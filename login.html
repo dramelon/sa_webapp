@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>เข้าสู่ระบบ</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="auth">
+      <section class="card">
+        <div class="logo" aria-label="Logo placeholder"></div>
+
+        <form class="form" action="login.php" method="post" autocomplete="on">
+          <label class="field">
+            <span class="icon mail"></span>
+            <input
+              type="text"
+              name="username"
+              placeholder="Username or Email"
+              required
+            />
+          </label>
+          <label class="field">
+            <span class="icon lock"></span>
+            <input
+              type="password"
+              name="password"
+              placeholder="Password" required
+            />
+          </label>
+          <button class="btn" type="submit">Log in</button>
+        </form>
+
+        <nav class="meta">
+          <a class="link" href="admin_create_account.html">Create account</a>
+          <a class="link" href="#">Forgot password?</a>
+        </nav>
+      </section>
+    </main>
+  </body>
+</html>
+<!-- 
+<form class="form" action="#" method="post" autocomplete="on">
+  <label class="field">
+    <span class="icon mail" aria-hidden="true"></span>
+    <input type="email" name="email" placeholder="Email" required />
+  </label>
+  <label class="field">
+    <span class="icon lock" aria-hidden="true"></span>
+    <input type="password" name="password" placeholder="Password" required />
+  </label>
+
+  <button class="btn" type="submit">Log in</button>
+</form> -->

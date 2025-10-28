@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>สร้างบัญชี — ตั้งชื่อผู้ใช้</title>
+    <link rel="stylesheet" href="style.css" />
+    <script>
+      // carry first/last forward if present
+      function carry() {
+        const p = new URLSearchParams(location.search);
+        const name = [p.get("first"), p.get("last")].filter(Boolean).join(" ");
+        const el = document.getElementById("fullname");
+        if (el && name) el.textContent = name;
+      }
+      document.addEventListener("DOMContentLoaded", carry);
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <a class="back" href="signup.html">ย้อนกลับ</a>
+      <div class="header" style="margin-top: 8px">ระบบจัดการวัสดุอุปกรณ์</div>
+      <p class="subtle">
+        กรุณาสร้างข้อมูลผู้ใช้สำหรับเข้าระบบ <span id="fullname"></span>
+      </p>
+
+      <form
+        onsubmit="alert('สมัครสำเร็จ'); location.href='first-login.html'; return false;"
+      >
+        <input
+          class="input"
+          name="username"
+          placeholder="ชื่อผู้ใช้"
+          minlength="4"
+          required
+        />
+        <div class="hint">
+          <span class="i">i</span>
+          ตั้งด้วยภาษาอังกฤษตัวพิมพ์เล็กและตัวเลขเท่านั้น เช่น myname123
+        </div>
+
+        <div class="footer">
+          <div class="link-left">
+            มีบัญชีแล้ว? <a href="first-login.html">เข้าสู่ระบบ</a>
+          </div>
+          <button class="btn" type="submit">ถัดไป</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>
