@@ -86,6 +86,19 @@ body {
   box-shadow: 0 0 0 3px rgba(246, 196, 79, 0.25);
 }
 
+.form-msg {
+  margin: 4px 2px 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #ffecec;
+  color: #c62828;
+  font-size: 0.95rem;
+}
+.form-msg.ok {
+  background: #e9f7ee;
+  color: #2e7d32;
+}
+
 /* Button */
 .btn {
   width: 100%;

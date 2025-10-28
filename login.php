@@ -2,7 +2,7 @@
 session_start();
 
 try {
-    $db = new PDO('mysql:host=localhost;dbname=sa_app;charset=utf8mb4', 'dbuser', 'dbpass', [
+    $db = new PDO('mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4', 'dramelon', 'dramelon', [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
 } catch (PDOException $e) {
@@ -18,19 +18,16 @@ if (!$userInput || !$password) {
     exit;
 }
 
-$stmt = $db->prepare(query: 'SELECT StaffID, Password FROM staffs WHERE Username = :u OR Email = :u LIMIT 1');
+$stmt = $db->prepare('SELECT StaffID, Password FROM staffs WHERE Username = :u OR Email = :u LIMIT 1');
 $stmt->execute([':u' => $userInput]);
 $staff = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($staff && password_verify($password, $staff['Password'])) {
-    session_regenerate_id(true);
+if ($staff && password_verify($password, hash: $staff['Password'])) {
+    session_regenerate_id(delete_old_session: true);
     $_SESSION['staff_id'] = $staff['StaffID'];
-
-    $update = $db->prepare('UPDATE staffs SET LastLogin = NOW() WHERE StaffID = :id');
-    $update->execute([':id' => $staff['StaffID']]);
-
-    echo 'login ok';
-} else {
-    http_response_code(401);
-    echo 'invalid';
+    $db->prepare('UPDATE staffs SET LastLogin=NOW() WHERE StaffID=:id')->execute([':id' => $row['StaffID']]);
+    header('Location: home.html'); // success
+    exit;
 }
+header('Location: login.html?error=1'); // bad credentials
+exit;

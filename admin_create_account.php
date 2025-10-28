@@ -12,7 +12,7 @@ try {
 
 $username = trim($_POST['username'] ?? '');
 $password = $_POST['password'] ?? '';
-$fullname = trim($_POST['fullname'] ?? '');
+$fullname = trim(string: $_POST['fullname'] ?? '');
 $email = trim($_POST['email'] ?? '');
 $phone = trim($_POST['phone'] ?? '');
 $role = trim($_POST['role'] ?? 'staff');
@@ -23,17 +23,30 @@ if (!$username || !$password || !$email) {
     exit;
 }
 
-$hash = password_hash($password, PASSWORD_DEFAULT);
+try {
+    $hash = password_hash($password, PASSWORD_DEFAULT);
 
-$stmt = $db->prepare('INSERT INTO staffs (Username, Password, FullName, Email, Phone, Role)
-                     VALUES (:u, :p, :f, :e, :ph, :r)');
-$stmt->execute([
-    ':u' => $username,
-    ':p' => $hash,
-    ':f' => $fullname,
-    ':e' => $email,
-    ':ph' => $phone,
-    ':r' => $role
-]);
+    $stmt = $db->prepare('INSERT INTO staffs (Username, Password, FullName, Email, Phone, Role)
+                        VALUES (:u, :p, :f, :e, :ph, :r)');
+    $stmt->execute([
+        ':u' => $username,
+        ':p' => $hash,
+        ':f' => $fullname,
+        ':e' => $email,
+        ':ph' => $phone,
+        ':r' => $role
+    ]);
 
-echo 'Account created successfully';
+    // success → login
+    header('Location: login.html?created=1');
+    exit;
+} catch (PDOException $e) {
+    // duplicate username/email → back to login with message
+    if ($e->getCode() === '23000') {
+        header('Location: login.html?error=exists');
+        exit;
+    }
+
+    header('Location: login.html?error=server');
+    exit;
+}
