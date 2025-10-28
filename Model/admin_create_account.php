@@ -38,15 +38,15 @@ try {
     ]);
 
     // success → login
-    header('Location: login.html?created=1');
+    header('Location: ../View/login.html?created=1');
     exit;
 } catch (PDOException $e) {
     // duplicate username/email → back to login with message
     if ($e->getCode() === '23000') {
-        header('Location: login.html?error=exists');
+        header('Location: ../View/login.html?error=exists');
         exit;
     }
 
-    header('Location: login.html?error=server');
+    header('Location: ../View/login.html?error=server');
     exit;
 }

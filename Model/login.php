@@ -26,8 +26,8 @@ if ($staff && password_verify($password, hash: $staff['Password'])) {
     session_regenerate_id(delete_old_session: true);
     $_SESSION['staff_id'] = $staff['StaffID'];
     $db->prepare('UPDATE staffs SET LastLogin=NOW() WHERE StaffID=:id')->execute([':id' => $row['StaffID']]);
-    header('Location: home.html'); // success
+    header('Location: ../View/home.html'); // success
     exit;
 }
-header('Location: login.html?error=1'); // bad credentials
+header('Location: ../View/login.html?error=1'); // bad credentials
 exit;
