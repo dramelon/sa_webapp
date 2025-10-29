@@ -15,7 +15,7 @@
             <a class="item" href="#">
                 <span class="i home"></span><span>เมนูหลัก</span>
             </a>
-            <a class="item active" href="#">
+            <a class="item active" href="../View/home.html">
                 <span class="i news"></span><span>ข่าวสารทั่วไป</span>
             </a>
             <a class="item" href="#">
@@ -36,7 +36,7 @@
     <div id="scrim" class="scrim" hidden></div>
 
     <!-- App shell -->
-    <header class="topbar">
+    <div class="topbar">
         <button id="btnMenu" class="hamburger" aria-label="เมนู">
             <span></span><span></span><span></span>
         </button>
@@ -49,7 +49,7 @@
             </span>
             <a class="powerbtn" href="../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
         </div>
-    </header>
+    </div>
 
     <main class="page">
         <section class="news-head">
@@ -57,39 +57,7 @@
             <p class="date">วันจันทร์ที่ 15 กันยายน 2568</p>
         </section>
 
-        <section class="cards">
-            <!-- Card 1 -->
-            <article class="card">
-                <header class="card-head">
-                    <span class="i bubble"></span>
-                    <h3>ประกาศปิดปรับปรุงระบบ</h3>
-                </header>
-                <div class="card-divider"></div>
-                <p class="card-body">
-                    ขอประกาศปิดปรับปรุงระบบ วันที่ 91 2302132832132jdsn... skodakspodaksj...
-                </p>
-                <footer class="card-foot">
-                    <span class="i clock"></span>
-                    <span>ประกาศเมื่อ: 12 กันยายน 2568 | นางสาวกราชา พุฒรา - ฝ่ายบริหารจัดการระบบ</span>
-                </footer>
-            </article>
-
-            <!-- Card 2 -->
-            <article class="card">
-                <header class="card-head">
-                    <span class="i bubble"></span>
-                    <h3>asdusahdsaidashadiauhasd</h3>
-                </header>
-                <div class="card-divider"></div>
-                <p class="card-body">
-                    asdksaoidj djiaosi doisdjaosji... djoaijsdaoijsdjaosidjaosia...
-                </p>
-                <footer class="card-foot">
-                    <span class="i clock"></span>
-                    <span>ประกาศเมื่อ: xx bbbbbb yyyy | abcdef ghijklmnopqrstuvwxyz</span>
-                </footer>
-            </article>
-        </section>
+        <section class="cards" id="newsCards"></section>
     </main>
 
     <script src="../Controller/home.js" defer></script>
