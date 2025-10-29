@@ -11,11 +11,13 @@
     box.textContent =
       error === "1"
         ? "Incorrect username or password"
+        : error === "unauth"
+        ? "Unauth" //so silly pls change later
         : error === "exists"
         ? "Username or email already exists"
         : error === "missing"
         ? "Please fill all required fields"
-        : "Server error";
+        : "angy, if u see dis msg, so something error... rah rah RAHHHH!!😡😡😡💢 Anger Symbol Emoji | Meaning, Copy And Paste";
     box.hidden = false;
     box.classList.remove("ok");
   } else if (created) {

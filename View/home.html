@@ -1,11 +1,98 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home</title>
+    <link rel="stylesheet" href="../style.css" />
 </head>
+
 <body>
-    hi, welcome to home page
+    <!-- Slide-out drawer -->
+    <aside id="drawer" class="drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a class="item" href="#">
+                <span class="i home"></span><span>เมนูหลัก</span>
+            </a>
+            <a class="item active" href="#">
+                <span class="i news"></span><span>ข่าวสารทั่วไป</span>
+            </a>
+            <a class="item" href="#">
+                <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
+            </a>
+            <a class="item" href="#">
+                <span class="i box"></span><span>สถานะวัสดุในคลัง</span>
+            </a>
+            <div class="drawer-sep"></div>
+            <a class="item" href="#">
+                <span class="i user"></span><span>บัญชีของฉัน</span>
+            </a>
+            <a class="item" href="../Model/logout.php">
+                <span class="i power"></span><span>ออกจากระบบ</span>
+            </a>
+        </nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <!-- App shell -->
+    <header class="topbar">
+        <button id="btnMenu" class="hamburger" aria-label="เมนู">
+            <span></span><span></span><span></span>
+        </button>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - ฝ่ายจัดการอีเว้น</h1>
+
+        <div class="account">
+            <span class="pill">
+                <img class="avatar" id="avatar" alt="avatar" />
+                <span class="uid" id="fullName">...</span>
+            </span>
+            <a class="powerbtn" href="../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
+        </div>
+    </header>
+
+    <main class="page">
+        <section class="news-head">
+            <h2>ข่าวสารทั่วไป</h2>
+            <p class="date">วันจันทร์ที่ 15 กันยายน 2568</p>
+        </section>
+
+        <section class="cards">
+            <!-- Card 1 -->
+            <article class="card">
+                <header class="card-head">
+                    <span class="i bubble"></span>
+                    <h3>ประกาศปิดปรับปรุงระบบ</h3>
+                </header>
+                <div class="card-divider"></div>
+                <p class="card-body">
+                    ขอประกาศปิดปรับปรุงระบบ วันที่ 91 2302132832132jdsn... skodakspodaksj...
+                </p>
+                <footer class="card-foot">
+                    <span class="i clock"></span>
+                    <span>ประกาศเมื่อ: 12 กันยายน 2568 | นางสาวกราชา พุฒรา - ฝ่ายบริหารจัดการระบบ</span>
+                </footer>
+            </article>
+
+            <!-- Card 2 -->
+            <article class="card">
+                <header class="card-head">
+                    <span class="i bubble"></span>
+                    <h3>asdusahdsaidashadiauhasd</h3>
+                </header>
+                <div class="card-divider"></div>
+                <p class="card-body">
+                    asdksaoidj djiaosi doisdjaosji... djoaijsdaoijsdjaosidjaosia...
+                </p>
+                <footer class="card-foot">
+                    <span class="i clock"></span>
+                    <span>ประกาศเมื่อ: xx bbbbbb yyyy | abcdef ghijklmnopqrstuvwxyz</span>
+                </footer>
+            </article>
+        </section>
+    </main>
+
+    <script src="../Controller/home.js" defer></script>
 </body>
+
 </html>
