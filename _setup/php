@@ -6,19 +6,41 @@ CREATE DATABASE sa_app
 
 USE sa_app;
 
+
+
+
+-- STAFFS (aka: user) v2
 CREATE TABLE staffs (
-  StaffID INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  LastLogin DATETIME DEFAULT NULL,
-  Username VARCHAR(100) NOT NULL UNIQUE,
-  Password VARCHAR(255) NOT NULL,
-  FullName VARCHAR(200) DEFAULT NULL,
-  Email VARCHAR(255) DEFAULT NULL UNIQUE,
-  Phone VARCHAR(50) DEFAULT NULL,
-  AvatarPath VARCHAR(255) DEFAULT NULL;
-  Role VARCHAR(50) DEFAULT 'staff',
-  Status ENUM('active','inactive','suspended') DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    StaffID INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    LastLogin DATETIME DEFAULT NULL,
+    Username VARCHAR(100) NOT NULL UNIQUE,
+    Password VARCHAR(255) NOT NULL,
+    FullName VARCHAR(200) DEFAULT NULL,
+    Email VARCHAR(255) DEFAULT NULL UNIQUE,
+    Phone VARCHAR(50) DEFAULT NULL,
+    AvatarPath VARCHAR(255) DEFAULT NULL;
+    Role VARCHAR(50) DEFAULT 'staff',
+    Status ENUM('active','inactive','suspended') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 
+-- in case if missing only "AvatarPath" (this added in v2)
 ALTER TABLE staffs
-  ADD COLUMN AvatarPath VARCHAR(255) NULL AFTER Phone;
+    ADD COLUMN AvatarPath VARCHAR(255) NULL AFTER Phone;
+
+
+
+
+-- ANNOUNCEMENT (aka: news/announce) v1
+CREATE TABLE Announcement (
+    AnnounceID   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    Topic        VARCHAR(255) NOT NULL,
+    Description  TEXT NOT NULL,
+    AnnounceDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Announcer    INT UNSIGNED NULL,
+    Archived     TINYINT(1) NOT NULL DEFAULT 0,
+    INDEX idx_archived_date (Archived, AnnounceDate),
+    CONSTRAINT fk_announce_staff
+    FOREIGN KEY (Announcer) REFERENCES staffs(StaffID)
+    ON DELETE SET NULL ON UPDATE CASCADE
+);
