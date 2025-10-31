@@ -2,9 +2,9 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Home</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
     <link rel="stylesheet" href="../style.css" />
 </head>
 
@@ -12,10 +12,10 @@
     <!-- Slide-out drawer -->
     <aside id="drawer" class="drawer" aria-hidden="true">
         <nav class="drawer-nav">
-            <a class="item" href="../View/main_menu.html">
+            <a class="item active" href="../View/main_menu.html">
                 <span class="i home"></span><span>เมนูหลัก</span>
             </a>
-            <a class="item active" href="../View/home.html">
+            <a class="item" href="../View/home.html">
                 <span class="i news"></span><span>ข่าวสารทั่วไป</span>
             </a>
             <a class="item" href="#">
@@ -53,14 +53,23 @@
 
     <main class="page">
         <section class="news-head">
-            <h2>ข่าวสารทั่วไป</h2>
-            <p class="date">วันจันทร์ที่ 15 กันยายน 2568</p>
+            <h2>หน้าหลัก</h2>
+            <p class="date">...</p>
         </section>
 
-        <section class="cards" id="newsCards"></section>
+        <!-- Tiles -->
+        <section class="tile-grid">
+            <a class="tile" href="#"><span class="i list"></span><strong>รายการอีเว้นทั้งหมด</strong></a>
+            <a class="tile" href="#"><span class="i list"></span><strong>รายการอีเว้นของฉัน</strong></a>
+            <a class="tile" href="#"><span class="i clip"></span><strong>สัญญา</strong></a>
+            <a class="tile" href="#"><span class="i user"></span><strong>ลูกค้า และ CRM</strong></a>
+
+            <a class="tile" href="#"><span class="i box"></span><strong>วัสดุในคลัง</strong></a>
+            <a class="tile" href="#"><span class="i user"></span><strong>บัญชี</strong></a>
+            <a class="tile" href="#"><span class="i settings"></span><strong>การตั้งค่า</strong></a>
+            <a class="tile" href="../Model/logout.php"><span class="i power"></span><strong>ออกจากระบบ</strong></a>
+        </section>
     </main>
 
     <script src="../Controller/home.js" defer></script>
 </body>
-
-</html>
