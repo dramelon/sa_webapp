@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>รายการอีเว้น</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+
+<body>
+    <!-- Slide-out drawer -->
+    <aside id="drawer" class="drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a class="item" href="../View/main_menu.html">
+                <span class="i home"></span><span>เมนูหลัก</span>
+            </a>
+            <a class="item" href="../View/home.html">
+                <span class="i news"></span><span>ข่าวสารทั่วไป</span>
+            </a>
+            <a class="item active" href="../View/events.html">
+                <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
+            </a>
+            <a class="item" href="#">
+                <span class="i box"></span><span>สถานะวัสดุในคลัง</span>
+            </a>
+            <div class="drawer-sep"></div>
+            <a class="item" href="#">
+                <span class="i user"></span><span>บัญชีของฉัน</span>
+            </a>
+            <a class="item" href="../Model/logout.php">
+                <span class="i power"></span><span>ออกจากระบบ</span>
+            </a>
+        </nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <!-- App shell -->
+    <div class="topbar">
+        <button id="btnMenu" class="hamburger" aria-label="เมนู">
+            <span></span><span></span><span></span>
+        </button>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - ฝ่ายจัดการอีเว้น</h1>
+
+        <div class="account">
+            <span class="pill">
+                <img class="avatar" id="avatar" alt="avatar" />
+                <span class="uid" id="fullName">...</span>
+            </span>
+            <a class="powerbtn" href="../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
+        </div>
+    </div>
+
+    <main class="page">
+        <section class="page-head">
+            <div>
+                <h2>รายการอีเว้น</h2>
+                <p class="date" id="pageDate">วัน...</p>
+            </div>
+            <div class="head-actions">
+                <button class="btn btn-secondary" id="btnNewEvent">
+                    <span class="i plus"></span>
+                    สร้างอีเว้นใหม่
+                </button>
+            </div>
+        </section>
+
+        <section class="summary-cards" id="summaryCards" aria-label="ภาพรวมสถานะอีเว้น">
+            <!-- Populated by JS -->
+        </section>
+
+        <section class="list-panel" id="my-events">
+            <header class="list-toolbar">
+                <div class="toolbar-group">
+                    <label class="field search">
+                        <span class="i search"></span>
+                        <input type="search" id="searchInput" placeholder="ค้นหารหัสอีเว้น ชื่องาน หรือชื่อผู้ดูแล..." />
+                    </label>
+                    <label class="field select">
+                        <span class="i filter"></span>
+                        <select id="statusFilter" aria-label="กรองตามสถานะ">
+                            <option value="all">สถานะทั้งหมด</option>
+                            <option value="draft">ร่าง</option>
+                            <option value="planning">วางแผน</option>
+                            <option value="waiting">รอดำเนินการ</option>
+                            <option value="processing">กำลังดำเนินการ</option>
+                            <option value="billing">เรียกเก็บเงิน</option>
+                            <option value="completed">เสร็จสิ้น</option>
+                            <option value="cancelled">ยกเลิก</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="toolbar-group">
+                    <button class="ghost" id="btnClearFilters">ล้างตัวกรอง</button>
+                    <button class="btn btn-ghost" id="btnExport">
+                        <span class="i download"></span>
+                        ส่งออก
+                    </button>
+                </div>
+            </header>
+
+            <div class="table-wrap" role="region" aria-live="polite">
+                <table class="event-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">รหัส</th>
+                            <th scope="col">ชื่องาน</th>
+                            <th scope="col">หน่วยงาน</th>
+                            <th scope="col">ผู้ประสานงาน</th>
+                            <th scope="col">วันที่จัด</th>
+                            <th scope="col">งบประมาณ</th>
+                            <th scope="col">สถานะ</th>
+                            <th scope="col" class="col-actions">การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventTableBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+                <div class="empty-state" id="emptyState" aria-hidden="true">
+                    <span class="i inbox"></span>
+                    <p>ไม่พบอีเว้นตามตัวกรองที่เลือก</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="../Controller/events.js" defer></script>
+</body>
+
+</html>
