@@ -31,7 +31,7 @@ ALTER TABLE staffs
 
 
 
--- ANNOUNCEMENT (aka: news/announce) v1
+-- ANNOUNCEMENT [requirement: staffs] (aka: news/announce) v1
 CREATE TABLE Announcement (
     AnnounceID   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     Topic        VARCHAR(255) NOT NULL,
@@ -49,137 +49,82 @@ CREATE TABLE Announcement (
 
 
 
--- EVENTS v1
+-- LOCATIONS v1
+CREATE TABLE locations (
+  LocationID    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  Loc_Name      VARCHAR(150) DEFAULT NULL,
+  House_Number  VARCHAR(50)  DEFAULT NULL,
+  Village       VARCHAR(150) DEFAULT NULL,
+  Building_Name VARCHAR(150) DEFAULT NULL,
+  Floor         VARCHAR(50)  DEFAULT NULL,
+  Room          VARCHAR(50)  DEFAULT NULL,
+  Street        VARCHAR(150) DEFAULT NULL,
+  Subdistrict   VARCHAR(150) DEFAULT NULL,
+  District      VARCHAR(150) DEFAULT NULL,
+  Province      VARCHAR(150) DEFAULT NULL,
+  Postal_Code   VARCHAR(20)  DEFAULT NULL,
+  Country       VARCHAR(100) DEFAULT NULL,
+  Notes         TEXT         DEFAULT NULL,
+  PRIMARY KEY (LocationID)
+);
+
+
+
+
+-- CUSTOMERS [requirement: locations] v1
+CREATE TABLE customers (
+  CustomerID    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  LocationID    INT UNSIGNED DEFAULT NULL,     -- billing/contact address
+  Customer_Name VARCHAR(150) NOT NULL,
+  OrgName       VARCHAR(150) DEFAULT NULL,
+  Email         VARCHAR(150) DEFAULT NULL,
+  Phone         VARCHAR(50)  DEFAULT NULL,
+  TaxID         VARCHAR(50)  DEFAULT NULL,
+  Status        ENUM('active','inactive') NOT NULL DEFAULT 'active',
+  Notes         TEXT DEFAULT NULL,
+  PRIMARY KEY (CustomerID),
+  KEY idx_customer_location (LocationID),
+  CONSTRAINT fk_customer_location
+    FOREIGN KEY (LocationID)
+    REFERENCES locations(LocationID)
+    ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+
+
+
+-- EVENTS [requirement: staffs, customers, locations] v1
 CREATE TABLE events (
     EventID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Name         VARCHAR(200)    NOT NULL,
-    StaffID      INT UNSIGNED    NULL,
-    CustomerID   INT UNSIGNED    NULL,
-    LocationID   INT UNSIGNED    NULL,
-    ILR_ID       INT UNSIGNED    NULL,
-    CreatedAt    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UpdatedAt    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    StartDate    DATETIME        NULL,
-    EndDate      DATETIME        NULL,
-    Description  TEXT            NULL,
-    Status       ENUM('draft','incoming','ongoing','completed','canceled') NOT NULL DEFAULT 'draft',
-    Notes        TEXT            NULL,
-    Archived     TINYINT(1)      NOT NULL DEFAULT 0,
+    Event_Name   VARCHAR(200) NOT NULL,
+    StaffID      INT UNSIGNED    DEFAULT NULL,   -- FK → staffs
+    CustomerID   INT UNSIGNED    DEFAULT NULL,   -- FK → customers
+    LocationID   INT UNSIGNED    DEFAULT NULL,   -- FK → locations
+
+    CreatedAt    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    StartDate    DATETIME DEFAULT NULL,
+    EndDate      DATETIME DEFAULT NULL,
+
+    Description  TEXT DEFAULT NULL,
+    Status       ENUM('draft', 'planning', 'waiting', 'processing', 'billing', 'completed', 'cancelled') NOT NULL DEFAULT 'draft',
+    PicturePath  VARCHAR(255) DEFAULT NULL,
+    FilePath     VARCHAR(255) DEFAULT NULL,
+    Notes        TEXT DEFAULT NULL,
 
     PRIMARY KEY (EventID),
-    INDEX idx_status_start (Status, StartDate),
-    INDEX idx_staff (StaffID),
-    INDEX idx_customer (CustomerID),
-    INDEX idx_location (LocationID),
-    UNIQUE KEY uq_ilr (ILR_ID),
+    KEY idx_status_start (Status, StartDate),
+    KEY idx_staff (StaffID),
+    KEY idx_customer (CustomerID),
+    KEY idx_location (LocationID),
 
     CONSTRAINT fk_event_staff
-        FOREIGN KEY (StaffID)    REFERENCES staffs(StaffID)
+        FOREIGN KEY (StaffID) REFERENCES staffs(StaffID)
         ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT fk_event_customer
         FOREIGN KEY (CustomerID) REFERENCES customers(CustomerID)
         ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT fk_event_location
         FOREIGN KEY (LocationID) REFERENCES locations(LocationID)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_event_ilr
-        FOREIGN KEY (ILR_ID)     REFERENCES item_list_requests(ILR_ID)
         ON DELETE SET NULL ON UPDATE CASCADE
-)
-
-
-
-
--- CUSTOMERS v1
-CREATE TABLE customers (
-    CustomerID     INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Name           VARCHAR(150) NOT NULL,
-    OrgName        VARCHAR(150) DEFAULT NULL,
-    Phone          VARCHAR(50)  DEFAULT NULL,
-    Email          VARCHAR(150) DEFAULT NULL,
-    TaxID          VARCHAR(50)  DEFAULT NULL,
-    BillingAddress INT UNSIGNED DEFAULT NULL,     -- FK → locations
-    Notes          TEXT         DEFAULT NULL,
-    Archived       TINYINT(1)   NOT NULL DEFAULT 0,
-
-    PRIMARY KEY (CustomerID),
-    INDEX idx_org (OrgName),
-    CONSTRAINT fk_customer_location
-    FOREIGN KEY (BillingAddress)
-    REFERENCES locations(LocationID)
-    ON DELETE SET NULL ON UPDATE CASCADE
-)
-
-
-
-
--- LOCATIONS v1
-CREATE TABLE locations (
-    LocationID   INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Address1     VARCHAR(255) NOT NULL,
-    Address2     VARCHAR(255) DEFAULT NULL,
-    Name         VARCHAR(150) DEFAULT NULL,
-    Notes        TEXT DEFAULT NULL,
-    Archived     TINYINT(1) NOT NULL DEFAULT 0,
-
-    PRIMARY KEY (LocationID)
-)
-
-
-
-
--- ITEMS v1
-CREATE TABLE items (
-    ItemID        INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    ItemType      VARCHAR(100) NOT NULL,
-    SerialNumber  VARCHAR(100) DEFAULT NULL,
-    Name          VARCHAR(150) NOT NULL,
-    Category      VARCHAR(100) DEFAULT NULL,
-    CanBeExpensed TINYINT(1) NOT NULL DEFAULT 0,
-    Price         DECIMAL(12,2) DEFAULT 0.00,
-    Status        ENUM('available','in_use','maintenance','lost','disposed', 'reserve') NOT NULL DEFAULT 'available',
-    Active        TINYINT(1) NOT NULL DEFAULT 1,
-    Notes         TEXT DEFAULT NULL,
-
-    PRIMARY KEY (ItemID),
-    INDEX idx_category (Category)
-)
-
-
-
-
--- ITEMLISTREQUEST v1
-CREATE TABLE item_list_requests (
-    ILR_ID      INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    EventID     BIGINT UNSIGNED DEFAULT NULL,   -- linked to events later
-    CreatedAt   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UpdatedAt   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    Notes       TEXT DEFAULT NULL,
-    Status      ENUM('draft','waiting','processing','completed','canceled') NOT NULL DEFAULT 'draft',
-
-    PRIMARY KEY (ILR_ID),
-    INDEX idx_status (Status)
-)
-
-CREATE TABLE item_list_request_lines (
-    LineID        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    ILR_ID        INT UNSIGNED NOT NULL,
-    ItemID        INT UNSIGNED DEFAULT NULL,
-    ItemType      VARCHAR(100) DEFAULT NULL,
-    QtyRequested  INT UNSIGNED NOT NULL DEFAULT 1,
-    Notes         TEXT DEFAULT NULL,
-    Status        ENUM('waiting','approved','rejected') NOT NULL DEFAULT 'waiting',
-
-    PRIMARY KEY (LineID),
-    INDEX idx_ilr (ILR_ID),
-    CONSTRAINT fk_line_ilr
-        FOREIGN KEY (ILR_ID) REFERENCES item_list_requests(ILR_ID)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_line_item
-        FOREIGN KEY (ItemID) REFERENCES items(ItemID)
-        ON DELETE SET NULL ON UPDATE CASCADE
-)
-
-
-
-
+);
