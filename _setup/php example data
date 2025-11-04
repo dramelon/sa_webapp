@@ -1,0 +1,78 @@
+INSERT INTO locations
+(Loc_Name, House_Number, Village, Building_Name, Floor, Room, Street,
+ Subdistrict, District, Province, Postal_Code, Country, Notes)
+VALUES
+('Kasetsart University HQ', '50', 'Chatuchak', 'Ratchaphruek', '1', '101', 'Ngamwongwan Rd', 'Lat Yao', 'Chatuchak', 'Bangkok', '10900', 'Thailand', 'Main university campus'),
+('Central Plaza', '99/9', NULL, 'Office Tower A', '12', '1205', 'Phahonyothin Rd', 'Chatuchak', 'Chatuchak', 'Bangkok', '10900', 'Thailand', 'Shopping complex'),
+('Impact Arena', '45', NULL, 'Exhibition Hall', '2', 'Hall2', 'Popular Rd', 'Ban Mai', 'Pak Kret', 'Nonthaburi', '11120', 'Thailand', NULL),
+('Bangkok Art Center', '89', NULL, NULL, '3', NULL, 'Rama I Rd', 'Wang Mai', 'Pathumwan', 'Bangkok', '10330', 'Thailand', NULL),
+('Siam Paragon', '991', NULL, NULL, '5', '502', 'Rama I Rd', 'Pathumwan', 'Pathumwan', 'Bangkok', '10330', 'Thailand', NULL),
+('Kasetsart Auditorium', '50', NULL, 'KU Hall', NULL, NULL, 'Ngamwongwan Rd', 'Lat Yao', 'Chatuchak', 'Bangkok', '10900', 'Thailand', NULL),
+('BITEC', '88', NULL, 'EH106', NULL, NULL, 'Sukhumvit Rd', 'Bang Na Tai', 'Bang Na', 'Bangkok', '10260', 'Thailand', NULL),
+('Queen Sirikit Center', '60', NULL, 'QSNCC', 'B1', NULL, 'Ratchadaphisek Rd', 'Khlong Toei', 'Khlong Toei', 'Bangkok', '10110', 'Thailand', NULL),
+('Khon Kaen Hall', '123', NULL, 'Convention Center', NULL, NULL, 'Mittraphap Rd', 'Nai Mueang', 'Mueang Khon Kaen', 'Khon Kaen', '40000', 'Thailand', NULL),
+('Chiang Mai Hall', '33', NULL, 'Exhibition Hall', NULL, NULL, 'Changklan Rd', 'Chang Khlan', 'Mueang Chiang Mai', 'Chiang Mai', '50100', 'Thailand', NULL),
+('Phuket Arena', '88', NULL, 'Arena A', NULL, NULL, 'Chaofa Rd', 'Wichit', 'Mueang Phuket', 'Phuket', '83000', 'Thailand', NULL),
+('Samyan Mitrtown', '944', NULL, NULL, '6', '604', 'Rama IV Rd', 'Wang Mai', 'Pathumwan', 'Bangkok', '10330', 'Thailand', NULL),
+('ICONSIAM', '299', NULL, NULL, '5', NULL, 'Charoen Nakhon Rd', 'Khlong Ton Sai', 'Khlong San', 'Bangkok', '10600', 'Thailand', NULL),
+('KMITL Campus', '1', NULL, 'IT Building', '4', '408', 'Ladkrabang Rd', 'Ladkrabang', 'Ladkrabang', 'Bangkok', '10520', 'Thailand', NULL),
+('Nakhon Ratchasima Hall', '9', NULL, NULL, NULL, NULL, 'Mittraphap Rd', 'Nai Mueang', 'Mueang Nakhon Ratchasima', 'Nakhon Ratchasima', '30000', 'Thailand', NULL),
+('Chiang Rai Plaza', '2', NULL, NULL, NULL, NULL, 'Ban Du Rd', 'Ban Du', 'Mueang Chiang Rai', 'Chiang Rai', '57100', 'Thailand', NULL),
+('Trang Center', '7', NULL, NULL, NULL, NULL, 'Ramkhamhaeng Rd', 'Thap Thiang', 'Mueang Trang', 'Trang', '92000', 'Thailand', NULL),
+('Surat Hall', '5', NULL, NULL, NULL, NULL, 'Tapi Rd', 'Talat', 'Mueang Surat Thani', 'Surat Thani', '84000', 'Thailand', NULL),
+('Udon Event Park', '23', NULL, NULL, NULL, NULL, 'Prajak Rd', 'Mak Khaeng', 'Mueang Udon Thani', 'Udon Thani', '41000', 'Thailand', NULL),
+('Rayong Expo', '17', NULL, NULL, NULL, NULL, 'Sukhumvit Rd', 'Tha Pradu', 'Mueang Rayong', 'Rayong', '21000', 'Thailand', NULL);
+
+INSERT INTO customers
+(LocationID, Customer_Name, OrgName, Email, Phone, TaxID, Status, Notes)
+VALUES
+(1,'บริษัท เอ บี ซี จำกัด','ABC Co.,Ltd.','contact@abc.co.th','0812345678','0105551234567','active','regular client'),
+(2,'บริษัท ดี อี เอฟ จำกัด','DEF Co.,Ltd.','sales@def.co.th','0891112233','0105559876543','active','event supplier'),
+(3,'คุณสมชาย ใจดี',NULL,'somchai@gmail.com','0865432198',NULL,'active',NULL),
+(4,'บริษัท จี เอช ไอ จำกัด','GHI Co.,Ltd.','info@ghi.co.th','0845556677','0105553344556','active',NULL),
+(5,'คุณสุนีย์ แสงทอง',NULL,'sunee@gmail.com','0821122334',NULL,'active',NULL),
+(6,'บริษัท เจ เค แอล จำกัด','JKL Co.,Ltd.','support@jkl.co.th','0859988776','0105557788990','inactive',NULL),
+(7,'บริษัท มโนรมย์ กรุ๊ป','Manorom Group','hello@manorom.com','0827776665','0105567788991','active',NULL),
+(8,'คุณปิยะดา พานิช',NULL,'piyada@yahoo.com','0832233445',NULL,'active',NULL),
+(9,'บริษัท เค มาร์เก็ตติ้ง','K Marketing Co.,Ltd.','info@kmarketing.co.th','0819988221','0105576655443','active',NULL),
+(10,'คุณกิตติชัย ใจงาม',NULL,'kitti@hotmail.com','0811117779',NULL,'active',NULL),
+(11,'บริษัท แสงทอง ไลท์ติ้ง','Saengthong Lighting','sales@saengthong.com','0867894561','0105588899776','active',NULL),
+(12,'บริษัท โปรเจค ดีไซน์','Project Design Co.','info@projdesign.com','0823456789','0105598877665','active',NULL),
+(13,'คุณสมฤดี พรหมจิต',NULL,'somruedee@gmail.com','0834567890',NULL,'active',NULL),
+(14,'บริษัท มหานคร โปรดักชั่น','Mahanakhon Production','info@mprod.com','0894561234','0105588997664','active',NULL),
+(15,'คุณอาทิตย์ วัฒนา',NULL,'artit@gmail.com','0819876543',NULL,'active',NULL),
+(16,'บริษัท โอเวอร์อีเว้นท์','OverEvent Co.','admin@overevent.com','0849998887','0105596677889','active',NULL),
+(17,'คุณพิมพ์ใจ นาคดี',NULL,'pimjai@hotmail.com','0812457893',NULL,'active',NULL),
+(18,'บริษัท เบสต์เซอร์วิส','BestService Co.','info@bestservice.com','0862349988','0105577766552','active',NULL),
+(19,'คุณชัยรัตน์ อินทร์ดี',NULL,'chairat@gmail.com','0816782345',NULL,'active',NULL),
+(20,'บริษัท ครีเอทีฟอาร์ต','Creative Art Co.','hello@creativeart.com','0898877661','0105591112233','active',NULL);
+
+INSERT INTO events
+(Event_Name, StaffID, CustomerID, LocationID, CreatedAt, StartDate, EndDate,
+ Description, Status, PicturePath, FilePath, Notes)
+VALUES
+('New Year Celebration 2025', 1, 1, 1, NOW(),'2025-12-28','2025-12-31','New Year countdown event with fireworks and concert','planning','../_files/pic1.jpg','../_files/doc1.pdf','Outdoor main stage'),
+('University Open House', 2, 3, 6, NOW(),'2025-11-15','2025-11-16','Open house for new students and parents','waiting',NULL,NULL,NULL),
+('Wedding Ceremony - Mr. A & Ms. B', 8, 5, 9, NOW(),'2025-12-05','2025-12-05','Wedding event setup for 300 guests','processing',NULL,NULL,NULL),
+('Corporate Seminar 2025', 1, 2, 2, NOW(),'2025-12-20','2025-12-22','Corporate seminar on annual growth plan','draft',NULL,NULL,NULL),
+('Music Festival Bangkok', 2, 9, 7, NOW(),'2026-01-10','2026-01-12','Outdoor music festival with 10 bands','planning',NULL,NULL,NULL),
+('Trade Show Chiang Mai', 1, 10, 10, NOW(),'2026-02-01','2026-02-05','Regional trade and expo for SME promotion','waiting',NULL,NULL,NULL),
+('Lighting Expo', 8, 11, 13, NOW(),'2025-11-25','2025-11-27','Exhibition for new lighting equipment','processing',NULL,NULL,NULL),
+('Interior Design Fair', 2, 12, 12, NOW(),'2025-12-03','2025-12-07','Interior design collaboration fair','billing',NULL,NULL,NULL),
+('Kasetsart Science Week', 1, 3, 6, NOW(),'2026-03-01','2026-03-07','Science and innovation week','planning',NULL,NULL,NULL),
+('Community Charity Run', 8, 17, 18, NOW(),'2026-01-14','2026-01-14','Charity marathon event 5 km','draft',NULL,NULL,NULL),
+('Beach Music Night', 2, 18, 11, NOW(),'2025-12-10','2025-12-10','One-night beach music party','completed',NULL,NULL,NULL),
+('Startup Expo 2026', 1, 16, 8, NOW(),'2026-04-10','2026-04-12','Startup showcase and investor networking','waiting',NULL,NULL,NULL),
+('Wedding - Mr. C & Ms. D', 8, 13, 9, NOW(),'2026-02-14','2026-02-14','Elegant wedding setup for VIP guests','processing',NULL,NULL,NULL),
+('Government Seminar', 1, 19, 15, NOW(),'2026-03-20','2026-03-22','Government department annual seminar','draft',NULL,NULL,NULL),
+('Food Fair Khon Kaen', 2, 8, 9, NOW(),'2026-03-10','2026-03-12','Regional food festival','planning',NULL,NULL,NULL),
+('Book Expo 2026', 8, 7, 5, NOW(),'2026-04-15','2026-04-18','Book fair for publishers and readers','waiting',NULL,NULL,NULL),
+('Company Annual Party', 1, 1, 1, NOW(),'2025-12-29','2025-12-29','Internal staff year-end celebration','billing',NULL,NULL,NULL),
+('Charity Gala Dinner', 2, 4, 4, NOW(),'2026-02-25','2026-02-25','Fundraising dinner with performances','completed',NULL,NULL,NULL),
+('Cultural Festival 2026', 8, 20, 10, NOW(),'2026-05-05','2026-05-10','Cultural stage and local craft exhibition','planning',NULL,NULL,NULL),
+('Fashion Week Bangkok', 2, 14, 13, NOW(),'2026-06-01','2026-06-06','Bangkok Fashion Week show','cancelled',NULL,NULL,NULL);
+('Tech Expo 2026', 1, 6, 7, NOW(),'2026-07-20','2026-07-23','Technology showcase for innovation startups','waiting',NULL,NULL,NULL),
+('Green Energy Forum', 2, 15, 5, NOW(),'2026-08-10','2026-08-12','Conference promoting renewable energy projects','planning',NULL,NULL,NULL),
+('Education Expo 2026', 8, 12, 10, NOW(),'2026-09-05','2026-09-07','Education fair for universities and schools','processing',NULL,NULL,NULL),
+('International Tourism Fair', 1, 9, 13, NOW(),'2026-10-15','2026-10-19','Tourism and travel promotion event','draft',NULL,NULL,NULL),
+('Startup Pitch Night', 2, 2, 8, NOW(),'2026-11-02','2026-11-02','Evening startup pitching session for investors','billing',NULL,NULL,'Short networking event');

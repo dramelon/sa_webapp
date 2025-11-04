@@ -74,7 +74,8 @@
                 <div class="toolbar-group">
                     <label class="field search">
                         <span class="i search"></span>
-                        <input type="search" id="searchInput" placeholder="ค้นหารหัสอีเว้น ชื่องาน หรือชื่อผู้ดูแล..." />
+                        <input type="search" id="searchInput"
+                            placeholder="ค้นหารหัสอีเว้น ชื่องาน หรือชื่อผู้ดูแล..." />
                     </label>
                     <label class="field select">
                         <span class="i filter"></span>
@@ -103,12 +104,11 @@
                 <table class="event-table">
                     <thead>
                         <tr>
-                            <th scope="col">รหัส</th>
-                            <th scope="col">ชื่องาน</th>
-                            <th scope="col">หน่วยงาน</th>
-                            <th scope="col">ผู้ประสานงาน</th>
-                            <th scope="col">วันที่จัด</th>
-                            <th scope="col">งบประมาณ</th>
+                            <th scope="col">รหัสอีเว้น</th>
+                            <th scope="col">ชื่องาน / สถานที่</th>
+                            <th scope="col">ลูกค้า</th>
+                            <th scope="col">ผู้รับผิดชอบ</th>
+                            <th scope="col">วันและเวลาเริ่ม</th>
                             <th scope="col">สถานะ</th>
                             <th scope="col" class="col-actions">การจัดการ</th>
                         </tr>
@@ -121,6 +121,11 @@
                     <span class="i inbox"></span>
                     <p>ไม่พบอีเว้นตามตัวกรองที่เลือก</p>
                 </div>
+            </div>
+            <div class="table-pagination" id="paginationControls" aria-live="polite">
+                <button class="btn btn-ghost" id="prevPage" type="button">ก่อนหน้า</button>
+                <span class="page-indicator" id="pageIndicator">หน้า 1</span>
+                <button class="btn btn-secondary" id="nextPage" type="button">หน้าถัดไป</button>
             </div>
         </section>
     </main>
