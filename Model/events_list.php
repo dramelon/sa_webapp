@@ -19,6 +19,33 @@ try {
 
     $offset = ($page - 1) * EVENTS_PER_PAGE;
 
+    $allowedSorts = [
+        'event_id' => 'e.EventID',
+        'event_name' => 'e.Event_Name',
+        'customer_name' => 'c.Customer_Name',
+        'staff_name' => 's.FullName',
+        'start_date' => 'e.StartDate',
+        'status' => 'e.Status',
+        'created_at' => 'e.CreatedAt',
+    ];
+
+    $sortKey = $_GET['sort_key'] ?? 'event_id';
+    if (!isset($allowedSorts[$sortKey])) {
+        $sortKey = 'event_id';
+    }
+
+    $sortDirection = strtolower($_GET['sort_direction'] ?? 'desc');
+    if (!in_array($sortDirection, ['asc', 'desc'], true)) {
+        $sortDirection = 'desc';
+    }
+
+    $orderParts = [];
+    $orderParts[] = $allowedSorts[$sortKey] . ' ' . strtoupper($sortDirection);
+    if ($sortKey !== 'event_id') {
+        $orderParts[] = 'e.EventID DESC';
+    }
+    $orderSql = implode(', ', $orderParts);
+
     $allowedStatuses = ['draft', 'planning', 'waiting', 'processing', 'billing', 'completed', 'cancelled'];
     $status = $_GET['status'] ?? 'all';
     if ($status !== 'all' && !in_array($status, $allowedStatuses, true)) {
@@ -102,7 +129,7 @@ try {
         LEFT JOIN staffs s ON s.StaffID = e.StaffID
         LEFT JOIN locations l ON l.LocationID = e.LocationID
         $dataWhereSql
-        ORDER BY e.CreatedAt DESC
+        ORDER BY $orderSql
         LIMIT :limit OFFSET :offset
     ";
 

@@ -776,6 +776,41 @@ body {
     font-size: 0.95rem;
 }
 
+.event-table thead th[aria-sort] {
+    transition: background-color 0.2s ease;
+}
+
+.event-table thead th[aria-sort="ascending"],
+.event-table thead th[aria-sort="descending"] {
+    background: #ffe99b;
+}
+
+.event-table thead .sort-button {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+}
+
+.event-table thead .sort-button:focus-visible {
+    outline: 2px solid #c27d00;
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+.event-table thead .sort-indicator {
+    font-size: 0.75rem;
+    opacity: 0.6;
+}
+
+.event-table thead th[aria-sort="ascending"] .sort-indicator,
+.event-table thead th[aria-sort="descending"] .sort-indicator {
+    opacity: 1;
+}
+
 .event-table tbody td {
     padding: 14px 16px;
     border-top: 1px solid #f3dfb8;

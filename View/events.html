@@ -104,12 +104,42 @@
                 <table class="event-table">
                     <thead>
                         <tr>
-                            <th scope="col">รหัสอีเว้น</th>
-                            <th scope="col">ชื่องาน / สถานที่</th>
-                            <th scope="col">ลูกค้า</th>
-                            <th scope="col">ผู้รับผิดชอบ</th>
-                            <th scope="col">วันและเวลาเริ่ม</th>
-                            <th scope="col">สถานะ</th>
+                            <th scope="col" data-sort-key="event_id" aria-sort="descending">
+                                <button type="button" class="sort-button" data-sort-key="event_id" data-label="รหัสอีเว้น">
+                                    รหัสอีเว้น
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="event_name" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="event_name" data-label="ชื่องานหรือสถานที่">
+                                    ชื่องาน / สถานที่
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="customer_name" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="customer_name" data-label="ลูกค้า">
+                                    ลูกค้า
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="staff_name" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="staff_name" data-label="ผู้รับผิดชอบ">
+                                    ผู้รับผิดชอบ
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="start_date" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="start_date" data-label="วันและเวลาเริ่ม">
+                                    วันและเวลาเริ่ม
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="status" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="status" data-label="สถานะ">
+                                    สถานะ
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
                             <th scope="col" class="col-actions">การจัดการ</th>
                         </tr>
                     </thead>

@@ -76,6 +76,8 @@ const summaryWrap = document.getElementById('summaryCards');
 const prevPageBtn = document.getElementById('prevPage');
 const nextPageBtn = document.getElementById('nextPage');
 const pageIndicator = document.getElementById('pageIndicator');
+const tableHeaders = document.querySelectorAll('.event-table thead th[data-sort-key]');
+const sortButtons = document.querySelectorAll('.event-table thead .sort-button');
 
 let events = [];
 let summaryCounts = normalizeCounts();
@@ -84,6 +86,9 @@ let hasNextPage = false;
 let hasPrevPage = false;
 let searchDebounceHandle = null;
 let lastRequestToken = 0;
+const defaultSort = Object.freeze({ key: 'event_id', direction: 'desc' });
+let sortKey = defaultSort.key;
+let sortDirection = defaultSort.direction;
 
 function normalizeCounts(source = {}) {
     const normalized = { all: 0 };
@@ -162,6 +167,8 @@ async function fetchEvents() {
     if (term) {
         params.set('search', term);
     }
+    params.set('sort_key', sortKey);
+    params.set('sort_direction', sortDirection);
 
     try {
         const response = await fetch(`../Model/events_list.php?${params.toString()}`, { credentials: 'same-origin' });
@@ -177,6 +184,7 @@ async function fetchEvents() {
         renderSummary();
         renderTable(events);
         updatePagination();
+        updateSortIndicators();
     } catch (err) {
         if (token !== lastRequestToken) {
             return;
@@ -192,20 +200,22 @@ async function fetchEvents() {
         `;
         emptyState.classList.remove('show');
         emptyState.setAttribute('aria-hidden', 'true');
+        updateSortIndicators();
         updatePagination();
     }
 }
 
 function renderTable(list) {
+    const rows = Array.isArray(list) ? list : [];
     tableBody.innerHTML = '';
-    const hasRows = list.length > 0;
+    const hasRows = rows.length > 0;
     emptyState.classList.toggle('show', !hasRows);
     emptyState.setAttribute('aria-hidden', hasRows ? 'true' : 'false');
     if (!hasRows) {
         return;
     }
 
-    for (const ev of list) {
+    for (const ev of rows) {
         const tr = document.createElement('tr');
         const statusKey = (ev.status || '').toLowerCase();
         const statusInfo = statusMeta[statusKey] ?? { label: 'ไม่ระบุ', icon: '' };
@@ -275,6 +285,38 @@ function handleSearchInput() {
     }, 300);
 }
 
+function resetSort() {
+    sortKey = defaultSort.key;
+    sortDirection = defaultSort.direction;
+}
+
+function updateSortIndicators() {
+    tableHeaders.forEach(th => {
+        const key = th.dataset.sortKey;
+        const isActive = key === sortKey;
+        const ariaState = isActive ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none';
+        th.setAttribute('aria-sort', ariaState);
+        const indicator = th.querySelector('.sort-indicator');
+        if (indicator) {
+            let symbol = '↕';
+            if (ariaState === 'ascending') symbol = '▲';
+            if (ariaState === 'descending') symbol = '▼';
+            indicator.textContent = symbol;
+        }
+        const button = th.querySelector('.sort-button');
+        if (button) {
+            const label = button.dataset.label || button.textContent.trim();
+            if (ariaState === 'ascending') {
+                button.setAttribute('aria-label', `จัดเรียงตาม${label} (น้อยไปมาก)`);
+            } else if (ariaState === 'descending') {
+                button.setAttribute('aria-label', `จัดเรียงตาม${label} (มากไปน้อย)`);
+            } else {
+                button.setAttribute('aria-label', `จัดเรียงตาม${label}`);
+            }
+        }
+    });
+}
+
 searchInput.addEventListener('input', handleSearchInput);
 statusFilter.addEventListener('change', () => {
     setStatusFilter(statusFilter.value);
@@ -292,6 +334,9 @@ document.getElementById('btnClearFilters').addEventListener('click', () => {
         searchDebounceHandle = null;
     }
     searchInput.value = '';
+    resetSort();
+    updateSortIndicators();
+    currentPage = 1;
     setStatusFilter('all');
 });
 
@@ -319,5 +364,22 @@ if (nextPageBtn) {
     });
 }
 
+sortButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        const key = button.dataset.sortKey;
+        if (!key) return;
+        if (sortKey === key) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortKey = key;
+            sortDirection = key === defaultSort.key ? defaultSort.direction : 'asc';
+        }
+        updateSortIndicators();
+        currentPage = 1;
+        fetchEvents();
+    });
+});
+
 renderSummary();
+updateSortIndicators();
 fetchEvents();
