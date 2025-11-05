@@ -379,6 +379,18 @@ sortButtons.forEach(button => {
         fetchEvents();
     });
 });
+tableBody.addEventListener('click', event => {
+    const actionBtn = event.target.closest('button[data-action="open"]');
+    if (!actionBtn) {
+        return;
+    }
+    const eventId = actionBtn.dataset.id;
+    if (!eventId) {
+        return;
+    }
+    const params = new URLSearchParams({ event_id: eventId });
+    window.location.href = `../View/event_manage.html?${params.toString()}`;
+});
 
 renderSummary();
 updateSortIndicators();

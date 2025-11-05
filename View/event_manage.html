@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>จัดการอีเว้น</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+
+<body>
+    <!-- Slide-out drawer -->
+    <aside id="drawer" class="drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a class="item" href="../View/main_menu.html">
+                <span class="i home"></span><span>เมนูหลัก</span>
+            </a>
+            <a class="item" href="../View/home.html">
+                <span class="i news"></span><span>ข่าวสารทั่วไป</span>
+            </a>
+            <a class="item active" href="../View/events.html">
+                <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
+            </a>
+            <a class="item" href="#">
+                <span class="i box"></span><span>สถานะวัสดุในคลัง</span>
+            </a>
+            <div class="drawer-sep"></div>
+            <a class="item" href="#">
+                <span class="i user"></span><span>บัญชีของฉัน</span>
+            </a>
+            <a class="item" href="../Model/logout.php">
+                <span class="i power"></span><span>ออกจากระบบ</span>
+            </a>
+        </nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <!-- App shell -->
+    <div class="topbar">
+        <button id="btnMenu" class="hamburger" aria-label="เมนู">
+            <span></span><span></span><span></span>
+        </button>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - ฝ่ายจัดการอีเว้น</h1>
+
+        <div class="account">
+            <span class="pill">
+                <img class="avatar" id="avatar" alt="avatar" />
+                <span class="uid" id="fullName">...</span>
+            </span>
+            <a class="powerbtn" href="../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
+        </div>
+    </div>
+
+    <main class="page detail-page">
+        <section class="page-head">
+            <div>
+                <p class="breadcrumb"><a href="./events.html">← กลับไปหน้ารายการอีเว้น</a></p>
+                <h2 id="eventHeading">กำลังโหลด...</h2>
+                <p class="date" id="pageDate">วัน...</p>
+            </div>
+            <div class="head-actions">
+                <button class="btn btn-ghost" type="button" id="btnBack">
+                    <span class="i back"></span>
+                    กลับ
+                </button>
+                <button class="btn btn-secondary" type="submit" form="eventForm" id="btnSave">
+                    <span class="i check"></span>
+                    บันทึกการเปลี่ยนแปลง
+                </button>
+            </div>
+        </section>
+
+        <section class="detail-meta" aria-live="polite">
+            <div class="meta-primary">
+                <p class="meta-label">รหัสอีเว้น</p>
+                <h3 id="eventIdDisplay">—</h3>
+                <p class="meta-sub" id="eventLocation">สถานที่: —</p>
+            </div>
+            <div class="meta-secondary">
+                <span class="status-chip" id="statusBadge" aria-live="polite">
+                    <span class="dot"></span>
+                    <span id="statusText">สถานะ: —</span>
+                </span>
+                <p class="meta-updated" id="lastUpdated">อัปเดตล่าสุด: —</p>
+                <p class="meta-created" id="createdAt">สร้างเมื่อ: —</p>
+            </div>
+        </section>
+
+        <section class="detail-card">
+            <header class="detail-card-head">
+                <h3>ข้อมูลอีเว้น</h3>
+                <p class="detail-card-sub">ตรวจสอบและแก้ไขรายละเอียดของงานอีเว้น</p>
+            </header>
+            <div id="formMessage" class="form-alert" role="alert" hidden></div>
+            <form id="eventForm" class="detail-form" autocomplete="off">
+                <div class="form-grid">
+                    <label class="field-block">
+                        <span class="field-label">ชื่องาน *</span>
+                        <input type="text" name="event_name" id="eventName" required />
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">สถานะ *</span>
+                        <select name="status" id="eventStatus" required>
+                            <option value="draft">ร่าง</option>
+                            <option value="planning">วางแผน</option>
+                            <option value="waiting">รอดำเนินการ</option>
+                            <option value="processing">กำลังดำเนินการ</option>
+                            <option value="billing">เรียกเก็บเงิน</option>
+                            <option value="completed">เสร็จสิ้น</option>
+                            <option value="cancelled">ยกเลิก</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="form-grid">
+                    <label class="field-block">
+                        <span class="field-label">ลูกค้า</span>
+                        <div class="typeahead" data-type="customer">
+                            <input type="text" id="customerInput" placeholder="ค้นหาด้วยรหัสหรือชื่อลูกค้า" autocomplete="off" />
+                            <input type="hidden" name="customer_id" id="customerId" />
+                            <div class="typeahead-list" id="customerList" hidden></div>
+                        </div>
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">ผู้รับผิดชอบ</span>
+                        <div class="typeahead" data-type="staff">
+                            <input type="text" id="staffInput" placeholder="ค้นหาด้วยรหัสหรือชื่อผู้รับผิดชอบ" autocomplete="off" />
+                            <input type="hidden" name="staff_id" id="staffId" />
+                            <div class="typeahead-list" id="staffList" hidden></div>
+                        </div>
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">สถานที่จัดงาน</span>
+                        <div class="typeahead" data-type="location">
+                            <input type="text" id="locationInput" placeholder="ค้นหาด้วยรหัสหรือชื่อสถานที่" autocomplete="off" />
+                            <input type="hidden" name="location_id" id="locationId" />
+                            <div class="typeahead-list" id="locationList" hidden></div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="form-grid">
+                    <label class="field-block">
+                        <span class="field-label">วันและเวลาเริ่ม</span>
+                        <input type="datetime-local" name="start_date" id="startDate" />
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">วันและเวลาสิ้นสุด</span>
+                        <input type="datetime-local" name="end_date" id="endDate" />
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">ไฟล์แนบ</span>
+                        <input type="text" name="file_path" id="filePath" placeholder="URL หรือเส้นทางไฟล์" />
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">รูปภาพ</span>
+                        <input type="text" name="picture_path" id="picturePath" placeholder="URL หรือเส้นทางรูปภาพ" />
+                    </label>
+                </div>
+
+                <label class="field-block">
+                    <span class="field-label">คำอธิบาย</span>
+                    <textarea name="description" id="description" rows="4" placeholder="รายละเอียดของงาน"></textarea>
+                </label>
+
+                <label class="field-block">
+                    <span class="field-label">บันทึกเพิ่มเติม</span>
+                    <textarea name="notes" id="notes" rows="4" placeholder="ข้อมูลเพิ่มเติมหรือคำแนะนำ"></textarea>
+                </label>
+            </form>
+        </section>
+    </main>
+
+    <script src="../Controller/event_manage.js" defer></script>
+</body>
+
+</html>

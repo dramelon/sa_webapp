@@ -1,8 +1,8 @@
 -- $db = new PDO('mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4', 'dramelon', 'dramelon', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
 CREATE DATABASE sa_app
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_general_ci;
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_general_ci;
 
 USE sa_app;
 
@@ -51,21 +51,21 @@ CREATE TABLE Announcement (
 
 -- LOCATIONS v1
 CREATE TABLE locations (
-  LocationID    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  Loc_Name      VARCHAR(150) DEFAULT NULL,
-  House_Number  VARCHAR(50)  DEFAULT NULL,
-  Village       VARCHAR(150) DEFAULT NULL,
-  Building_Name VARCHAR(150) DEFAULT NULL,
-  Floor         VARCHAR(50)  DEFAULT NULL,
-  Room          VARCHAR(50)  DEFAULT NULL,
-  Street        VARCHAR(150) DEFAULT NULL,
-  Subdistrict   VARCHAR(150) DEFAULT NULL,
-  District      VARCHAR(150) DEFAULT NULL,
-  Province      VARCHAR(150) DEFAULT NULL,
-  Postal_Code   VARCHAR(20)  DEFAULT NULL,
-  Country       VARCHAR(100) DEFAULT NULL,
-  Notes         TEXT         DEFAULT NULL,
-  PRIMARY KEY (LocationID)
+    LocationID    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Loc_Name      VARCHAR(150) DEFAULT NULL,
+    House_Number  VARCHAR(50)  DEFAULT NULL,
+    Village       VARCHAR(150) DEFAULT NULL,
+    Building_Name VARCHAR(150) DEFAULT NULL,
+    Floor         VARCHAR(50)  DEFAULT NULL,
+    Room          VARCHAR(50)  DEFAULT NULL,
+    Street        VARCHAR(150) DEFAULT NULL,
+    Subdistrict   VARCHAR(150) DEFAULT NULL,
+    District      VARCHAR(150) DEFAULT NULL,
+    Province      VARCHAR(150) DEFAULT NULL,
+    Postal_Code   VARCHAR(20)  DEFAULT NULL,
+    Country       VARCHAR(100) DEFAULT NULL,
+    Notes         TEXT         DEFAULT NULL,
+    PRIMARY KEY (LocationID)
 );
 
 
@@ -73,21 +73,21 @@ CREATE TABLE locations (
 
 -- CUSTOMERS [requirement: locations] v1
 CREATE TABLE customers (
-  CustomerID    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  LocationID    INT UNSIGNED DEFAULT NULL,     -- billing/contact address
-  Customer_Name VARCHAR(150) NOT NULL,
-  OrgName       VARCHAR(150) DEFAULT NULL,
-  Email         VARCHAR(150) DEFAULT NULL,
-  Phone         VARCHAR(50)  DEFAULT NULL,
-  TaxID         VARCHAR(50)  DEFAULT NULL,
-  Status        ENUM('active','inactive') NOT NULL DEFAULT 'active',
-  Notes         TEXT DEFAULT NULL,
-  PRIMARY KEY (CustomerID),
-  KEY idx_customer_location (LocationID),
-  CONSTRAINT fk_customer_location
-    FOREIGN KEY (LocationID)
-    REFERENCES locations(LocationID)
-    ON DELETE SET NULL ON UPDATE CASCADE
+    CustomerID    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    LocationID    INT UNSIGNED DEFAULT NULL,     -- billing/contact address
+    Customer_Name VARCHAR(150) NOT NULL,
+    OrgName       VARCHAR(150) DEFAULT NULL,
+    Email         VARCHAR(150) DEFAULT NULL,
+    Phone         VARCHAR(50)  DEFAULT NULL,
+    TaxID         VARCHAR(50)  DEFAULT NULL,
+    Status        ENUM('active','inactive') NOT NULL DEFAULT 'active',
+    Notes         TEXT DEFAULT NULL,
+    PRIMARY KEY (CustomerID),
+    KEY idx_customer_location (LocationID),
+    CONSTRAINT fk_customer_location
+        FOREIGN KEY (LocationID)
+        REFERENCES locations(LocationID)
+        ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 
