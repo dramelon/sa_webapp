@@ -1,6 +1,5 @@
 INSERT INTO locations
-(Loc_Name, House_Number, Village, Building_Name, Floor, Room, Street,
- Subdistrict, District, Province, Postal_Code, Country, Notes)
+(Loc_Name, House_Number, Village, Building_Name, Floor, Room, Street, Subdistrict, District, Province, Postal_Code, Country, Notes)
 VALUES
 ('Kasetsart University HQ', '50', 'Chatuchak', 'Ratchaphruek', '1', '101', 'Ngamwongwan Rd', 'Lat Yao', 'Chatuchak', 'Bangkok', '10900', 'Thailand', 'Main university campus'),
 ('Central Plaza', '99/9', NULL, 'Office Tower A', '12', '1205', 'Phahonyothin Rd', 'Chatuchak', 'Chatuchak', 'Bangkok', '10900', 'Thailand', 'Shopping complex'),
@@ -48,31 +47,30 @@ VALUES
 (20,'บริษัท ครีเอทีฟอาร์ต','Creative Art Co.','hello@creativeart.com','0898877661','0105591112233','active',NULL);
 
 INSERT INTO events
-(Event_Name, StaffID, CustomerID, LocationID, CreatedAt, StartDate, EndDate,
- Description, Status, PicturePath, FilePath, Notes)
+(EventName, StaffID, CustomerID, LocationID, CreatedBy, UpdatedBy, CreatedAt, StartDate, EndDate, Description, Notes, Status)
 VALUES
-('New Year Celebration 2025', 1, 1, 1, NOW(),'2025-12-28','2025-12-31','New Year countdown event with fireworks and concert','planning','../_files/pic1.jpg','../_files/doc1.pdf','Outdoor main stage'),
-('University Open House', 2, 3, 6, NOW(),'2025-11-15','2025-11-16','Open house for new students and parents','waiting',NULL,NULL,NULL),
-('Wedding Ceremony - Mr. A & Ms. B', 8, 5, 9, NOW(),'2025-12-05','2025-12-05','Wedding event setup for 300 guests','processing',NULL,NULL,NULL),
-('Corporate Seminar 2025', 1, 2, 2, NOW(),'2025-12-20','2025-12-22','Corporate seminar on annual growth plan','draft',NULL,NULL,NULL),
-('Music Festival Bangkok', 2, 9, 7, NOW(),'2026-01-10','2026-01-12','Outdoor music festival with 10 bands','planning',NULL,NULL,NULL),
-('Trade Show Chiang Mai', 1, 10, 10, NOW(),'2026-02-01','2026-02-05','Regional trade and expo for SME promotion','waiting',NULL,NULL,NULL),
-('Lighting Expo', 8, 11, 13, NOW(),'2025-11-25','2025-11-27','Exhibition for new lighting equipment','processing',NULL,NULL,NULL),
-('Interior Design Fair', 2, 12, 12, NOW(),'2025-12-03','2025-12-07','Interior design collaboration fair','billing',NULL,NULL,NULL),
-('Kasetsart Science Week', 1, 3, 6, NOW(),'2026-03-01','2026-03-07','Science and innovation week','planning',NULL,NULL,NULL),
-('Community Charity Run', 8, 17, 18, NOW(),'2026-01-14','2026-01-14','Charity marathon event 5 km','draft',NULL,NULL,NULL),
-('Beach Music Night', 2, 18, 11, NOW(),'2025-12-10','2025-12-10','One-night beach music party','completed',NULL,NULL,NULL),
-('Startup Expo 2026', 1, 16, 8, NOW(),'2026-04-10','2026-04-12','Startup showcase and investor networking','waiting',NULL,NULL,NULL),
-('Wedding - Mr. C & Ms. D', 8, 13, 9, NOW(),'2026-02-14','2026-02-14','Elegant wedding setup for VIP guests','processing',NULL,NULL,NULL),
-('Government Seminar', 1, 19, 15, NOW(),'2026-03-20','2026-03-22','Government department annual seminar','draft',NULL,NULL,NULL),
-('Food Fair Khon Kaen', 2, 8, 9, NOW(),'2026-03-10','2026-03-12','Regional food festival','planning',NULL,NULL,NULL),
-('Book Expo 2026', 8, 7, 5, NOW(),'2026-04-15','2026-04-18','Book fair for publishers and readers','waiting',NULL,NULL,NULL),
-('Company Annual Party', 1, 1, 1, NOW(),'2025-12-29','2025-12-29','Internal staff year-end celebration','billing',NULL,NULL,NULL),
-('Charity Gala Dinner', 2, 4, 4, NOW(),'2026-02-25','2026-02-25','Fundraising dinner with performances','completed',NULL,NULL,NULL),
-('Cultural Festival 2026', 8, 20, 10, NOW(),'2026-05-05','2026-05-10','Cultural stage and local craft exhibition','planning',NULL,NULL,NULL),
-('Fashion Week Bangkok', 2, 14, 13, NOW(),'2026-06-01','2026-06-06','Bangkok Fashion Week show','cancelled',NULL,NULL,NULL);
-('Tech Expo 2026', 1, 6, 7, NOW(),'2026-07-20','2026-07-23','Technology showcase for innovation startups','waiting',NULL,NULL,NULL),
-('Green Energy Forum', 2, 15, 5, NOW(),'2026-08-10','2026-08-12','Conference promoting renewable energy projects','planning',NULL,NULL,NULL),
-('Education Expo 2026', 8, 12, 10, NOW(),'2026-09-05','2026-09-07','Education fair for universities and schools','processing',NULL,NULL,NULL),
-('International Tourism Fair', 1, 9, 13, NOW(),'2026-10-15','2026-10-19','Tourism and travel promotion event','draft',NULL,NULL,NULL),
-('Startup Pitch Night', 2, 2, 8, NOW(),'2026-11-02','2026-11-02','Evening startup pitching session for investors','billing',NULL,NULL,'Short networking event');
+('New Year Celebration 2025', 1, 1, 1, 1, 1, NOW(),'2025-12-28','2025-12-31','Countdown festival with fireworks and live bands','Main event at KU field','planning'),
+('University Open House', 2, 3, 6, 2, 2, NOW(),'2025-11-15','2025-11-16','Open house welcoming new students','Faculty showcases and activities','waiting'),
+('Wedding Ceremony - Mr. A & Ms. B', 8, 5, 9, 8, 8, NOW(),'2025-12-05','2025-12-05','Wedding setup for 300 guests','Decoration and sound setup','processing'),
+('Corporate Seminar 2025', 1, 2, 2, 1, 1, NOW(),'2025-12-20','2025-12-22','Corporate seminar on growth strategy','Require projector and audio system','draft'),
+('Music Festival Bangkok', 2, 9, 7, 2, 2, NOW(),'2026-01-10','2026-01-12','Outdoor concert featuring 10 popular bands','Requires stage and lighting rigs','planning'),
+('Trade Show Chiang Mai', 1, 10, 10, 1, 1, NOW(),'2026-02-01','2026-02-05','Regional product and business trade fair','Expecting 5,000 visitors','waiting'),
+('Lighting Expo', 8, 11, 13, 8, 8, NOW(),'2025-11-25','2025-11-27','Exhibition of modern lighting technology','Include product demo booths','processing'),
+('Interior Design Fair', 2, 12, 12, 2, 2, NOW(),'2025-12-03','2025-12-07','Interior design collaboration fair','Booth arrangement pending','billing'),
+('Kasetsart Science Week', 1, 3, 6, 1, 1, NOW(),'2026-03-01','2026-03-07','Science exhibition for high school students','Laboratory zone included','planning'),
+('Community Charity Run', 8, 17, 18, 8, 8, NOW(),'2026-01-14','2026-01-14','5 km charity run with 800 participants','Route safety under KU security','draft'),
+('Beach Music Night', 2, 18, 11, 2, 2, NOW(),'2025-12-10','2025-12-10','One-night beach concert event','Sponsors: KU Sound Club','completed'),
+('Startup Expo 2026', 1, 16, 8, 1, 1, NOW(),'2026-04-10','2026-04-12','Startup innovation showcase','Pitching stage and judges required','waiting'),
+('Wedding - Mr. C & Ms. D', 8, 13, 9, 8, 8, NOW(),'2026-02-14','2026-02-14','Luxury wedding decoration project','Use rose-themed stage','processing'),
+('Government Seminar', 1, 19, 15, 1, 1, NOW(),'2026-03-20','2026-03-22','Government annual conference','Request interpretation system','draft'),
+('Food Fair Khon Kaen', 2, 8, 9, 2, 2, NOW(),'2026-03-10','2026-03-12','Regional Thai food festival','Cooking zone and judging panel','planning'),
+('Book Expo 2026', 8, 7, 5, 8, 8, NOW(),'2026-04-15','2026-04-18','National book fair for publishers','KU Press to participate','waiting'),
+('Company Annual Party', 1, 1, 1, 1, 1, NOW(),'2025-12-29','2025-12-29','Internal New Year company party','Catering service confirmed','billing'),
+('Charity Gala Dinner', 2, 4, 4, 2, 2, NOW(),'2026-02-25','2026-02-25','Fundraising dinner with orchestra performance','Black-tie dress code','completed'),
+('Cultural Festival 2026', 8, 20, 10, 8, 8, NOW(),'2026-05-05','2026-05-10','Cultural performances and handicraft market','To include food stalls','planning'),
+('Fashion Week Bangkok', 2, 14, 13, 2, 2, NOW(),'2026-06-01','2026-06-06','Bangkok Fashion Week featuring local designers','Postponed due to venue issue','cancelled'),
+('Tech Expo 2026', 1, 6, 7, 1, 1, NOW(),'2026-07-20','2026-07-23','Technology showcase for innovation startups','IT faculty partnership','waiting'),
+('Green Energy Forum', 2, 15, 5, 2, 2, NOW(),'2026-08-10','2026-08-12','Conference promoting renewable energy projects','Solar panel demo zone','planning'),
+('Education Expo 2026', 8, 12, 10, 8, 8, NOW(),'2026-09-05','2026-09-07','Education fair for universities and schools','Include KU exhibition booth','processing'),
+('International Tourism Fair', 1, 9, 13, 1, 1, NOW(),'2026-10-15','2026-10-19','Tourism and travel promotion event','Sponsored by TAT','draft'),
+('Startup Pitch Night', 2, 2, 8, 2, 2, NOW(),'2026-11-02','2026-11-02','Evening startup pitching session for investors','Short networking event','billing');

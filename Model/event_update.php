@@ -8,6 +8,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+if (empty($_SESSION['staff_id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'unauthorized']);
+    exit;
+}
+
 $input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) {
     http_response_code(400);
@@ -44,8 +50,7 @@ $startDate = normalizeDateTime($input['start_date'] ?? null);
 $endDate = normalizeDateTime($input['end_date'] ?? null);
 $description = trimText($input['description'] ?? '');
 $notes = trimText($input['notes'] ?? '');
-$picturePath = trimText($input['picture_path'] ?? '');
-$filePath = trimText($input['file_path'] ?? '');
+$updatedBy = (int) $_SESSION['staff_id'];
 
 try {
     $db = new PDO(
@@ -66,7 +71,7 @@ try {
 
     $updateSql = "
         UPDATE events SET
-            Event_Name = :event_name,
+            EventName = :event_name,
             Status = :status,
             CustomerID = :customer_id,
             StaffID = :staff_id,
@@ -75,8 +80,7 @@ try {
             EndDate = :end_date,
             Description = :description,
             Notes = :notes,
-            PicturePath = :picture_path,
-            FilePath = :file_path
+            UpdatedBy = :updated_by
         WHERE EventID = :event_id
     ";
 
@@ -90,8 +94,7 @@ try {
     bindNullableDateTime($stmt, ':end_date', $endDate);
     bindNullableString($stmt, ':description', $description);
     bindNullableString($stmt, ':notes', $notes);
-    bindNullableString($stmt, ':picture_path', $picturePath);
-    bindNullableString($stmt, ':file_path', $filePath);
+    $stmt->bindValue(':updated_by', $updatedBy, PDO::PARAM_INT);
     $stmt->bindValue(':event_id', $eventId, PDO::PARAM_INT);
     $stmt->execute();
 
@@ -103,14 +106,18 @@ try {
             e.CustomerID AS customer_id,
             e.StaffID AS staff_id,
             e.LocationID AS location_id,
+            e.UpdatedBy AS updated_by_id,
             c.Customer_Name AS customer_name,
             l.Loc_Name AS location_name,
             s.FullName AS staff_name,
-            s.Role AS staff_role
+            s.Role AS staff_role,
+            updated.FullName AS updated_by_name,
+            updated.Role AS updated_by_role
         FROM events e
         LEFT JOIN customers c ON c.CustomerID = e.CustomerID
         LEFT JOIN locations l ON l.LocationID = e.LocationID
         LEFT JOIN staffs s ON s.StaffID = e.StaffID
+        LEFT JOIN staffs updated ON updated.StaffID = e.UpdatedBy
         WHERE e.EventID = :event_id
         LIMIT 1
     ";
@@ -129,7 +136,9 @@ try {
         'staff_id' => isset($row['staff_id']) ? (int) $row['staff_id'] : null,
         'staff_label' => formatStaffLabel($row['staff_id'] ?? null, $row['staff_name'] ?? null, $row['staff_role'] ?? null),
         'location_id' => isset($row['location_id']) ? (int) $row['location_id'] : null,
-        'location_label' => formatLocationLabel($row['location_id'] ?? null, $row['location_name'] ?? null)
+        'location_label' => formatLocationLabel($row['location_id'] ?? null, $row['location_name'] ?? null),
+        'updated_by_id' => isset($row['updated_by_id']) ? (int) $row['updated_by_id'] : $updatedBy,
+        'updated_by_label' => formatStaffLabel($row['updated_by_id'] ?? $updatedBy, $row['updated_by_name'] ?? null, $row['updated_by_role'] ?? null)
     ];
 
     echo json_encode($response, JSON_UNESCAPED_UNICODE);

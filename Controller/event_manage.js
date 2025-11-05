@@ -76,9 +76,25 @@ const eventLocation = document.getElementById('eventLocation');
 const statusBadge = document.getElementById('statusBadge');
 const statusText = document.getElementById('statusText');
 const lastUpdated = document.getElementById('lastUpdated');
+const updatedBy = document.getElementById('updatedBy');
 const createdAt = document.getElementById('createdAt');
+const createdBy = document.getElementById('createdBy');
 const btnBack = document.getElementById('btnBack');
 const btnSave = document.getElementById('btnSave');
+const breadcrumbLink = document.querySelector('.breadcrumb a');
+const unsavedBanner = document.getElementById('unsavedBanner');
+const btnDiscardChanges = document.getElementById('btnDiscardChanges');
+const btnSaveInline = document.getElementById('btnSaveInline');
+const unsavedModal = document.getElementById('unsavedModal');
+const btnModalStay = document.getElementById('btnModalStay');
+const btnModalDiscard = document.getElementById('btnModalDiscard');
+const btnModalSave = document.getElementById('btnModalSave');
+const locationInput = document.getElementById('locationInput');
+const locationHidden = document.getElementById('locationId');
+
+if (unsavedModal) {
+    unsavedModal.setAttribute('aria-hidden', unsavedModal.hidden ? 'true' : 'false');
+}
 
 const statusMeta = {
     draft: { label: 'ร่าง', className: 'draft' },
@@ -93,17 +109,34 @@ const statusMeta = {
 const params = new URLSearchParams(location.search);
 const eventId = params.get('event_id');
 
+let initialSnapshot = null;
+let isDirty = false;
+let isPopulating = false;
+let pendingNavigationAction = null;
+
 if (!eventId) {
     lockForm('ไม่พบรหัสอีเว้นที่ต้องการเปิด');
 }
 
 btnBack.addEventListener('click', () => {
-    if (window.history.length > 1) {
-        window.history.back();
-    } else {
-        window.location.href = './events.html';
-    }
+    requestNavigation(() => {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = './events.html';
+        }
+    });
 });
+
+if (breadcrumbLink) {
+    breadcrumbLink.addEventListener('click', event => {
+        event.preventDefault();
+        const href = breadcrumbLink.getAttribute('href');
+        requestNavigation(() => {
+            window.location.href = href || './events.html';
+        });
+    });
+}
 
 function lockForm(message) {
     eventForm.querySelectorAll('input, textarea, select, button').forEach(el => {
@@ -176,6 +209,171 @@ function toDateInputValue(value) {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+function extractLabelName(label) {
+    if (!label) {
+        return '';
+    }
+    const parts = String(label).split(' - ');
+    if (parts.length > 1) {
+        return parts.slice(1).join(' - ').trim();
+    }
+    return String(label).trim();
+}
+
+function setMetaPerson(element, prefix, label) {
+    if (!element) {
+        return;
+    }
+    const name = extractLabelName(label);
+    element.textContent = `${prefix}: ${name || 'ไม่ระบุ'}`;
+}
+
+function serializeForm() {
+    return {
+        event_name: document.getElementById('eventName').value || '',
+        status: document.getElementById('eventStatus').value || '',
+        customer_id: document.getElementById('customerId').value || '',
+        customer_label: document.getElementById('customerInput').value || '',
+        staff_id: document.getElementById('staffId').value || '',
+        staff_label: document.getElementById('staffInput').value || '',
+        location_id: document.getElementById('locationId').value || '',
+        location_label: document.getElementById('locationInput').value || '',
+        start_date: document.getElementById('startDate').value || '',
+        end_date: document.getElementById('endDate').value || '',
+        description: document.getElementById('description').value || '',
+        notes: document.getElementById('notes').value || ''
+    };
+}
+
+function snapshotsEqual(a, b) {
+    if (!a || !b) {
+        return false;
+    }
+    const keys = Object.keys(a);
+    if (keys.length !== Object.keys(b).length) {
+        return false;
+    }
+    for (const key of keys) {
+        if (a[key] !== b[key]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function setDirtyState(next) {
+    if (isDirty === next) {
+        return;
+    }
+    isDirty = next;
+    if (unsavedBanner) {
+        unsavedBanner.hidden = !isDirty;
+    }
+}
+
+function syncLocationDisplayFromForm() {
+    if (!locationHidden) {
+        return;
+    }
+    const idValue = locationHidden.value.trim();
+    if (!idValue) {
+        eventLocation.textContent = 'สถานที่: ไม่ระบุ';
+        return;
+    }
+    const label = locationInput?.value || '';
+    const text = extractLabelName(label);
+    eventLocation.textContent = `สถานที่: ${text || 'ไม่ระบุ'}`;
+}
+
+function handleFormMutated() {
+    if (isPopulating || !initialSnapshot) {
+        syncLocationDisplayFromForm();
+        return;
+    }
+    syncLocationDisplayFromForm();
+    const current = serializeForm();
+    const dirty = !snapshotsEqual(current, initialSnapshot);
+    setDirtyState(dirty);
+}
+
+function runWithPopulation(fn) {
+    const prev = isPopulating;
+    isPopulating = true;
+    try {
+        fn();
+    } finally {
+        isPopulating = prev;
+    }
+}
+
+function restoreSnapshot(snapshot) {
+    if (!snapshot) {
+        return;
+    }
+    runWithPopulation(() => {
+        document.getElementById('eventName').value = snapshot.event_name;
+        document.getElementById('eventStatus').value = snapshot.status;
+        document.getElementById('startDate').value = snapshot.start_date;
+        document.getElementById('endDate').value = snapshot.end_date;
+        document.getElementById('description').value = snapshot.description;
+        document.getElementById('notes').value = snapshot.notes;
+        const customerField = findTypeaheadByType('customer');
+        customerField?.setValue(snapshot.customer_id, snapshot.customer_label);
+        const staffField = findTypeaheadByType('staff');
+        staffField?.setValue(snapshot.staff_id, snapshot.staff_label);
+        const locationField = findTypeaheadByType('location');
+        locationField?.setValue(snapshot.location_id, snapshot.location_label);
+        setStatus(snapshot.status);
+    });
+    syncLocationDisplayFromForm();
+    initialSnapshot = serializeForm();
+    setDirtyState(false);
+}
+
+function requestNavigation(action) {
+    if (!isDirty) {
+        action();
+        return;
+    }
+    pendingNavigationAction = action;
+    openUnsavedModal();
+}
+
+function openUnsavedModal() {
+    if (!unsavedModal) {
+        return;
+    }
+    unsavedModal.hidden = false;
+    unsavedModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeUnsavedModal() {
+    if (!unsavedModal) {
+        return;
+    }
+    unsavedModal.hidden = true;
+    unsavedModal.setAttribute('aria-hidden', 'true');
+}
+
+function triggerSave() {
+    if (!eventForm || btnSave.disabled) {
+        return;
+    }
+    if (typeof eventForm.requestSubmit === 'function') {
+        eventForm.requestSubmit(btnSave);
+    } else {
+        btnSave.click();
+    }
+}
+
+function handleBeforeUnload(event) {
+    if (!isDirty) {
+        return;
+    }
+    event.preventDefault();
+    event.returnValue = '';
+}
+
 class TypeaheadField {
     constructor(root) {
         this.root = root;
@@ -198,8 +396,9 @@ class TypeaheadField {
             this.debounceHandle = setTimeout(() => {
                 this.fetch(value);
             }, 250);
-            if (value === '') {
-                this.hidden.value = '';
+            this.hidden.value = '';
+            if (this.type === 'location') {
+                syncLocationDisplayFromForm();
             }
         });
 
@@ -218,6 +417,10 @@ class TypeaheadField {
     setValue(id, label) {
         this.hidden.value = id == null ? '' : id;
         this.input.value = label || '';
+        if (this.type === 'location') {
+            syncLocationDisplayFromForm();
+        }
+        handleFormMutated();
     }
 
     async fetch(query) {
@@ -272,6 +475,10 @@ class TypeaheadField {
                 this.input.value = item.label || '';
                 this.closeList();
             });
+            if (this.type === 'location') {
+                    syncLocationDisplayFromForm();
+                }
+                handleFormMutated();
             this.list.append(option);
         }
     }
@@ -288,6 +495,63 @@ const typeaheadFields = Array.from(document.querySelectorAll('.typeahead')).map(
 function findTypeaheadByType(type) {
     return typeaheadFields.find(field => field.type === type) || null;
 }
+
+if (btnDiscardChanges) {
+    btnDiscardChanges.addEventListener('click', () => {
+        pendingNavigationAction = null;
+        restoreSnapshot(initialSnapshot);
+    });
+}
+
+if (btnSaveInline) {
+    btnSaveInline.addEventListener('click', () => {
+        triggerSave();
+    });
+}
+
+if (btnModalStay) {
+    btnModalStay.addEventListener('click', () => {
+        pendingNavigationAction = null;
+        closeUnsavedModal();
+    });
+}
+
+if (btnModalDiscard) {
+    btnModalDiscard.addEventListener('click', () => {
+        const action = pendingNavigationAction;
+        pendingNavigationAction = null;
+        setDirtyState(false);
+        closeUnsavedModal();
+        if (typeof action === 'function') {
+            action();
+        }
+    });
+}
+
+if (btnModalSave) {
+    btnModalSave.addEventListener('click', () => {
+        closeUnsavedModal();
+        triggerSave();
+    });
+}
+
+if (eventForm) {
+    eventForm.addEventListener('input', handleFormMutated);
+    eventForm.addEventListener('change', handleFormMutated);
+    eventForm.addEventListener('keydown', event => {
+        const tagName = event.target?.tagName;
+        if (event.key === 'Enter' && tagName && tagName !== 'TEXTAREA' && (tagName === 'INPUT' || tagName === 'SELECT')) {
+            event.preventDefault();
+        }
+    });
+}
+
+if (locationInput) {
+    locationInput.addEventListener('input', syncLocationDisplayFromForm);
+    locationInput.addEventListener('change', syncLocationDisplayFromForm);
+}
+
+window.addEventListener('beforeunload', handleBeforeUnload);
 
 async function loadEvent() {
     if (!eventId) {
@@ -309,36 +573,33 @@ async function loadEvent() {
 }
 
 function populateForm(data) {
-    eventHeading.textContent = data.event_name || 'ไม่พบข้อมูลอีเว้น';
-    eventIdDisplay.textContent = data.event_id != null ? `EV-${data.event_id}` : '—';
-    document.getElementById('eventName').value = data.event_name || '';
-    document.getElementById('eventStatus').value = data.status || 'draft';
-    document.getElementById('startDate').value = toDateInputValue(data.start_date || '');
-    document.getElementById('endDate').value = toDateInputValue(data.end_date || '');
-    document.getElementById('description').value = data.description || '';
-    document.getElementById('notes').value = data.notes || '';
-    document.getElementById('picturePath').value = data.picture_path || '';
-    document.getElementById('filePath').value = data.file_path || '';
+    runWithPopulation(() => {
+        eventHeading.textContent = data.event_name || 'ไม่พบข้อมูลอีเว้น';
+        eventIdDisplay.textContent = data.event_id != null ? `EV-${data.event_id}` : '—';
+        document.getElementById('eventName').value = data.event_name || '';
+        document.getElementById('eventStatus').value = data.status || 'draft';
+        document.getElementById('startDate').value = toDateInputValue(data.start_date || '');
+        document.getElementById('endDate').value = toDateInputValue(data.end_date || '');
+        document.getElementById('description').value = data.description || '';
+        document.getElementById('notes').value = data.notes || '';
 
-    setStatus(data.status);
+        setStatus(data.status);
 
-    const customerField = findTypeaheadByType('customer');
-    if (customerField) {
-        customerField.setValue(data.customer_id ?? '', data.customer_label || '');
-    }
-    const staffField = findTypeaheadByType('staff');
-    if (staffField) {
-        staffField.setValue(data.staff_id ?? '', data.staff_label || '');
-    }
-    const locationField = findTypeaheadByType('location');
-    if (locationField) {
-        locationField.setValue(data.location_id ?? '', data.location_label || '');
-    }
+        const customerField = findTypeaheadByType('customer');
+        customerField?.setValue(data.customer_id ?? '', data.customer_label || '');
+        const staffField = findTypeaheadByType('staff');
+        staffField?.setValue(data.staff_id ?? '', data.staff_label || '');
+        const locationField = findTypeaheadByType('location');
+        locationField?.setValue(data.location_id ?? '', data.location_label || '');
 
-    const locationText = data.location_label ? data.location_label.split(' - ').slice(1).join(' - ').trim() : '';
-    eventLocation.textContent = `สถานที่: ${locationText || 'ไม่ระบุ'}`;
-    lastUpdated.textContent = `อัปเดตล่าสุด: ${formatDisplayDate(data.updated_at)}`;
-    createdAt.textContent = `สร้างเมื่อ: ${formatDisplayDate(data.created_at)}`;
+        lastUpdated.textContent = `อัปเดตล่าสุด: ${formatDisplayDate(data.updated_at)}`;
+        setMetaPerson(updatedBy, 'ปรับปรุงโดย', data.updated_by_label);
+        createdAt.textContent = `สร้างเมื่อ: ${formatDisplayDate(data.created_at)}`;
+        setMetaPerson(createdBy, 'สร้างโดย', data.created_by_label);
+    });
+    syncLocationDisplayFromForm();
+    initialSnapshot = serializeForm();
+    setDirtyState(false);
 }
 
 eventForm.addEventListener('submit', async event => {
@@ -359,9 +620,7 @@ eventForm.addEventListener('submit', async event => {
         start_date: document.getElementById('startDate').value,
         end_date: document.getElementById('endDate').value,
         description: document.getElementById('description').value.trim(),
-        notes: document.getElementById('notes').value.trim(),
-        picture_path: document.getElementById('picturePath').value.trim(),
-        file_path: document.getElementById('filePath').value.trim()
+        notes: document.getElementById('notes').value.trim()
     };
 
     try {
@@ -379,35 +638,44 @@ eventForm.addEventListener('submit', async event => {
             throw new Error(result.error || 'unknown');
         }
         showMessage('บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว', 'success');
-        const latestName = document.getElementById('eventName').value.trim();
-        if (latestName) {
-            eventHeading.textContent = latestName;
-        }
-        setStatus(result.status || payload.status);
-        lastUpdated.textContent = `อัปเดตล่าสุด: ${formatDisplayDate(result.updated_at || '')}`;
-        if (Object.prototype.hasOwnProperty.call(result, 'customer_label')) {
-            const customerField = findTypeaheadByType('customer');
-            const customerIdValue = Object.prototype.hasOwnProperty.call(result, 'customer_id')
-                ? result.customer_id
-                : payload.customer_id;
-            customerField?.setValue(customerIdValue ?? '', result.customer_label || '');
-        }
-        if (Object.prototype.hasOwnProperty.call(result, 'staff_label')) {
-            const staffField = findTypeaheadByType('staff');
-            const staffIdValue = Object.prototype.hasOwnProperty.call(result, 'staff_id')
-                ? result.staff_id
-                : payload.staff_id;
-            staffField?.setValue(staffIdValue ?? '', result.staff_label || '');
-        }
-        if (Object.prototype.hasOwnProperty.call(result, 'location_label')) {
-            const locationField = findTypeaheadByType('location');
-            const locationIdValue = Object.prototype.hasOwnProperty.call(result, 'location_id')
-                ? result.location_id
-                : payload.location_id;
-            locationField?.setValue(locationIdValue ?? '', result.location_label || '');
-            const locationLabel = result.location_label || '';
-            const locationText = locationLabel ? locationLabel.split(' - ').slice(1).join(' - ').trim() : '';
-            eventLocation.textContent = `สถานที่: ${locationText || 'ไม่ระบุ'}`;
+        runWithPopulation(() => {
+            const latestName = document.getElementById('eventName').value.trim();
+            if (latestName) {
+                eventHeading.textContent = latestName;
+            }
+            setStatus(result.status || payload.status);
+            lastUpdated.textContent = `อัปเดตล่าสุด: ${formatDisplayDate(result.updated_at || '')}`;
+            setMetaPerson(updatedBy, 'ปรับปรุงโดย', result.updated_by_label);
+            if (Object.prototype.hasOwnProperty.call(result, 'customer_label')) {
+                const customerField = findTypeaheadByType('customer');
+                const customerIdValue = Object.prototype.hasOwnProperty.call(result, 'customer_id')
+                    ? result.customer_id
+                    : payload.customer_id;
+                customerField?.setValue(customerIdValue ?? '', result.customer_label || '');
+            }
+            if (Object.prototype.hasOwnProperty.call(result, 'staff_label')) {
+                const staffField = findTypeaheadByType('staff');
+                const staffIdValue = Object.prototype.hasOwnProperty.call(result, 'staff_id')
+                    ? result.staff_id
+                    : payload.staff_id;
+                staffField?.setValue(staffIdValue ?? '', result.staff_label || '');
+            }
+            if (Object.prototype.hasOwnProperty.call(result, 'location_label')) {
+                const locationField = findTypeaheadByType('location');
+                const locationIdValue = Object.prototype.hasOwnProperty.call(result, 'location_id')
+                    ? result.location_id
+                    : payload.location_id;
+                locationField?.setValue(locationIdValue ?? '', result.location_label || '');
+            }
+        });
+        syncLocationDisplayFromForm();
+        initialSnapshot = serializeForm();
+        setDirtyState(false);
+        closeUnsavedModal();
+        if (typeof pendingNavigationAction === 'function') {
+            const action = pendingNavigationAction;
+            pendingNavigationAction = null;
+            action();
         }
     } catch (error) {
         showMessage('เกิดข้อผิดพลาดในการบันทึกข้อมูล โปรดลองใหม่อีกครั้ง', 'error');

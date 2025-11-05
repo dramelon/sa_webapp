@@ -82,7 +82,9 @@
                     <span id="statusText">สถานะ: —</span>
                 </span>
                 <p class="meta-updated" id="lastUpdated">อัปเดตล่าสุด: —</p>
+                <p class="meta-updated-by" id="updatedBy">ปรับปรุงโดย: —</p>
                 <p class="meta-created" id="createdAt">สร้างเมื่อ: —</p>
+                <p class="meta-created-by" id="createdBy">สร้างโดย: —</p>
             </div>
         </section>
 
@@ -148,14 +150,6 @@
                         <span class="field-label">วันและเวลาสิ้นสุด</span>
                         <input type="datetime-local" name="end_date" id="endDate" />
                     </label>
-                    <label class="field-block">
-                        <span class="field-label">ไฟล์แนบ</span>
-                        <input type="text" name="file_path" id="filePath" placeholder="URL หรือเส้นทางไฟล์" />
-                    </label>
-                    <label class="field-block">
-                        <span class="field-label">รูปภาพ</span>
-                        <input type="text" name="picture_path" id="picturePath" placeholder="URL หรือเส้นทางรูปภาพ" />
-                    </label>
                 </div>
 
                 <label class="field-block">
@@ -170,6 +164,26 @@
             </form>
         </section>
     </main>
+
+    <div id="unsavedBanner" class="unsaved-banner" role="status" hidden>
+        <span class="unsaved-text">ระวัง! ยังไม่ได้บันทึกการเปลี่ยนแปลง</span>
+        <div class="unsaved-actions">
+            <button type="button" class="unsaved-btn unsaved-btn-muted" id="btnDiscardChanges">ยกเลิกการแก้ไข</button>
+            <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnSaveInline">บันทึกการเปลี่ยนแปลง</button>
+        </div>
+    </div>
+
+    <div id="unsavedModal" class="unsaved-modal" hidden aria-hidden="true">
+        <div class="unsaved-modal-card" role="dialog" aria-modal="true" aria-labelledby="unsavedModalTitle">
+            <h3 id="unsavedModalTitle">ยังไม่ได้บันทึกการเปลี่ยนแปลง</h3>
+            <p class="unsaved-modal-text">คุณต้องการบันทึกการแก้ไขก่อนออกจากหน้านี้หรือไม่?</p>
+            <div class="unsaved-modal-actions">
+                <button type="button" class="unsaved-btn unsaved-btn-muted" id="btnModalStay">อยู่ในหน้านี้</button>
+                <button type="button" class="unsaved-btn unsaved-btn-danger" id="btnModalDiscard">ละทิ้งการแก้ไข</button>
+                <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnModalSave">บันทึกและดำเนินการต่อ</button>
+            </div>
+        </div>
+    </div>
 
     <script src="../Controller/event_manage.js" defer></script>
 </body>

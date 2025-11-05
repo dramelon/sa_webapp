@@ -21,7 +21,7 @@ try {
 
     $allowedSorts = [
         'event_id' => 'e.EventID',
-        'event_name' => 'e.Event_Name',
+        'event_name' => 'e.EventName',
         'customer_name' => 'c.Customer_Name',
         'staff_name' => 's.FullName',
         'start_date' => 'e.StartDate',
@@ -60,7 +60,7 @@ try {
     if ($search !== '') {
         $whereClauses[] = '(
             e.EventID LIKE :search
-            OR e.Event_Name LIKE :search
+            OR e.EventName LIKE :search
             OR c.Customer_Name LIKE :search
             OR s.FullName LIKE :search
             OR l.Loc_Name LIKE :search
@@ -117,7 +117,7 @@ try {
     $dataSql = "
         SELECT
             e.EventID AS event_id,
-            e.Event_Name AS event_name,
+            e.EventName AS event_name,
             e.CreatedAt AS created_at,
             e.StartDate AS start_date,
             e.Status AS status,

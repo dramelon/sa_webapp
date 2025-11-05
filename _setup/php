@@ -96,27 +96,28 @@ CREATE TABLE customers (
 -- EVENTS [requirement: staffs, customers, locations] v1
 CREATE TABLE events (
     EventID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Event_Name   VARCHAR(200) NOT NULL,
-    StaffID      INT UNSIGNED    DEFAULT NULL,   -- FK → staffs
-    CustomerID   INT UNSIGNED    DEFAULT NULL,   -- FK → customers
-    LocationID   INT UNSIGNED    DEFAULT NULL,   -- FK → locations
+    EventName    VARCHAR(200) NOT NULL,
+    StaffID      INT UNSIGNED DEFAULT NULL,
+    CustomerID   INT UNSIGNED DEFAULT NULL,
+    LocationID   INT UNSIGNED DEFAULT NULL,
 
     CreatedAt    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy    INT UNSIGNED DEFAULT NULL,
     UpdatedAt    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UpdatedBy    INT UNSIGNED DEFAULT NULL,
     StartDate    DATETIME DEFAULT NULL,
     EndDate      DATETIME DEFAULT NULL,
-
     Description  TEXT DEFAULT NULL,
-    Status       ENUM('draft', 'planning', 'waiting', 'processing', 'billing', 'completed', 'cancelled') NOT NULL DEFAULT 'draft',
-    PicturePath  VARCHAR(255) DEFAULT NULL,
-    FilePath     VARCHAR(255) DEFAULT NULL,
     Notes        TEXT DEFAULT NULL,
+    Status       ENUM('draft','planning','waiting','processing','billing','completed','cancelled') NOT NULL DEFAULT 'draft',
 
     PRIMARY KEY (EventID),
     KEY idx_status_start (Status, StartDate),
     KEY idx_staff (StaffID),
     KEY idx_customer (CustomerID),
     KEY idx_location (LocationID),
+    KEY idx_createdby (CreatedBy),
+    KEY idx_updatedby (UpdatedBy),
 
     CONSTRAINT fk_event_staff
         FOREIGN KEY (StaffID) REFERENCES staffs(StaffID)
@@ -126,5 +127,11 @@ CREATE TABLE events (
         ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT fk_event_location
         FOREIGN KEY (LocationID) REFERENCES locations(LocationID)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_event_createdby
+        FOREIGN KEY (CreatedBy) REFERENCES staffs(StaffID)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_event_updatedby
+        FOREIGN KEY (UpdatedBy) REFERENCES staffs(StaffID)
         ON DELETE SET NULL ON UPDATE CASCADE
-);
+)
