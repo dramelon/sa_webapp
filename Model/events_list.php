@@ -4,6 +4,8 @@ header('Content-Type: application/json; charset=utf-8');
 
 const EVENTS_PER_PAGE = 20;
 
+$currentStaffId = isset($_SESSION['staff_id']) ? (int) $_SESSION['staff_id'] : 0;
+
 try {
     $db = new PDO(
         'mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4',
@@ -53,6 +55,7 @@ try {
     }
 
     $search = trim($_GET['search'] ?? '');
+    $assignedOnly = filter_var($_GET['assigned_only'] ?? null, FILTER_VALIDATE_BOOLEAN);
 
     $whereClauses = [];
     $params = [];
@@ -66,6 +69,11 @@ try {
             OR l.Loc_Name LIKE :search
         )';
         $params[':search'] = '%' . $search . '%';
+    }
+
+    if ($assignedOnly && $currentStaffId > 0) {
+        $whereClauses[] = 'e.StaffID = :current_staff';
+        $params[':current_staff'] = $currentStaffId;
     }
 
     $whereSql = '';
@@ -85,7 +93,10 @@ try {
     ";
 
     $countsStmt = $db->prepare($countsSql);
-    $countsStmt->execute($params);
+    foreach ($params as $key => $value) {
+        $countsStmt->bindValue($key, $value, $key === ':current_staff' ? PDO::PARAM_INT : PDO::PARAM_STR);
+    }
+    $countsStmt->execute();
 
     $counts = ['all' => 0];
     foreach ($allowedStatuses as $key) {
@@ -122,6 +133,7 @@ try {
             e.StartDate AS start_date,
             e.Status AS status,
             c.Customer_Name AS customer_name,
+            s.StaffID AS staff_id,
             s.FullName AS staff_name,
             l.Loc_Name AS location_name
         FROM events e
@@ -136,6 +148,11 @@ try {
     $stmt = $db->prepare($dataSql);
     foreach ($dataParams as $key => $value) {
         $stmt->bindValue($key, $value, $key === ':search' ? PDO::PARAM_STR : PDO::PARAM_STR);
+        $paramType = PDO::PARAM_STR;
+        if ($key === ':current_staff') {
+            $paramType = PDO::PARAM_INT;
+        }
+        $stmt->bindValue($key, $value, $paramType);
     }
     $stmt->bindValue(':limit', EVENTS_PER_PAGE + 1, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);

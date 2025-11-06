@@ -11,6 +11,9 @@
 <body>
     <aside id="drawer" class="drawer" aria-hidden="true">
         <nav class="drawer-nav">
+            <a class="item" href="./main_menu.html">
+                <span class="i grid"></span><span>เมนูหลัก</span>
+            </a>
             <a class="item" href="./dashboard.html">
                 <span class="i home"></span><span>สรุปภาพรวม</span>
             </a>
@@ -44,22 +47,99 @@
     </div>
 
     <main class="page">
-        <section class="news-head">
-            <h2>อีเว้นที่คุณรับผิดชอบ</h2>
-            <p class="date">...</p>
+        <section class="page-head">
+            <div>
+                <h2>อีเว้นที่ฉันติดตาม</h2>
+                <p class="date" id="pageDate">วัน...</p>
+            </div>
+            <div class="head-actions">
+                <button class="btn btn-secondary" id="btnNewEvent" type="button">
+                    <span class="i plus"></span>
+                    สร้างอีเว้นแบบร่าง
+                </button>
+            </div>
         </section>
 
-        <section class="cards" style="min-height:240px;display:grid;place-items:center;border:2px dashed var(--line);border-radius:var(--radius);background:var(--card);padding:32px;">
-            <div style="text-align:center;max-width:480px;">
-                <h3>หน้านี้อยู่ระหว่างการพัฒนา</h3>
-                <p style="color:var(--muted);">ระบบงานโครงการจะเชื่อมโยงกับข้อมูลอีเว้นจริงในเวอร์ชันถัดไป หากต้องการดูรายละเอียดทั้งหมดกรุณาใช้เมนูของผู้ดูแลระบบ</p>
+        <section class="summary-cards" id="summaryCards" aria-label="ภาพรวมสถานะของฉัน">
+            <!-- populated by script -->
+        </section>
+
+        <section class="list-panel">
+            <header class="list-toolbar">
+                <div class="toolbar-group">
+                    <label class="field search">
+                        <span class="i search"></span>
+                        <input type="search" id="searchInput" placeholder="ค้นหารหัสอีเว้น ชื่องาน หรือสถานที่" />
+                    </label>
+                    <label class="field select">
+                        <span class="i filter"></span>
+                        <select id="statusFilter" aria-label="กรองสถานะ">
+                            <option value="all">สถานะทั้งหมด</option>
+                            <option value="draft">ร่าง</option>
+                            <option value="planning">วางแผน</option>
+                            <option value="waiting">รอดำเนินการ</option>
+                            <option value="processing">กำลังดำเนินการ</option>
+                            <option value="billing">เรียกเก็บเงิน</option>
+                            <option value="completed">เสร็จสิ้น</option>
+                            <option value="cancelled">ยกเลิก</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="toolbar-group">
+                    <button class="ghost" id="btnClearFilters" type="button">ล้างตัวกรอง</button>
+                </div>
+            </header>
+
+            <div class="table-wrap" role="region" aria-live="polite">
+                <table class="event-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" data-sort-key="event_id" aria-sort="descending">
+                                <button type="button" class="sort-button" data-sort-key="event_id" data-label="รหัสอีเว้น">
+                                    รหัสอีเว้น
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="event_name" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="event_name" data-label="ชื่องานหรือสถานที่">
+                                    ชื่องาน / สถานที่
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="start_date" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="start_date" data-label="วันและเวลาเริ่ม">
+                                    วันและเวลาเริ่ม
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="status" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="status" data-label="สถานะ">
+                                    สถานะ
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" class="col-actions">การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventTableBody"></tbody>
+                </table>
+                <div class="empty-state" id="emptyState" aria-hidden="true">
+                    <span class="i inbox"></span>
+                    <p>ยังไม่มีอีเว้นในเงื่อนไขที่เลือก</p>
+                </div>
+            </div>
+
+            <div class="table-pagination" aria-live="polite">
+                <button class="btn btn-ghost" id="prevPage" type="button">ก่อนหน้า</button>
+                <span class="page-indicator" id="pageIndicator">หน้า 1</span>
+                <button class="btn btn-secondary" id="nextPage" type="button">หน้าถัดไป</button>
             </div>
         </section>
     </main>
 
     <script src="../../Controller/common/role_guard.js" defer></script>
     <script src="../../Controller/common/ui_shell.js" defer></script>
-    <script src="../../Controller/Project/placeholder.js" defer></script>
+    <script src="../../Controller/Project/events.js" defer></script>
 </body>
 
 </html>

@@ -41,7 +41,8 @@ try {
         'avatar' => $u['AvatarPath'],
         'role' => $roleLabels[$roleKey] ?? $u['Role'],
         'role_key' => $roleKey,
-        'home_path' => $homeRoutes[$roleKey] ?? 'View/login.html'
+        'home_path' => $homeRoutes[$roleKey] ?? 'View/login.html',
+        'staff_id' => (int) $_SESSION['staff_id'],
     ]);
 } catch (Throwable $e) {
     http_response_code(500);

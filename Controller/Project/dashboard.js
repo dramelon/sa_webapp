@@ -79,7 +79,7 @@
 
     const fetchOverview = async (modelRoot) => {
         try {
-            const params = new URLSearchParams({ page: 1, status: 'all' });
+            const params = new URLSearchParams({ page: 1, status: 'all', assigned_only: '1' });
             const response = await fetch(`${modelRoot}/events_list.php?${params.toString()}`, {
                 credentials: 'same-origin',
             });

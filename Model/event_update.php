@@ -43,6 +43,8 @@ if (!in_array($status, $allowedStatuses, true)) {
     exit;
 }
 
+$isProjectRole = isset($_SESSION['role']) && strtolower((string) $_SESSION['role']) === 'project';
+
 $customerId = parseNullableInt($input['customer_id'] ?? null);
 $staffId = parseNullableInt($input['staff_id'] ?? null);
 $locationId = parseNullableInt($input['location_id'] ?? null);
@@ -60,13 +62,22 @@ try {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
-    $checkStmt = $db->prepare('SELECT COUNT(*) FROM events WHERE EventID = :id');
+    $checkStmt = $db->prepare('SELECT Status FROM events WHERE EventID = :id');
     $checkStmt->bindValue(':id', $eventId, PDO::PARAM_INT);
     $checkStmt->execute();
+    $existingRow = $checkStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$existingRow) {
     if ((int) $checkStmt->fetchColumn() === 0) {
         http_response_code(404);
         echo json_encode(['error' => 'not_found']);
         exit;
+    }
+
+    if ($isProjectRole) {
+        $status = strtolower((string) ($existingRow['Status'] ?? 'draft'));
+        if (!in_array($status, $allowedStatuses, true)) {
+            $status = 'draft';
+        }
     }
 
     $updateSql = "

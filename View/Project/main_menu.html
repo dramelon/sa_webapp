@@ -4,17 +4,17 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Project · แดชบอร์ดงานโครงการ</title>
+    <title>Project · เมนูหลัก</title>
     <link rel="stylesheet" href="../../style.css" />
 </head>
 
 <body>
     <aside id="drawer" class="drawer" aria-hidden="true">
         <nav class="drawer-nav">
-            <a class="item" href="./main_menu.html">
+            <a class="item active" href="./main_menu.html">
                 <span class="i grid"></span><span>เมนูหลัก</span>
             </a>
-            <a class="item active" href="./dashboard.html">
+            <a class="item" href="./dashboard.html">
                 <span class="i home"></span><span>สรุปภาพรวม</span>
             </a>
             <a class="item" href="./events.html">
@@ -48,38 +48,22 @@
 
     <main class="page">
         <section class="news-head">
-            <h2>งานที่ต้องติดตาม</h2>
+            <h2>หน้าหลัก</h2>
             <p class="date">...</p>
         </section>
 
-        <section class="cards" id="projectCards"></section>
-
-        <section class="list-panel" style="margin-top:32px;">
-            <header class="list-toolbar">
-                <div>
-                    <h3 style="margin:0;">เหตุการณ์ตามสถานะ</h3>
-                    <p class="muted" style="margin:4px 0 0; color:var(--muted);">ข้อมูลนี้แสดงเฉพาะงานที่คุณรับผิดชอบ</p>
-                </div>
-            </header>
-            <div class="table-wrap" role="region">
-                <table class="event-table compact" id="projectTable">
-                    <thead>
-                        <tr>
-                            <th scope="col">รหัส</th>
-                            <th scope="col">ชื่องาน</th>
-                            <th scope="col">สถานะ</th>
-                            <th scope="col">วันเริ่ม</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+        <section class="tile-grid">
+            <a class="tile" href="./dashboard.html"><span class="i home"></span><strong>แดชบอร์ด</strong></a>
+            <a class="tile" href="./events.html"><span class="i list"></span><strong>อีเว้นของฉัน</strong></a>
+            <a class="tile" href="./event_manage.html?mode=create"><span class="i plus"></span><strong>สร้างอีเว้นแบบร่าง</strong></a>
+            <a class="tile" href="./tasks.html"><span class="i progress"></span><strong>แผนงาน</strong></a>
+            <a class="tile" href="../../Model/logout.php"><span class="i power"></span><strong>ออกจากระบบ</strong></a>
         </section>
     </main>
 
     <script src="../../Controller/common/role_guard.js" defer></script>
     <script src="../../Controller/common/ui_shell.js" defer></script>
-    <script src="../../Controller/Project/dashboard.js" defer></script>
+    <script src="../../Controller/Project/main_menu.js" defer></script>
 </body>
 
 </html>
