@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th" data-root="../.." data-allowed="Procurement">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Procurement · ศูนย์ควบคุมวัสดุ</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body>
+    <aside id="drawer" class="drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a class="item active" href="./dashboard.html">
+                <span class="i box"></span><span>คลังวัสดุ</span>
+            </a>
+            <a class="item" href="./purchase_orders.html">
+                <span class="i clip"></span><span>ใบสั่งซื้อ</span>
+            </a>
+            <a class="item" href="./suppliers.html">
+                <span class="i user"></span><span>ซัพพลายเออร์</span>
+            </a>
+            <div class="drawer-sep"></div>
+            <a class="item" href="../../Model/logout.php">
+                <span class="i power"></span><span>ออกจากระบบ</span>
+            </a>
+        </nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <div class="topbar">
+        <button id="btnMenu" class="hamburger" aria-label="เมนู">
+            <span></span><span></span><span></span>
+        </button>
+        <h1 class="app-title">ศูนย์จัดซื้อและควบคุมวัสดุ</h1>
+        <div class="account">
+            <span class="pill">
+                <img class="avatar" id="avatar" alt="avatar" />
+                <span class="uid" id="fullName">...</span>
+            </span>
+            <span class="role" id="roleLabel"></span>
+            <a class="powerbtn" href="../../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
+        </div>
+    </div>
+
+    <main class="page">
+        <section class="news-head">
+            <h2>สรุปสถานะคลังวัสดุ</h2>
+            <p class="date">...</p>
+        </section>
+
+        <section class="cards" id="procurementCards"></section>
+
+        <section class="list-panel" style="margin-top:32px;">
+            <header class="list-toolbar">
+                <div>
+                    <h3 style="margin:0;">ใบเบิกและใบสั่งซื้อที่รอดำเนินการ</h3>
+                    <p class="muted" style="margin:4px 0 0;color:var(--muted);">ข้อมูลสาธิตสำหรับทีมจัดซื้อ</p>
+                </div>
+            </header>
+            <div class="table-wrap" role="region">
+                <table class="event-table compact" id="procurementTable">
+                    <thead>
+                        <tr>
+                            <th scope="col">เลขที่เอกสาร</th>
+                            <th scope="col">ประเภท</th>
+                            <th scope="col">สถานะ</th>
+                            <th scope="col">วันที่สร้าง</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Procurement/dashboard.js" defer></script>
+</body>
+
+</html>

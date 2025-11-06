@@ -11,7 +11,7 @@ if (empty($_SESSION['staff_id'])) {
 
 try {
     $db = new PDO('mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4', 'dramelon', 'dramelon', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-    $q = $db->prepare(query: 'SELECT FullName, COALESCE(AvatarPath,"") AS AvatarPath, Role FROM staffs WHERE StaffID=:id LIMIT 1');
+    $q = $db->prepare('SELECT FullName, COALESCE(AvatarPath, "") AS AvatarPath, Role FROM staffs WHERE StaffID = :id LIMIT 1');
     $q->execute([':id' => $_SESSION['staff_id']]);
     $u = $q->fetch(PDO::FETCH_ASSOC);
 
@@ -21,10 +21,27 @@ try {
         exit;
     }
 
+    $roleKey = strtolower((string) $u['Role']);
+    $roleLabels = [
+        'administrator' => 'Administrator',
+        'project' => 'Project',
+        'procurement' => 'Procurement',
+        'accounting' => 'Accounting',
+    ];
+
+    $homeRoutes = [
+        'administrator' => 'View/Administrator/home.html',
+        'project' => 'View/Project/dashboard.html',
+        'procurement' => 'View/Procurement/dashboard.html',
+        'accounting' => 'View/Accounting/dashboard.html',
+    ];
+
     echo json_encode([
         'full_name' => $u['FullName'] ?: 'ผู้ใช้งาน',
         'avatar' => $u['AvatarPath'],
-        'role' => $u['Role']
+        'role' => $roleLabels[$roleKey] ?? $u['Role'],
+        'role_key' => $roleKey,
+        'home_path' => $homeRoutes[$roleKey] ?? 'View/login.html'
     ]);
 } catch (Throwable $e) {
     http_response_code(500);

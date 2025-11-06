@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" data-root="../..">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator Login</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body>
+    <main class="auth">
+        <section class="card">
+            <div class="logo" aria-label="Logo placeholder"></div>
+
+            <form class="form" action="../../Model/login.php" method="post" autocomplete="on">
+                <label class="field">
+                    <span class="icon mail"></span>
+                    <input type="text" name="username" placeholder="Username or Email" required />
+                </label>
+                <label class="field">
+                    <span class="icon lock"></span>
+                    <input type="password" name="password" placeholder="Password" required />
+                </label>
+
+                <!-- inline message: under fields, above button -->
+                <div id="formMsg" class="form-msg" hidden></div>
+
+                <button class="btn" type="submit">Login</button>
+            </form>
+
+            <nav class="meta">
+                <a class="link" href="./admin_create_account.html">สร้างบัญชีเจ้าหน้าที่</a>
+                <a class="link" href="../forgot_password.html">ลืมรหัสผ่าน?</a>
+            </nav>
+        </section>
+    </main>
+</body>
+
+<script src="../../Controller/login.js" defer></script>
+
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" data-root="../.." data-allowed="Administrator">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator · เมนูหลัก</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body>
+    <!-- Slide-out drawer -->
+    <aside id="drawer" class="drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a class="item active" href="./main_menu.html">
+                <span class="i home"></span><span>เมนูหลัก</span>
+            </a>
+            <a class="item" href="./home.html">
+                <span class="i news"></span><span>ข่าวสารทั่วไป</span>
+            </a>
+            <a class="item" href="./events.html">
+                <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
+            </a>
+            <a class="item" href="./event_manage.html">
+                <span class="i box"></span><span>จัดการอีเว้น</span>
+            </a>
+            <div class="drawer-sep"></div>
+            <a class="item" href="./admin_create_account.html">
+                <span class="i user"></span><span>สร้างบัญชีเจ้าหน้าที่</span>
+            </a>
+            <a class="item" href="../../Model/logout.php">
+                <span class="i power"></span><span>ออกจากระบบ</span>
+            </a>
+        </nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <!-- App shell -->
+    <div class="topbar">
+        <button id="btnMenu" class="hamburger" aria-label="เมนู">
+            <span></span><span></span><span></span>
+        </button>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - ฝ่ายจัดการอีเว้น</h1>
+
+        <div class="account">
+            <span class="pill">
+                <img class="avatar" id="avatar" alt="avatar" />
+                <span class="uid" id="fullName">...</span>
+            </span>
+            <a class="powerbtn" href="../../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
+        </div>
+    </div>
+
+    <main class="page">
+        <section class="news-head">
+            <h2>หน้าหลัก</h2>
+            <p class="date">...</p>
+        </section>
+
+        <!-- Tiles -->
+        <section class="tile-grid">
+            <a class="tile" href="./events.html"><span class="i list"></span><strong>รายการอีเว้นทั้งหมด</strong></a>
+            <a class="tile" href="./event_manage.html"><span class="i clip"></span><strong>สร้าง/แก้ไข อีเว้น</strong></a>
+            <a class="tile" href="./admin_create_account.html"><span class="i user"></span><strong>สร้างบัญชีเจ้าหน้าที่</strong></a>
+            <a class="tile" href="../../Model/logout.php"><span class="i power"></span><strong>ออกจากระบบ</strong></a>
+        </section>
+    </main>
+
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Administrator/main_menu.js" defer></script>
+</body>

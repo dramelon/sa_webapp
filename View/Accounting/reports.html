@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="th" data-root="../.." data-allowed="Accounting">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Accounting · รายงาน</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body>
+    <aside id="drawer" class="drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a class="item" href="./dashboard.html">
+                <span class="i wallet"></span><span>สถานะการเงิน</span>
+            </a>
+            <a class="item" href="./invoices.html">
+                <span class="i list"></span><span>ใบแจ้งหนี้</span>
+            </a>
+            <a class="item active" href="./reports.html">
+                <span class="i chart"></span><span>รายงาน</span>
+            </a>
+            <div class="drawer-sep"></div>
+            <a class="item" href="../../Model/logout.php">
+                <span class="i power"></span><span>ออกจากระบบ</span>
+            </a>
+        </nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <div class="topbar">
+        <button id="btnMenu" class="hamburger" aria-label="เมนู">
+            <span></span><span></span><span></span>
+        </button>
+        <h1 class="app-title">ศูนย์การเงินและบัญชี</h1>
+        <div class="account">
+            <span class="pill">
+                <img class="avatar" id="avatar" alt="avatar" />
+                <span class="uid" id="fullName">...</span>
+            </span>
+            <span class="role" id="roleLabel"></span>
+            <a class="powerbtn" href="../../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
+        </div>
+    </div>
+
+    <main class="page">
+        <section class="news-head">
+            <h2>รายงานทางการเงิน</h2>
+            <p class="date">...</p>
+        </section>
+
+        <section class="cards" style="display:grid;gap:18px;">
+            <article class="card">
+                <header class="card-head"><span class="i chart"></span><h3>รายงานรายได้</h3></header>
+                <div class="card-divider"></div>
+                <p class="card-body">รายงานจริงจะสามารถสร้างเป็นไฟล์ PDF / Excel ได้เร็ว ๆ นี้</p>
+            </article>
+            <article class="card">
+                <header class="card-head"><span class="i chart"></span><h3>รายงานค่าใช้จ่าย</h3></header>
+                <div class="card-divider"></div>
+                <p class="card-body">ระหว่างนี้สามารถอ้างอิงข้อมูลจากระบบผู้ดูแลระบบ</p>
+            </article>
+        </section>
+    </main>
+
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Accounting/placeholder.js" defer></script>
+</body>
+
+</html>

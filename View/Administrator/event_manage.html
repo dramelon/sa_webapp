@@ -1,34 +1,34 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-root="../.." data-allowed="Administrator">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>จัดการอีเว้น</title>
-    <link rel="stylesheet" href="../style.css" />
+    <link rel="stylesheet" href="../../style.css" />
 </head>
 
 <body>
     <!-- Slide-out drawer -->
     <aside id="drawer" class="drawer" aria-hidden="true">
         <nav class="drawer-nav">
-            <a class="item" href="../View/main_menu.html">
+            <a class="item" href="./main_menu.html">
                 <span class="i home"></span><span>เมนูหลัก</span>
             </a>
-            <a class="item" href="../View/home.html">
+            <a class="item" href="./home.html">
                 <span class="i news"></span><span>ข่าวสารทั่วไป</span>
             </a>
-            <a class="item active" href="../View/events.html">
+            <a class="item" href="./events.html">
                 <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
             </a>
-            <a class="item" href="#">
-                <span class="i box"></span><span>สถานะวัสดุในคลัง</span>
+            <a class="item active" href="./event_manage.html">
+                <span class="i box"></span><span>จัดการอีเว้น</span>
             </a>
             <div class="drawer-sep"></div>
-            <a class="item" href="#">
-                <span class="i user"></span><span>บัญชีของฉัน</span>
+            <a class="item" href="./admin_create_account.html">
+                <span class="i user"></span><span>สร้างบัญชีเจ้าหน้าที่</span>
             </a>
-            <a class="item" href="../Model/logout.php">
+            <a class="item" href="../../Model/logout.php">
                 <span class="i power"></span><span>ออกจากระบบ</span>
             </a>
         </nav>
@@ -47,7 +47,7 @@
                 <img class="avatar" id="avatar" alt="avatar" />
                 <span class="uid" id="fullName">...</span>
             </span>
-            <a class="powerbtn" href="../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
+            <a class="powerbtn" href="../../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
         </div>
     </div>
 
@@ -185,7 +185,9 @@
         </div>
     </div>
 
-    <script src="../Controller/event_manage.js" defer></script>
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Administrator/event_manage.js" defer></script>
 </body>
 
 </html>
