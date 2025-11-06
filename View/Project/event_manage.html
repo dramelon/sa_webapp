@@ -95,64 +95,77 @@
             <div id="formMessage" class="form-alert" role="alert" hidden></div>
             <form id="eventForm" class="detail-form" autocomplete="off">
                 <input type="hidden" id="statusValue" name="status" value="draft" />
-                <div class="form-grid">
-                    <label class="field-block">
-                        <span class="field-label">ชื่องาน *</span>
-                        <input type="text" name="event_name" id="eventName" required />
-                    </label>
-                    <label class="field-block">
-                        <span class="field-label">สถานะปัจจุบัน</span>
-                        <input type="text" id="statusDisplay" value="ร่าง" readonly />
-                    </label>
-                </div>
-
-                <div class="form-grid">
-                    <label class="field-block">
-                        <span class="field-label">ลูกค้า</span>
-                        <div class="typeahead" data-type="customer">
-                            <input type="text" id="customerInput" placeholder="ค้นหาโดยรหัสหรือชื่อลูกค้า" autocomplete="off" />
-                            <input type="hidden" name="customer_id" id="customerId" />
-                            <div class="typeahead-list" id="customerList" hidden></div>
+                <div class="detail-form-columns">
+                    <div class="detail-column">
+                        <label class="field-block">
+                            <span class="field-label">รหัสอีเว้น</span>
+                            <input type="text" id="eventCode" value="—" readonly />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ชื่องาน *</span>
+                            <input type="text" name="event_name" id="eventName" required />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ผู้รับผิดชอบ *</span>
+                            <div class="typeahead" data-type="staff">
+                                <input type="text" id="staffInput" placeholder="ค้นหาชื่อหรือรหัสผู้รับผิดชอบ" autocomplete="off" />
+                                <input type="hidden" name="staff_id" id="staffId" />
+                                <div class="typeahead-list" id="staffList" hidden></div>
+                            </div>
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ลูกค้า *</span>
+                            <div class="typeahead" data-type="customer">
+                                <input type="text" id="customerInput" placeholder="ค้นหาโดยรหัสหรือชื่อลูกค้า" autocomplete="off" />
+                                <input type="hidden" name="customer_id" id="customerId" />
+                                <div class="typeahead-list" id="customerList" hidden></div>
+                            </div>
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">สถานที่จัดงาน *</span>
+                            <div class="typeahead" data-type="location">
+                                <input type="text" id="locationInput" placeholder="ค้นหาสถานที่" autocomplete="off" />
+                                <input type="hidden" name="location_id" id="locationId" />
+                                <div class="typeahead-list" id="locationList" hidden></div>
+                            </div>
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">คำอธิบาย</span>
+                            <textarea name="description" id="description" rows="4" placeholder="รายละเอียดเพิ่มเติม"></textarea>
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">บันทึกภายในทีม</span>
+                            <textarea name="notes" id="notes" rows="4" placeholder="ข้อมูลสำหรับทีม"></textarea>
+                        </label>
+                    </div>
+                    <div class="detail-column">
+                        <label class="field-block">
+                            <span class="field-label">สถานะปัจจุบัน</span>
+                            <input type="text" id="statusDisplay" value="ร่าง" readonly />
+                        </label>
+                        <div class="field-block">
+                            <span class="field-label">กำหนดการ</span>
+                            <label class="form-toggle" for="allDayToggle">
+                                <span class="toggle-switch">
+                                    <input type="checkbox" id="allDayToggle" />
+                                    <span class="toggle-slider" aria-hidden="true"></span>
+                                </span>
+                                <span class="toggle-text">
+                                    ตลอดทั้งวัน
+                                    <span class="toggle-caption">เปิดใช้งานเมื่อไม่ต้องการระบุชั่วโมงเริ่มและสิ้นสุด</span>
+                                </span>
+                            </label>
                         </div>
-                    </label>
-                    <label class="field-block">
-                        <span class="field-label">ผู้รับผิดชอบ</span>
-                        <div class="typeahead" data-type="staff">
-                            <input type="text" id="staffInput" placeholder="ค้นหาชื่อหรือรหัสผู้รับผิดชอบ" autocomplete="off" />
-                            <input type="hidden" name="staff_id" id="staffId" />
-                            <div class="typeahead-list" id="staffList" hidden></div>
-                        </div>
-                    </label>
-                    <label class="field-block">
-                        <span class="field-label">สถานที่จัดงาน</span>
-                        <div class="typeahead" data-type="location">
-                            <input type="text" id="locationInput" placeholder="ค้นหาสถานที่" autocomplete="off" />
-                            <input type="hidden" name="location_id" id="locationId" />
-                            <div class="typeahead-list" id="locationList" hidden></div>
-                        </div>
-                    </label>
+                        <label class="field-block">
+                            <span class="field-label">วันและเวลาเริ่ม *</span>
+                            <input type="datetime-local" name="start_date" id="startDate" required />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">วันและเวลาสิ้นสุด *</span>
+                            <input type="datetime-local" name="end_date" id="endDate" required />
+                        </label>
+                    </div>
                 </div>
-
-                <div class="form-grid">
-                    <label class="field-block">
-                        <span class="field-label">วันและเวลาเริ่ม</span>
-                        <input type="datetime-local" name="start_date" id="startDate" />
-                    </label>
-                    <label class="field-block">
-                        <span class="field-label">วันและเวลาสิ้นสุด</span>
-                        <input type="datetime-local" name="end_date" id="endDate" />
-                    </label>
-                </div>
-
-                <label class="field-block">
-                    <span class="field-label">คำอธิบาย</span>
-                    <textarea name="description" id="description" rows="4" placeholder="รายละเอียดเพิ่มเติม"></textarea>
-                </label>
-
-                <label class="field-block">
-                    <span class="field-label">บันทึกภายในทีม</span>
-                    <textarea name="notes" id="notes" rows="4" placeholder="ข้อมูลสำหรับทีม"></textarea>
-                </label>
             </form>
         </section>
     </main>

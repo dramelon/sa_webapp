@@ -23,6 +23,10 @@
     const btnModalSave = document.getElementById('btnModalSave');
     const locationInput = document.getElementById('locationInput');
     const locationHidden = document.getElementById('locationId');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const allDayToggle = document.getElementById('allDayToggle');
+    const eventCodeField = document.getElementById('eventCode');
 
     const params = new URLSearchParams(window.location.search);
     const eventIdParam = params.get('event_id');
@@ -145,6 +149,145 @@
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     }
 
+    function toDateOnlyValue(value) {
+        if (!value) {
+            return '';
+        }
+        const normalized = String(value).replace('T', ' ').trim();
+        const [datePart] = normalized.split(' ');
+        return datePart || '';
+    }
+
+    function extractTimePortion(value) {
+        if (!value) {
+            return '';
+        }
+        const normalized = String(value).replace(' ', 'T');
+        const parts = normalized.split('T');
+        if (parts.length < 2) {
+            return '';
+        }
+        return parts[1].slice(0, 5);
+    }
+
+    function detectAllDayRange(startValue, endValue) {
+        if (!startValue || !endValue) {
+            return false;
+        }
+        const startTime = extractTimePortion(startValue);
+        const endTime = extractTimePortion(endValue);
+        if (!startTime || !endTime) {
+            return false;
+        }
+        return startTime === '00:00' && endTime === '23:59';
+    }
+
+    const dateState = {
+        savedStart: '',
+        savedEnd: '',
+    };
+
+    function updateCachedDateTimesFromCurrentDates() {
+        if (!allDayToggle || !allDayToggle.checked) {
+            return;
+        }
+        const startValue = startDateInput?.value || '';
+        const endValue = endDateInput?.value || '';
+        const startTime = extractTimePortion(dateState.savedStart) || '00:00';
+        const endTime = extractTimePortion(dateState.savedEnd) || '23:59';
+        if (startValue) {
+            dateState.savedStart = `${startValue}T${startTime}`;
+        }
+        if (endValue) {
+            dateState.savedEnd = `${endValue}T${endTime}`;
+        }
+    }
+
+    function updateEndDateMinimum() {
+        if (!startDateInput || !endDateInput) {
+            return;
+        }
+        const value = startDateInput.value;
+        if (value) {
+            endDateInput.min = value;
+        } else {
+            endDateInput.removeAttribute('min');
+        }
+    }
+
+    function applyDateMode(allDayEnabled, options = {}) {
+        if (!startDateInput || !endDateInput) {
+            return;
+        }
+        const { startValue = null, endValue = null, cacheValues = true } = options;
+        if (allDayEnabled) {
+            if (cacheValues) {
+                if (startDateInput.type === 'datetime-local' && startDateInput.value) {
+                    dateState.savedStart = startDateInput.value;
+                }
+                if (endDateInput.type === 'datetime-local' && endDateInput.value) {
+                    dateState.savedEnd = endDateInput.value;
+                }
+            }
+            startDateInput.type = 'date';
+            endDateInput.type = 'date';
+            const resolvedStart =
+                startValue !== null
+                    ? startValue
+                    : toDateOnlyValue(startDateInput.value || dateState.savedStart);
+            const fallbackStart = toDateOnlyValue(dateState.savedStart);
+            const startToSet = resolvedStart || fallbackStart || '';
+            const resolvedEnd =
+                endValue !== null ? endValue : toDateOnlyValue(endDateInput.value || dateState.savedEnd);
+            const fallbackEnd = toDateOnlyValue(dateState.savedEnd);
+            const endToSet = resolvedEnd || fallbackEnd || startToSet;
+            startDateInput.value = startToSet;
+            endDateInput.value = endToSet;
+            updateCachedDateTimesFromCurrentDates();
+        } else {
+            startDateInput.type = 'datetime-local';
+            endDateInput.type = 'datetime-local';
+            let startToSet = startValue !== null ? startValue : startDateInput.value;
+            let endToSet = endValue !== null ? endValue : endDateInput.value;
+            if (cacheValues) {
+                if (dateState.savedStart) {
+                    startToSet = dateState.savedStart;
+                }
+                if (dateState.savedEnd) {
+                    endToSet = dateState.savedEnd;
+                }
+            } else {
+                dateState.savedStart = '';
+                dateState.savedEnd = '';
+            }
+            if (startToSet && startToSet.length === 10) {
+                startToSet = `${startToSet}T00:00`;
+            }
+            if (endToSet && endToSet.length === 10) {
+                endToSet = `${endToSet}T23:59`;
+            }
+            startDateInput.value = startToSet || '';
+            endDateInput.value = endToSet || '';
+        }
+        updateEndDateMinimum();
+    }
+
+    function getDatePayloadValues() {
+        const allDay = Boolean(allDayToggle?.checked);
+        if (!startDateInput || !endDateInput) {
+            return { allDay, start: '', end: '' };
+        }
+        const startRaw = startDateInput.value;
+        const endRaw = endDateInput.value;
+        if (allDay) {
+            const startDate = startRaw ? `${startRaw}T00:00` : '';
+            const resolvedEnd = endRaw || startRaw;
+            const endDate = resolvedEnd ? `${resolvedEnd}T23:59` : '';
+            return { allDay: true, start: startDate, end: endDate };
+        }
+        return { allDay: false, start: startRaw, end: endRaw };
+    }
+
     function extractLabelName(label) {
         if (!label) {
             return '';
@@ -167,15 +310,16 @@
     function serializeForm() {
         return {
             event_name: document.getElementById('eventName').value || '',
-            status: document.getElementById('eventStatus').value || '',
+            status: eventStatusField?.value || '',
             customer_id: document.getElementById('customerId').value || '',
             customer_label: document.getElementById('customerInput').value || '',
             staff_id: document.getElementById('staffId').value || '',
             staff_label: document.getElementById('staffInput').value || '',
             location_id: document.getElementById('locationId').value || '',
             location_label: document.getElementById('locationInput').value || '',
-            start_date: document.getElementById('startDate').value || '',
-            end_date: document.getElementById('endDate').value || '',
+            start_date: startDateInput?.value || '',
+            end_date: endDateInput?.value || '',
+            is_all_day: allDayToggle?.checked ? '1' : '0',
             description: document.getElementById('description').value || '',
             notes: document.getElementById('notes').value || '',
         };
@@ -247,18 +391,48 @@
             return;
         }
         runWithPopulation(() => {
-            document.getElementById('eventName').value = snapshot.event_name;
-            document.getElementById('eventStatus').value = snapshot.status;
-            document.getElementById('startDate').value = snapshot.start_date;
-            document.getElementById('endDate').value = snapshot.end_date;
-            document.getElementById('description').value = snapshot.description;
-            document.getElementById('notes').value = snapshot.notes;
+            const nameField = document.getElementById('eventName');
+            if (nameField) {
+                nameField.value = snapshot.event_name;
+            }
+            if (eventStatusField) {
+                eventStatusField.value = snapshot.status;
+            }
+            if (allDayToggle) {
+                allDayToggle.checked = snapshot.is_all_day === '1';
+                applyDateMode(allDayToggle.checked);
+            }
+            if (startDateInput) {
+                startDateInput.value = snapshot.start_date;
+            }
+            if (endDateInput) {
+                endDateInput.value = snapshot.end_date;
+            }
+            if (allDayToggle?.checked) {
+                updateCachedDateTimesFromCurrentDates();
+            } else {
+                dateState.savedStart = '';
+                dateState.savedEnd = '';
+                updateEndDateMinimum();
+            }
+            const descriptionField = document.getElementById('description');
+            if (descriptionField) {
+                descriptionField.value = snapshot.description;
+            }
+            const notesField = document.getElementById('notes');
+            if (notesField) {
+                notesField.value = snapshot.notes;
+            }
             const customerField = findTypeaheadByType('customer');
             customerField?.setValue(snapshot.customer_id, snapshot.customer_label);
             const staffField = findTypeaheadByType('staff');
             staffField?.setValue(snapshot.staff_id, snapshot.staff_label);
             const locationField = findTypeaheadByType('location');
             locationField?.setValue(snapshot.location_id, snapshot.location_label);
+            if (eventCodeField && eventIdDisplay) {
+                const codeValue = eventIdDisplay.textContent?.trim() || '—';
+                eventCodeField.value = codeValue;
+            }
             setStatus(snapshot.status);
         });
         syncLocationDisplayFromForm();
@@ -517,6 +691,42 @@
         });
     }
 
+    if (allDayToggle) {
+        allDayToggle.addEventListener('change', () => {
+            applyDateMode(allDayToggle.checked);
+            if (allDayToggle.checked) {
+                if (startDateInput && endDateInput && !endDateInput.value && startDateInput.value) {
+                    endDateInput.value = startDateInput.value;
+                }
+                updateCachedDateTimesFromCurrentDates();
+            }
+            handleFormMutated();
+        });
+    }
+
+    if (startDateInput) {
+        startDateInput.addEventListener('change', () => {
+            if (allDayToggle?.checked && endDateInput && startDateInput.value) {
+                if (!endDateInput.value || endDateInput.value < startDateInput.value) {
+                    endDateInput.value = startDateInput.value;
+                }
+                updateCachedDateTimesFromCurrentDates();
+            }
+            updateEndDateMinimum();
+        });
+    }
+
+    if (endDateInput) {
+        endDateInput.addEventListener('change', () => {
+            if (allDayToggle?.checked && startDateInput && endDateInput.value < startDateInput.value) {
+                endDateInput.value = startDateInput.value;
+            }
+            if (allDayToggle?.checked) {
+                updateCachedDateTimesFromCurrentDates();
+            }
+        });
+    }
+
     if (locationInput) {
         locationInput.addEventListener('input', syncLocationDisplayFromForm);
         locationInput.addEventListener('change', syncLocationDisplayFromForm);
@@ -573,6 +783,9 @@
             isCreateMode = false;
             eventHeading.textContent = data.event_name || (eventIdValue ? `อีเว้น #${eventIdValue}` : 'ไม่พบข้อมูลอีเว้น');
             eventIdDisplay.textContent = eventIdValue ? `EV-${eventIdValue}` : '—';
+            if (eventCodeField) {
+                eventCodeField.value = eventIdValue ? `EV-${eventIdValue}` : '—';
+            }
             const nameField = document.getElementById('eventName');
             if (nameField) {
                 nameField.value = data.event_name || '';
@@ -580,10 +793,35 @@
             if (eventStatusField) {
                 eventStatusField.value = data.status || 'draft';
             }
-            document.getElementById('startDate').value = toDateInputValue(data.start_date || '');
-            document.getElementById('endDate').value = toDateInputValue(data.end_date || '');
-            document.getElementById('description').value = data.description || '';
-            document.getElementById('notes').value = data.notes || '';
+            const startSource = data.start_date || '';
+            const endSource = data.end_date || '';
+            const isAllDay = detectAllDayRange(startSource, endSource);
+            if (allDayToggle) {
+                allDayToggle.checked = isAllDay;
+            }
+            if (isAllDay) {
+                dateState.savedStart = toDateInputValue(startSource) || '';
+                dateState.savedEnd = toDateInputValue(endSource) || '';
+                applyDateMode(true, {
+                    startValue: toDateOnlyValue(startSource),
+                    endValue: toDateOnlyValue(endSource),
+                });
+                updateCachedDateTimesFromCurrentDates();
+            } else {
+                applyDateMode(false, {
+                    startValue: toDateInputValue(startSource),
+                    endValue: toDateInputValue(endSource),
+                    cacheValues: false,
+                });
+            }
+            const descriptionField = document.getElementById('description');
+            if (descriptionField) {
+                descriptionField.value = data.description || '';
+            }
+            const notesField = document.getElementById('notes');
+            if (notesField) {
+                notesField.value = data.notes || '';
+            }
 
             setStatus(data.status || 'draft');
 
@@ -631,6 +869,12 @@
                 eventStatusField.value = 'draft';
             }
             setStatus('draft');
+            if (allDayToggle) {
+                allDayToggle.checked = false;
+            }
+            applyDateMode(false, { startValue: '', endValue: '', cacheValues: false });
+            dateState.savedStart = '';
+            dateState.savedEnd = '';
             const ids = ['customerId', 'staffId', 'locationId'];
             const inputs = ['customerInput', 'staffInput', 'locationInput'];
             ids.forEach((id) => {
@@ -645,27 +889,27 @@
                     el.value = '';
                 }
             });
-            const fieldsToClear = ['startDate', 'endDate', 'description', 'notes'];
-            fieldsToClear.forEach((id) => {
+            const textAreas = ['description', 'notes'];
+            textAreas.forEach((id) => {
                 const el = document.getElementById(id);
                 if (el) {
-                    if (el.tagName === 'TEXTAREA') {
-                        el.value = '';
-                    } else {
-                        el.value = '';
-                    }
+                    el.value = '';
                 }
             });
             typeaheadFields.forEach((field) => field.setValue('', ''));
         });
         eventHeading.textContent = 'สร้างอีเว้นใหม่';
         eventIdDisplay.textContent = 'ใหม่';
+        if (eventCodeField) {
+            eventCodeField.value = 'ใหม่';
+        }
         eventLocation.textContent = 'สถานที่: —';
         lastUpdated.textContent = 'อัปเดตล่าสุด: —';
         updatedBy.textContent = 'ปรับปรุงโดย: —';
         createdAt.textContent = 'สร้างเมื่อ: —';
         createdBy.textContent = 'สร้างโดย: —';
         syncLocationDisplayFromForm();
+        updateEndDateMinimum();
         initialSnapshot = serializeForm();
         setDirtyState(false);
         showMessage('');
@@ -692,6 +936,9 @@
         isCreateMode = false;
         eventHeading.textContent = payload.event_name || `อีเว้น #${newEventId}`;
         eventIdDisplay.textContent = `EV-${newEventId}`;
+        if (eventCodeField) {
+            eventCodeField.value = `EV-${newEventId}`;
+        }
         setStatus(resolvedStatus);
         params.set('event_id', newEventId);
         if (params.has('mode')) {
@@ -799,18 +1046,57 @@
                 showMessage('กรุณากรอกชื่องาน', 'error');
                 return;
             }
+            const staffIdValue = normalizeId(document.getElementById('staffId').value);
+            if (!staffIdValue) {
+                showMessage('กรุณาเลือกผู้รับผิดชอบ', 'error');
+                return;
+            }
+            const customerIdValue = normalizeId(document.getElementById('customerId').value);
+            if (!customerIdValue) {
+                showMessage('กรุณาเลือกลูกค้า', 'error');
+                return;
+            }
+            const locationIdValue = normalizeId(document.getElementById('locationId').value);
+            if (!locationIdValue) {
+                showMessage('กรุณาเลือกสถานที่จัดงาน', 'error');
+                return;
+            }
+            const startInputValue = startDateInput?.value || '';
+            if (!startInputValue) {
+                showMessage('กรุณาระบุวันเริ่มต้น', 'error');
+                return;
+            }
+            if (allDayToggle?.checked && endDateInput && !endDateInput.value) {
+                endDateInput.value = startInputValue;
+            }
+            const endInputValue = endDateInput?.value || '';
+            if (!endInputValue) {
+                showMessage('กรุณาระบุวันสิ้นสุด', 'error');
+                return;
+            }
+            const datePayload = getDatePayloadValues();
+            const startDateObject = datePayload.start ? new Date(datePayload.start) : null;
+            const endDateObject = datePayload.end ? new Date(datePayload.end) : null;
+            if (startDateObject && endDateObject && startDateObject.getTime() > endDateObject.getTime()) {
+                showMessage('วันสิ้นสุดต้องไม่ก่อนวันเริ่มต้น', 'error');
+                return;
+            }
+            const descriptionField = document.getElementById('description');
+            const notesField = document.getElementById('notes');
             const payload = {
                 event_name: eventNameValue,
                 status: (eventStatusField?.value || 'draft').toLowerCase(),
-                status: document.getElementById('eventStatus').value,
-                customer_id: normalizeId(document.getElementById('customerId').value),
-                staff_id: normalizeId(document.getElementById('staffId').value),
-                location_id: normalizeId(document.getElementById('locationId').value),
-                start_date: document.getElementById('startDate').value,
-                end_date: document.getElementById('endDate').value,
-                description: document.getElementById('description').value.trim(),
-                notes: document.getElementById('notes').value.trim(),
+                customer_id: customerIdValue,
+                staff_id: staffIdValue,
+                location_id: locationIdValue,
+                start_date: datePayload.start,
+                end_date: datePayload.end,
+                description: descriptionField?.value.trim() || '',
+                notes: notesField?.value.trim() || '',
             };
+            if (datePayload.allDay) {
+                payload.is_all_day = true;
+            }
             if (btnSave) {
                 btnSave.disabled = true;
             }

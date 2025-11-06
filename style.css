@@ -1179,6 +1179,23 @@ body {
     gap: 22px;
 }
 
+.detail-form-columns {
+    display: grid;
+    gap: 26px;
+}
+
+@media (min-width: 840px) {
+    .detail-form-columns {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 32px;
+    }
+}
+
+.detail-column {
+    display: grid;
+    gap: 20px;
+}
+
 .form-grid {
     display: grid;
     gap: 18px;
@@ -1219,6 +1236,71 @@ body {
 .field-block textarea {
     min-height: 120px;
     resize: vertical;
+}
+
+.form-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 52px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: #e3d6b6;
+    border-radius: 999px;
+    transition: background 0.2s ease;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: linear-gradient(135deg, #f6c44f, #f3ad32);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(24px);
+}
+
+.toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.toggle-caption {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 400;
 }
 
 .form-alert {

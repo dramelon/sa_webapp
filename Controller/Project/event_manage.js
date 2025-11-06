@@ -14,6 +14,11 @@
     const createdBy = document.getElementById('createdBy');
     const btnBack = document.getElementById('btnBack');
     const btnSave = document.getElementById('btnSave');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const allDayToggle = document.getElementById('allDayToggle');
+    const eventCodeField = document.getElementById('eventCode');
+    const locationInput = document.getElementById('locationInput');
 
     const params = new URLSearchParams(window.location.search);
     const eventIdParam = params.get('event_id');
@@ -123,11 +128,150 @@
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     }
 
+    function toDateOnlyValue(value) {
+        if (!value) {
+            return '';
+        }
+        const normalized = String(value).replace('T', ' ').trim();
+        const [datePart] = normalized.split(' ');
+        return datePart || '';
+    }
+
+    function extractTimePortion(value) {
+        if (!value) {
+            return '';
+        }
+        const normalized = String(value).replace(' ', 'T');
+        const parts = normalized.split('T');
+        if (parts.length < 2) {
+            return '';
+        }
+        return parts[1].slice(0, 5);
+    }
+
+    function detectAllDayRange(startValue, endValue) {
+        if (!startValue || !endValue) {
+            return false;
+        }
+        const startTime = extractTimePortion(startValue);
+        const endTime = extractTimePortion(endValue);
+        if (!startTime || !endTime) {
+            return false;
+        }
+        return startTime === '00:00' && endTime === '23:59';
+    }
+
+    const dateState = {
+        savedStart: '',
+        savedEnd: '',
+    };
+
+    function updateCachedDateTimesFromCurrentDates() {
+        if (!allDayToggle || !allDayToggle.checked) {
+            return;
+        }
+        const startValue = startDateInput?.value || '';
+        const endValue = endDateInput?.value || '';
+        const startTime = extractTimePortion(dateState.savedStart) || '00:00';
+        const endTime = extractTimePortion(dateState.savedEnd) || '23:59';
+        if (startValue) {
+            dateState.savedStart = `${startValue}T${startTime}`;
+        }
+        if (endValue) {
+            dateState.savedEnd = `${endValue}T${endTime}`;
+        }
+    }
+
+    function updateEndDateMinimum() {
+        if (!startDateInput || !endDateInput) {
+            return;
+        }
+        const value = startDateInput.value;
+        if (value) {
+            endDateInput.min = value;
+        } else {
+            endDateInput.removeAttribute('min');
+        }
+    }
+
+    function applyDateMode(allDayEnabled, options = {}) {
+        if (!startDateInput || !endDateInput) {
+            return;
+        }
+        const { startValue = null, endValue = null, cacheValues = true } = options;
+        if (allDayEnabled) {
+            if (cacheValues) {
+                if (startDateInput.type === 'datetime-local' && startDateInput.value) {
+                    dateState.savedStart = startDateInput.value;
+                }
+                if (endDateInput.type === 'datetime-local' && endDateInput.value) {
+                    dateState.savedEnd = endDateInput.value;
+                }
+            }
+            startDateInput.type = 'date';
+            endDateInput.type = 'date';
+            const resolvedStart =
+                startValue !== null
+                    ? startValue
+                    : toDateOnlyValue(startDateInput.value || dateState.savedStart);
+            const fallbackStart = toDateOnlyValue(dateState.savedStart);
+            const startToSet = resolvedStart || fallbackStart || '';
+            const resolvedEnd =
+                endValue !== null ? endValue : toDateOnlyValue(endDateInput.value || dateState.savedEnd);
+            const fallbackEnd = toDateOnlyValue(dateState.savedEnd);
+            const endToSet = resolvedEnd || fallbackEnd || startToSet;
+            startDateInput.value = startToSet;
+            endDateInput.value = endToSet;
+            updateCachedDateTimesFromCurrentDates();
+        } else {
+            startDateInput.type = 'datetime-local';
+            endDateInput.type = 'datetime-local';
+            let startToSet = startValue !== null ? startValue : startDateInput.value;
+            let endToSet = endValue !== null ? endValue : endDateInput.value;
+            if (cacheValues) {
+                if (dateState.savedStart) {
+                    startToSet = dateState.savedStart;
+                }
+                if (dateState.savedEnd) {
+                    endToSet = dateState.savedEnd;
+                }
+            } else {
+                dateState.savedStart = '';
+                dateState.savedEnd = '';
+            }
+            if (startToSet && startToSet.length === 10) {
+                startToSet = `${startToSet}T00:00`;
+            }
+            if (endToSet && endToSet.length === 10) {
+                endToSet = `${endToSet}T23:59`;
+            }
+            startDateInput.value = startToSet || '';
+            endDateInput.value = endToSet || '';
+        }
+        updateEndDateMinimum();
+    }
+
+    function getDatePayloadValues() {
+        const allDay = Boolean(allDayToggle?.checked);
+        if (!startDateInput || !endDateInput) {
+            return { allDay, start: '', end: '' };
+        }
+        const startRaw = startDateInput.value;
+        const endRaw = endDateInput.value;
+        if (allDay) {
+            const startDate = startRaw ? `${startRaw}T00:00` : '';
+            const resolvedEnd = endRaw || startRaw;
+            const endDate = resolvedEnd ? `${resolvedEnd}T23:59` : '';
+            return { allDay: true, start: startDate, end: endDate };
+        }
+        return { allDay: false, start: startRaw, end: endRaw };
+    }
+
     function syncLocationDisplayFromForm() {
         if (!eventLocation) {
             return;
         }
-        const value = document.getElementById('locationInput').value.trim();
+        const value = locationInput?.value.trim() || '';
         if (value) {
             eventLocation.textContent = `สถานที่: ${value}`;
         } else {
@@ -275,24 +419,83 @@
     }
 
     function resetMetaForCreate() {
+        if (eventForm) {
+            eventForm.reset();
+        }
         eventHeading.textContent = 'สร้างอีเว้นแบบร่าง';
         eventIdDisplay.textContent = 'ใหม่';
+        if (eventCodeField) {
+            eventCodeField.value = 'ใหม่';
+        }
+        if (allDayToggle) {
+            allDayToggle.checked = false;
+        }
+        applyDateMode(false, { startValue: '', endValue: '', cacheValues: false });
+        dateState.savedStart = '';
+        dateState.savedEnd = '';
         eventLocation.textContent = 'สถานที่: —';
         lastUpdated.textContent = 'อัปเดตล่าสุด: —';
         updatedBy.textContent = 'ปรับปรุงโดย: —';
         createdAt.textContent = 'สร้างเมื่อ: —';
         createdBy.textContent = 'สร้างโดย: —';
         setStatus('draft');
+        const inputsToClear = ['customerId', 'staffId', 'locationId'];
+        inputsToClear.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.value = '';
+            }
+        });
+        const textAreas = ['customerInput', 'staffInput', 'locationInput', 'description', 'notes'];
+        textAreas.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.value = '';
+            }
+        });
+        typeaheadFields.forEach((field) => field.setValue('', ''));
+        updateEndDateMinimum();
     }
 
     function populateForm(data) {
         eventHeading.textContent = data.event_name || `อีเว้น #${data.event_id}`;
         eventIdDisplay.textContent = data.event_id ? `EV-${data.event_id}` : '—';
-        document.getElementById('eventName').value = data.event_name || '';
-        document.getElementById('description').value = data.description || '';
-        document.getElementById('notes').value = data.notes || '';
-        document.getElementById('startDate').value = toDateInputValue(data.start_date || '');
-        document.getElementById('endDate').value = toDateInputValue(data.end_date || '');
+        if (eventCodeField) {
+            eventCodeField.value = data.event_id ? `EV-${data.event_id}` : '—';
+        }
+        const nameField = document.getElementById('eventName');
+        if (nameField) {
+            nameField.value = data.event_name || '';
+        }
+        const descriptionField = document.getElementById('description');
+        if (descriptionField) {
+            descriptionField.value = data.description || '';
+        }
+        const notesField = document.getElementById('notes');
+        if (notesField) {
+            notesField.value = data.notes || '';
+        }
+        const startSource = data.start_date || '';
+        const endSource = data.end_date || '';
+        const isAllDay = detectAllDayRange(startSource, endSource);
+        if (allDayToggle) {
+            allDayToggle.checked = isAllDay;
+        }
+        if (isAllDay) {
+            dateState.savedStart = toDateInputValue(startSource) || '';
+            dateState.savedEnd = toDateInputValue(endSource) || '';
+            applyDateMode(true, {
+                startValue: toDateOnlyValue(startSource),
+                endValue: toDateOnlyValue(endSource),
+            });
+            updateCachedDateTimesFromCurrentDates();
+        } else {
+            applyDateMode(false, {
+                startValue: toDateInputValue(startSource),
+                endValue: toDateInputValue(endSource),
+                cacheValues: false,
+            });
+        }
         setStatus(data.status || 'draft');
         syncLocationDisplayFromForm();
         lastUpdated.textContent = `อัปเดตล่าสุด: ${formatDisplayDate(data.updated_at)}`;
@@ -357,15 +560,17 @@
     }
 
     function collectPayload() {
+        const datePayload = getDatePayloadValues();
         return {
             event_name: document.getElementById('eventName').value.trim(),
             customer_id: normalizeId(document.getElementById('customerId').value),
             staff_id: normalizeId(document.getElementById('staffId').value),
             location_id: normalizeId(document.getElementById('locationId').value),
-            start_date: document.getElementById('startDate').value,
-            end_date: document.getElementById('endDate').value,
+            start_date: datePayload.start,
+            end_date: datePayload.end,
             description: document.getElementById('description').value.trim(),
             notes: document.getElementById('notes').value.trim(),
+            is_all_day: datePayload.allDay ? '1' : '0',
         };
     }
 
@@ -387,7 +592,10 @@
         }
         const hasValue = Boolean(document.getElementById('staffId').value);
         if (!hasValue && currentUser.staff_id) {
-            const label = currentUser.full_name ? `${currentUser.role_key ? currentUser.role_key.charAt(0).toUpperCase() : 'S'}${currentUser.staff_id} - ${currentUser.full_name}` : String(currentUser.staff_id);
+            const rolePrefix = currentUser.role_key ? currentUser.role_key.charAt(0).toUpperCase() : 'S';
+            const label = currentUser.full_name
+                ? `${rolePrefix}${currentUser.staff_id} - ${currentUser.full_name}`
+                : String(currentUser.staff_id); staffField.setValue(currentUser.staff_id, label);
             staffField.setValue(currentUser.staff_id, label);
         }
     }
@@ -398,6 +606,41 @@
                 window.history.back();
             } else {
                 window.location.href = './events.html';
+            }
+        });
+    }
+
+    if (allDayToggle) {
+        allDayToggle.addEventListener('change', () => {
+            applyDateMode(allDayToggle.checked);
+            if (allDayToggle.checked) {
+                if (startDateInput && endDateInput && !endDateInput.value && startDateInput.value) {
+                    endDateInput.value = startDateInput.value;
+                }
+                updateCachedDateTimesFromCurrentDates();
+            }
+        });
+    }
+
+    if (startDateInput) {
+        startDateInput.addEventListener('change', () => {
+            if (allDayToggle?.checked && endDateInput && startDateInput.value) {
+                if (!endDateInput.value || endDateInput.value < startDateInput.value) {
+                    endDateInput.value = startDateInput.value;
+                }
+                updateCachedDateTimesFromCurrentDates();
+            }
+            updateEndDateMinimum();
+        });
+    }
+
+    if (endDateInput) {
+        endDateInput.addEventListener('change', () => {
+            if (allDayToggle?.checked && startDateInput && endDateInput.value < startDateInput.value) {
+                endDateInput.value = startDateInput.value;
+            }
+            if (allDayToggle?.checked) {
+                updateCachedDateTimesFromCurrentDates();
             }
         });
     }
@@ -414,6 +657,33 @@
         }
         if (!payload.staff_id && currentUser?.staff_id) {
             payload.staff_id = String(currentUser.staff_id);
+            ensureDefaultAssignee();
+        }
+        if (!payload.staff_id) {
+            showMessage('กรุณาเลือกผู้รับผิดชอบ', 'error');
+            return;
+        }
+        if (!payload.customer_id) {
+            showMessage('กรุณาเลือกลูกค้า', 'error');
+            return;
+        }
+        if (!payload.location_id) {
+            showMessage('กรุณาเลือกสถานที่จัดงาน', 'error');
+            return;
+        }
+        if (!payload.start_date) {
+            showMessage('กรุณาระบุวันเริ่มต้น', 'error');
+            return;
+        }
+        if (!payload.end_date) {
+            showMessage('กรุณาระบุวันสิ้นสุด', 'error');
+            return;
+        }
+        const startDateObject = payload.start_date ? new Date(payload.start_date) : null;
+        const endDateObject = payload.end_date ? new Date(payload.end_date) : null;
+        if (startDateObject && endDateObject && startDateObject.getTime() > endDateObject.getTime()) {
+            showMessage('วันสิ้นสุดต้องไม่ก่อนวันเริ่มต้น', 'error');
+            return;
         }
         btnSave.disabled = true;
         showMessage('กำลังบันทึก...', 'info');
