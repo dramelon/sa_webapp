@@ -548,8 +548,16 @@ body {
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='%23333' fill='none' viewBox='0 0 24 24' stroke-width='2'><path d='M12 3a9 9 0 1 0 9 9'/><path d='M12 7v5l3 3'/></svg>");
 }
 
+.i.grid {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='%23333' fill='none' viewBox='0 0 24 24' stroke-width='2'><rect x='3' y='3' width='7' height='7'/><rect x='14' y='3' width='7' height='7'/><rect x='3' y='14' width='7' height='7'/><rect x='14' y='14' width='7' height='7'/></svg>");
+}
+
 .i.wallet {
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 7h18a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a1 1 0 0 1 1-1Z'/><path d='M16 3 4 7'/><path d='M17 14h3'/></svg>");
+}
+
+.i.chart {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='%23333' fill='none' viewBox='0 0 24 24' stroke-width='2'><path d='M4 19h16'/><path d='M7 19v-4'/><path d='M12 19v-8'/><path d='M17 19V7'/></svg>");
 }
 
 .i.check {
@@ -1075,21 +1083,36 @@ body {
 
 .detail-meta .meta-secondary {
     display: grid;
-    gap: 8px;
-    justify-items: start;
+    gap: 12px;
+    justify-items: end;
+    text-align: right;
+}
+
+.detail-meta .meta-secondary .meta-group {
+    display: grid;
+    gap: 4px;
+    text-align: inherit;
+}
+
+.detail-meta .meta-secondary .meta-group p {
+    margin: 0;
 }
 
 .status-chip {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
+    gap: 6px;
+    padding: 4px 12px;
     border-radius: 999px;
     background: #fff2bf;
     color: #5c4400;
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.9rem;
+}
+
+.detail-meta .status-chip {
+    justify-self: end;
 }
 
 .status-chip .dot {
@@ -1264,6 +1287,15 @@ body {
     .detail-meta {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .detail-meta .meta-secondary {
+        justify-items: start;
+        text-align: left;
+    }
+
+    .detail-meta .status-chip {
+        justify-self: start;
     }
 
     .head-actions {

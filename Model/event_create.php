@@ -28,6 +28,14 @@ if ($eventName === '') {
     exit;
 }
 
+$allowedStatuses = ['draft', 'planning', 'waiting', 'processing', 'billing', 'completed', 'cancelled'];
+$statusInput = strtolower((string) ($input['status'] ?? 'draft'));
+$status = in_array($statusInput, $allowedStatuses, true) ? $statusInput : 'draft';
+$isProjectRole = isset($_SESSION['role']) && strtolower((string) $_SESSION['role']) === 'project';
+if ($isProjectRole) {
+    $status = 'draft';
+}
+
 $customerId = parseNullableInt($input['customer_id'] ?? null);
 $staffId = parseNullableInt($input['staff_id'] ?? null);
 $locationId = parseNullableInt($input['location_id'] ?? null);
@@ -79,6 +87,7 @@ try {
 
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':event_name', $eventName, PDO::PARAM_STR);
+    $stmt->bindValue(':status', $status, PDO::PARAM_STR);
     bindNullableInt($stmt, ':customer_id', $customerId);
     bindNullableInt($stmt, ':staff_id', $staffId);
     bindNullableInt($stmt, ':location_id', $locationId);
@@ -95,14 +104,12 @@ try {
     echo json_encode([
         'success' => true,
         'event_id' => $eventId,
-        'status' => 'draft',
+        'status' => $status,
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => 'server']);
 }
-
-define('DATETIME_FORMAT', 'Y-m-d H:i:s');
 
 function parseNullableInt($value)
 {
@@ -132,7 +139,7 @@ function normalizeDateTime($value)
     if (!$date) {
         return null;
     }
-    return $date->format(DATETIME_FORMAT);
+    return $date->format('Y-m-d H:i:s');
 }
 
 function bindNullableInt(PDOStatement $stmt, string $parameter, ?int $value)

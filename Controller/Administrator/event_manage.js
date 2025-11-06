@@ -6,6 +6,7 @@
     const eventLocation = document.getElementById('eventLocation');
     const statusBadge = document.getElementById('statusBadge');
     const statusText = document.getElementById('statusText');
+    const eventStatusField = document.getElementById('eventStatus');
     const lastUpdated = document.getElementById('lastUpdated');
     const updatedBy = document.getElementById('updatedBy');
     const createdAt = document.getElementById('createdAt');
@@ -24,7 +25,13 @@
     const locationHidden = document.getElementById('locationId');
 
     const params = new URLSearchParams(window.location.search);
-    const eventId = params.get('event_id');
+    const eventIdParam = params.get('event_id');
+    const isCreateRequested = params.get('mode') === 'create';
+    let currentEventId = eventIdParam ? String(eventIdParam) : null;
+    let isCreateMode = !currentEventId;
+    if (isCreateRequested && !currentEventId) {
+        isCreateMode = true;
+    }
 
     const statusMeta = {
         draft: { label: 'ร่าง', className: 'draft' },
@@ -62,7 +69,7 @@
         }
     };
 
-    function lockForm(message) {
+    function lockForm(message, heading = 'ไม่พบข้อมูลอีเว้น') {
         if (!eventForm) return;
         eventForm.querySelectorAll('input, textarea, select, button').forEach((el) => {
             el.disabled = true;
@@ -70,8 +77,10 @@
         if (btnSave) {
             btnSave.disabled = true;
         }
-        eventHeading.textContent = 'ไม่พบข้อมูลอีเว้น';
+        eventHeading.textContent = heading;
         showMessage(message, 'error');
+        setDirtyState(false);
+        closeUnsavedModal();
     }
 
     function showMessage(message, variant = 'info') {
@@ -90,12 +99,12 @@
     function setStatus(statusKey) {
         const normalized = typeof statusKey === 'string' ? statusKey.toLowerCase() : '';
         const meta = statusMeta[normalized];
-        if (meta) {
-            statusBadge.dataset.status = normalized;
-            statusText.textContent = `สถานะ: ${meta.label}`;
-        } else {
-            statusBadge.dataset.status = 'draft';
-            statusText.textContent = `สถานะ: ${statusKey || 'ไม่ระบุ'}`;
+        const badgeStatus = meta ? normalized : 'draft';
+        const label = meta ? meta.label : statusKey || 'ไม่ระบุ';
+        statusBadge.dataset.status = badgeStatus;
+        statusText.textContent = `สถานะ: ${label}`;
+        if (eventStatusField && eventStatusField.value !== badgeStatus) {
+            eventStatusField.value = badgeStatus;
         }
     }
 
@@ -501,6 +510,12 @@
             }
         });
     }
+    
+    if (eventStatusField) {
+        eventStatusField.addEventListener('change', () => {
+            setStatus(eventStatusField.value);
+        });
+    }
 
     if (locationInput) {
         locationInput.addEventListener('input', syncLocationDisplayFromForm);
@@ -509,15 +524,19 @@
 
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    async function loadEvent() {
-        if (!eventId || !modelRoot) {
-            if (!eventId) {
-                lockForm('ไม่พบรหัสอีเว้นที่ต้องการเปิด');
-            }
-            return;
+   async function loadEvent(options = {}) {
+        const { lockOnError = true, eventId = currentEventId } = options;
+        if (!modelRoot) {
+            return false;
+        }
+        const targetId = eventId ? String(eventId) : null;
+        if (!targetId) {
+            currentEventId = null;
+            prepareCreateMode();
+            return true;
         }
         try {
-            const response = await fetch(`${modelRoot}/event_detail.php?id=${encodeURIComponent(eventId)}`, {
+            const response = await fetch(`${modelRoot}/event_detail.php?id=${encodeURIComponent(targetId)}`, {
                 credentials: 'same-origin',
             });
             if (!response.ok) {
@@ -528,23 +547,45 @@
                 throw new Error('notfound');
             }
             populateForm(payload.data);
+            return true;
         } catch (error) {
-            lockForm('ไม่สามารถโหลดข้อมูลอีเว้นได้');
+            if (lockOnError) {
+                if (error && error.message === 'notfound') {
+                    lockForm('ไม่พบรหัสอีเว้นที่ต้องการเปิด');
+                } else {
+                    lockForm('ไม่สามารถโหลดข้อมูลอีเว้นได้');
+                }
+            } else {
+                if (error && error.message === 'notfound') {
+                    showMessage('ไม่พบรหัสอีเว้นที่ต้องการเปิด', 'error');
+                } else {
+                    showMessage('ไม่สามารถโหลดข้อมูลอีเว้นได้', 'error');
+                }
+            }
+            return false;
         }
     }
 
     function populateForm(data) {
         runWithPopulation(() => {
-            eventHeading.textContent = data.event_name || 'ไม่พบข้อมูลอีเว้น';
-            eventIdDisplay.textContent = data.event_id != null ? `EV-${data.event_id}` : '—';
-            document.getElementById('eventName').value = data.event_name || '';
-            document.getElementById('eventStatus').value = data.status || 'draft';
+            const eventIdValue = data.event_id != null ? String(data.event_id) : null;
+            currentEventId = eventIdValue;
+            isCreateMode = false;
+            eventHeading.textContent = data.event_name || (eventIdValue ? `อีเว้น #${eventIdValue}` : 'ไม่พบข้อมูลอีเว้น');
+            eventIdDisplay.textContent = eventIdValue ? `EV-${eventIdValue}` : '—';
+            const nameField = document.getElementById('eventName');
+            if (nameField) {
+                nameField.value = data.event_name || '';
+            }
+            if (eventStatusField) {
+                eventStatusField.value = data.status || 'draft';
+            }
             document.getElementById('startDate').value = toDateInputValue(data.start_date || '');
             document.getElementById('endDate').value = toDateInputValue(data.end_date || '');
             document.getElementById('description').value = data.description || '';
             document.getElementById('notes').value = data.notes || '';
 
-            setStatus(data.status);
+            setStatus(data.status || 'draft');
 
             const customerField = findTypeaheadByType('customer');
             customerField?.setValue(data.customer_id ?? '', data.customer_label || '');
@@ -574,20 +615,193 @@
         return trimmed;
     }
 
+    function prepareCreateMode() {
+        if (!eventForm) {
+            return;
+        }
+        currentEventId = null;
+        isCreateMode = true;
+        runWithPopulation(() => {
+            eventForm.reset();
+            const nameField = document.getElementById('eventName');
+            if (nameField) {
+                nameField.value = '';
+            }
+            if (eventStatusField) {
+                eventStatusField.value = 'draft';
+            }
+            setStatus('draft');
+            const ids = ['customerId', 'staffId', 'locationId'];
+            const inputs = ['customerInput', 'staffInput', 'locationInput'];
+            ids.forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.value = '';
+                }
+            });
+            inputs.forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.value = '';
+                }
+            });
+            const fieldsToClear = ['startDate', 'endDate', 'description', 'notes'];
+            fieldsToClear.forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.tagName === 'TEXTAREA') {
+                        el.value = '';
+                    } else {
+                        el.value = '';
+                    }
+                }
+            });
+            typeaheadFields.forEach((field) => field.setValue('', ''));
+        });
+        eventHeading.textContent = 'สร้างอีเว้นใหม่';
+        eventIdDisplay.textContent = 'ใหม่';
+        eventLocation.textContent = 'สถานที่: —';
+        lastUpdated.textContent = 'อัปเดตล่าสุด: —';
+        updatedBy.textContent = 'ปรับปรุงโดย: —';
+        createdAt.textContent = 'สร้างเมื่อ: —';
+        createdBy.textContent = 'สร้างโดย: —';
+        syncLocationDisplayFromForm();
+        initialSnapshot = serializeForm();
+        setDirtyState(false);
+        showMessage('');
+    }
+
+    async function createEvent(payload) {
+        const requestBody = { ...payload };
+        const response = await fetch(`${modelRoot}/event_create.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(requestBody),
+        });
+        if (!response.ok) {
+            throw new Error('network');
+        }
+        const result = await response.json();
+        if (!result.success || !result.event_id) {
+            throw new Error(result.error || 'unknown');
+        }
+        const newEventId = String(result.event_id);
+        const resolvedStatus = (result.status || payload.status || 'draft').toLowerCase();
+        currentEventId = newEventId;
+        isCreateMode = false;
+        eventHeading.textContent = payload.event_name || `อีเว้น #${newEventId}`;
+        eventIdDisplay.textContent = `EV-${newEventId}`;
+        setStatus(resolvedStatus);
+        params.set('event_id', newEventId);
+        if (params.has('mode')) {
+            params.delete('mode');
+        }
+        const newQuery = params.toString();
+        const newUrl = newQuery ? `${window.location.pathname}?${newQuery}` : window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+        const loaded = await loadEvent({ lockOnError: false, eventId: newEventId });
+        if (!loaded) {
+            initialSnapshot = serializeForm();
+            setDirtyState(false);
+            closeUnsavedModal();
+            showMessage('สร้างอีเว้นแล้ว แต่ไม่สามารถโหลดข้อมูลล่าสุดได้ โปรดลองรีเฟรชหน้า', 'error');
+            return;
+        }
+        initialSnapshot = serializeForm();
+        setDirtyState(false);
+        closeUnsavedModal();
+        showMessage('สร้างอีเว้นเรียบร้อยแล้ว', 'success');
+        if (typeof pendingNavigationAction === 'function') {
+            const action = pendingNavigationAction;
+            pendingNavigationAction = null;
+            action();
+        }
+    }
+
+    async function updateExistingEvent(payload) {
+        if (!currentEventId) {
+            return;
+        }
+        const requestBody = {
+            event_id: currentEventId,
+            ...payload,
+        };
+        const response = await fetch(`${modelRoot}/event_update.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(requestBody),
+        });
+        if (!response.ok) {
+            throw new Error('network');
+        }
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || 'unknown');
+        }
+        runWithPopulation(() => {
+            const latestName = payload.event_name;
+            if (latestName) {
+                eventHeading.textContent = latestName;
+            }
+            const resolvedStatus = (result.status || requestBody.status || 'draft').toLowerCase();
+            setStatus(resolvedStatus);
+            if (Object.prototype.hasOwnProperty.call(result, 'updated_at')) {
+                lastUpdated.textContent = `อัปเดตล่าสุด: ${formatDisplayDate(result.updated_at)}`;
+            }
+            if (Object.prototype.hasOwnProperty.call(result, 'updated_by_label')) {
+                setMetaPerson(updatedBy, 'ปรับปรุงโดย', result.updated_by_label);
+            }
+            if (Object.prototype.hasOwnProperty.call(result, 'customer_label')) {
+                const customerField = findTypeaheadByType('customer');
+                const customerIdValue = Object.prototype.hasOwnProperty.call(result, 'customer_id')
+                    ? result.customer_id
+                    : payload.customer_id;
+                customerField?.setValue(customerIdValue ?? '', result.customer_label || '');
+            }
+            if (Object.prototype.hasOwnProperty.call(result, 'staff_label')) {
+                const staffField = findTypeaheadByType('staff');
+                const staffIdValue = Object.prototype.hasOwnProperty.call(result, 'staff_id')
+                    ? result.staff_id
+                    : payload.staff_id;
+                staffField?.setValue(staffIdValue ?? '', result.staff_label || '');
+            }
+            if (Object.prototype.hasOwnProperty.call(result, 'location_label')) {
+                const locationField = findTypeaheadByType('location');
+                const locationIdValue = Object.prototype.hasOwnProperty.call(result, 'location_id')
+                    ? result.location_id
+                    : payload.location_id;
+                locationField?.setValue(locationIdValue ?? '', result.location_label || '');
+            }
+        });
+        syncLocationDisplayFromForm();
+        initialSnapshot = serializeForm();
+        setDirtyState(false);
+        closeUnsavedModal();
+        showMessage('บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว', 'success');
+        if (typeof pendingNavigationAction === 'function') {
+            const action = pendingNavigationAction;
+            pendingNavigationAction = null;
+            action();
+        }
+    }
+
     if (eventForm) {
         eventForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            if (!eventId || !modelRoot) {
+            if (!modelRoot) {
                 return;
             }
-            if (btnSave) {
-                btnSave.disabled = true;
+            const nameField = document.getElementById('eventName');
+            const eventNameValue = nameField?.value.trim() || '';
+            if (!eventNameValue) {
+                showMessage('กรุณากรอกชื่องาน', 'error');
+                return;
             }
-            showMessage('กำลังบันทึก...', 'info');
-
             const payload = {
-                event_id: eventId,
-                event_name: document.getElementById('eventName').value.trim(),
+                event_name: eventNameValue,
+                status: (eventStatusField?.value || 'draft').toLowerCase(),
                 status: document.getElementById('eventStatus').value,
                 customer_id: normalizeId(document.getElementById('customerId').value),
                 staff_id: normalizeId(document.getElementById('staffId').value),
@@ -597,60 +811,16 @@
                 description: document.getElementById('description').value.trim(),
                 notes: document.getElementById('notes').value.trim(),
             };
+            if (btnSave) {
+                btnSave.disabled = true;
+            }
+            showMessage('กำลังบันทึก...', 'info');
 
             try {
-                const response = await fetch(`${modelRoot}/event_update.php`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body: JSON.stringify(payload),
-                });
-                if (!response.ok) {
-                    throw new Error('network');
-                }
-                const result = await response.json();
-                if (!result.success) {
-                    throw new Error(result.error || 'unknown');
-                }
-                showMessage('บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว', 'success');
-                runWithPopulation(() => {
-                    const latestName = document.getElementById('eventName').value.trim();
-                    if (latestName) {
-                        eventHeading.textContent = latestName;
-                    }
-                    setStatus(result.status || payload.status);
-                    lastUpdated.textContent = `อัปเดตล่าสุด: ${formatDisplayDate(result.updated_at || '')}`;
-                    setMetaPerson(updatedBy, 'ปรับปรุงโดย', result.updated_by_label);
-                    if (Object.prototype.hasOwnProperty.call(result, 'customer_label')) {
-                        const customerField = findTypeaheadByType('customer');
-                        const customerIdValue = Object.prototype.hasOwnProperty.call(result, 'customer_id')
-                            ? result.customer_id
-                            : payload.customer_id;
-                        customerField?.setValue(customerIdValue ?? '', result.customer_label || '');
-                    }
-                    if (Object.prototype.hasOwnProperty.call(result, 'staff_label')) {
-                        const staffField = findTypeaheadByType('staff');
-                        const staffIdValue = Object.prototype.hasOwnProperty.call(result, 'staff_id')
-                            ? result.staff_id
-                            : payload.staff_id;
-                        staffField?.setValue(staffIdValue ?? '', result.staff_label || '');
-                    }
-                    if (Object.prototype.hasOwnProperty.call(result, 'location_label')) {
-                        const locationField = findTypeaheadByType('location');
-                        const locationIdValue = Object.prototype.hasOwnProperty.call(result, 'location_id')
-                            ? result.location_id
-                            : payload.location_id;
-                        locationField?.setValue(locationIdValue ?? '', result.location_label || '');
-                    }
-                });
-                syncLocationDisplayFromForm();
-                initialSnapshot = serializeForm();
-                setDirtyState(false);
-                closeUnsavedModal();
-                if (typeof pendingNavigationAction === 'function') {
-                    const action = pendingNavigationAction;
-                    pendingNavigationAction = null;
-                    action();
+                if (!currentEventId) {
+                    await createEvent(payload);
+                } else {
+                    await updateExistingEvent(payload);
                 }
             } catch (error) {
                 showMessage('เกิดข้อผิดพลาดในการบันทึกข้อมูล โปรดลองใหม่อีกครั้ง', 'error');
@@ -660,10 +830,6 @@
                 }
             }
         });
-    }
-
-    if (!eventId) {
-        lockForm('ไม่พบรหัสอีเว้นที่ต้องการเปิด');
     }
 
     const boot = ({ root }) => {

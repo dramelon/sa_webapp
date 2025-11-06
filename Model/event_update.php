@@ -67,7 +67,6 @@ try {
     $checkStmt->execute();
     $existingRow = $checkStmt->fetch(PDO::FETCH_ASSOC);
     if (!$existingRow) {
-    if ((int) $checkStmt->fetchColumn() === 0) {
         http_response_code(404);
         echo json_encode(['error' => 'not_found']);
         exit;
