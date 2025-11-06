@@ -72,7 +72,7 @@ try {
             UpdatedBy
         ) VALUES (
             :event_name,
-            'draft',
+            :status,
             :customer_id,
             :staff_id,
             :location_id,
