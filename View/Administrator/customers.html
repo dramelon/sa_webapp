@@ -4,12 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>รายการอีเว้น</title>
+    <title>จัดการลูกค้า</title>
     <link rel="stylesheet" href="../../style.css" />
 </head>
 
 <body>
-    <!-- Slide-out drawer -->
     <aside id="drawer" class="drawer" aria-hidden="true">
         <nav class="drawer-nav">
             <a class="item" href="./main_menu.html">
@@ -18,13 +17,13 @@
             <a class="item" href="./home.html">
                 <span class="i news"></span><span>ข่าวสารทั่วไป</span>
             </a>
-            <a class="item active" href="./events.html">
+            <a class="item" href="./events.html">
                 <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
             </a>
             <a class="item" href="./event_manage.html">
                 <span class="i box"></span><span>จัดการอีเว้น</span>
             </a>
-            <a class="item" href="./customers.html">
+            <a class="item active" href="./customers.html">
                 <span class="i contacts"></span><span>ลูกค้า</span>
             </a>
             <a class="item" href="./locations.html">
@@ -41,12 +40,11 @@
     </aside>
     <div id="scrim" class="scrim" hidden></div>
 
-    <!-- App shell -->
     <div class="topbar">
         <button id="btnMenu" class="hamburger" aria-label="เมนู">
             <span></span><span></span><span></span>
         </button>
-        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - ฝ่ายจัดการอีเว้น</h1>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - จัดการลูกค้า</h1>
 
         <div class="account">
             <span class="pill">
@@ -60,83 +58,67 @@
     <main class="page">
         <section class="page-head">
             <div>
-                <h2>รายการอีเว้น</h2>
+                <h2>รายชื่อลูกค้า</h2>
                 <p class="date" id="pageDate">วัน...</p>
             </div>
             <div class="head-actions">
-                <button class="btn btn-secondary" id="btnNewEvent" data-target="./event_manage.html?mode=create">
+                <button class="btn btn-secondary" id="btnNewCustomer" data-target="./customer_detail.html?mode=create">
                     <span class="i plus"></span>
-                    สร้างอีเว้นใหม่
+                    เพิ่มลูกค้าใหม่
                 </button>
             </div>
         </section>
 
-        <section class="summary-cards" id="summaryCards" aria-label="ภาพรวมสถานะอีเว้น">
+        <section class="summary-cards" id="summaryCards" aria-label="ภาพรวมสถานะลูกค้า">
             <!-- Populated by JS -->
         </section>
 
-        <section class="list-panel" id="my-events">
+        <section class="list-panel" id="customerList" aria-live="polite">
             <header class="list-toolbar">
                 <div class="toolbar-group">
                     <label class="field search">
                         <span class="i search"></span>
-                        <input type="search" id="searchInput"
-                            placeholder="ค้นหารหัสอ้างอิง รหัสอีเว้น ชื่องาน หรือชื่อผู้ดูแล..." />
+                        <input type="search" id="searchInput" placeholder="ค้นหาชื่อลูกค้า องค์กร เบอร์โทร หรืออีเมล..." />
                     </label>
                     <label class="field select">
                         <span class="i filter"></span>
                         <select id="statusFilter" aria-label="กรองตามสถานะ">
                             <option value="all">สถานะทั้งหมด</option>
-                            <option value="draft">ร่าง</option>
-                            <option value="planning">วางแผน</option>
-                            <option value="waiting">รอดำเนินการ</option>
-                            <option value="processing">กำลังดำเนินการ</option>
-                            <option value="billing">เรียกเก็บเงิน</option>
-                            <option value="completed">เสร็จสิ้น</option>
-                            <option value="cancelled">ยกเลิก</option>
+                            <option value="active">ใช้งาน</option>
+                            <option value="inactive">ปิดใช้งาน</option>
                         </select>
                     </label>
                 </div>
                 <div class="toolbar-group">
                     <button class="ghost" id="btnClearFilters">ล้างตัวกรอง</button>
-                    <button class="btn btn-ghost" id="btnExport">
-                        <span class="i download"></span>
-                        ส่งออก
-                    </button>
                 </div>
             </header>
 
-            <div class="table-wrap" role="region" aria-live="polite">
-                <table class="event-table">
+            <div class="table-wrap" role="region">
+                <table class="event-table customer-table">
                     <thead>
                         <tr>
-                            <th scope="col" data-sort-key="event_id" aria-sort="descending">
-                                <button type="button" class="sort-button" data-sort-key="event_id" data-label="รหัสอีเว้น">
-                                    รหัสอีเว้น
-                                    <span class="sort-indicator" aria-hidden="true"></span>
-                                </button>
-                            </th>
-                            <th scope="col" data-sort-key="event_name" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="event_name" data-label="ชื่องานหรือสถานที่">
-                                    ชื่องาน / สถานที่
+                            <th scope="col" data-sort-key="customer_id" aria-sort="ascending">
+                                <button type="button" class="sort-button" data-sort-key="customer_id" data-label="รหัสลูกค้า">
+                                    รหัสลูกค้า
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
                             <th scope="col" data-sort-key="customer_name" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="customer_name" data-label="ลูกค้า">
-                                    ลูกค้า
+                                <button type="button" class="sort-button" data-sort-key="customer_name" data-label="ชื่อลูกค้า">
+                                    ชื่อลูกค้า
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
-                            <th scope="col" data-sort-key="staff_name" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="staff_name" data-label="ผู้รับผิดชอบ">
-                                    ผู้รับผิดชอบ
+                            <th scope="col" data-sort-key="organization" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="organization" data-label="องค์กร">
+                                    องค์กร
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
-                            <th scope="col" data-sort-key="start_date" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="start_date" data-label="วันและเวลาเริ่ม">
-                                    วันและเวลาเริ่ม
+                            <th scope="col" data-sort-key="phone" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="phone" data-label="ติดต่อ">
+                                    ติดต่อ
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
@@ -146,18 +128,25 @@
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
+                            <th scope="col" data-sort-key="location_name" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="location_name" data-label="สถานที่">
+                                    สถานที่
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
                             <th scope="col" class="col-actions">การจัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="eventTableBody">
+                    <tbody id="customerTableBody">
                         <!-- Populated by JS -->
                     </tbody>
                 </table>
                 <div class="empty-state" id="emptyState" aria-hidden="true">
                     <span class="i inbox"></span>
-                    <p>ไม่พบอีเว้นตามตัวกรองที่เลือก</p>
+                    <p>ไม่พบลูกค้าตามเงื่อนไขที่เลือก</p>
                 </div>
             </div>
+
             <div class="table-pagination" id="paginationControls" aria-live="polite">
                 <button class="btn btn-ghost" id="prevPage" type="button">ก่อนหน้า</button>
                 <span class="page-indicator" id="pageIndicator">หน้า 1</span>
@@ -168,7 +157,7 @@
 
     <script src="../../Controller/common/role_guard.js" defer></script>
     <script src="../../Controller/common/ui_shell.js" defer></script>
-    <script src="../../Controller/Administrator/events.js" defer></script>
+    <script src="../../Controller/Administrator/customers.js" defer></script>
 </body>
 
 </html>

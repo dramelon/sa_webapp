@@ -5,6 +5,8 @@
     const eventIdDisplay = document.getElementById('eventIdDisplay');
     const eventLocation = document.getElementById('eventLocation');
     const eventCustomer = document.getElementById('eventCustomer');
+    const customerEditBtn = document.getElementById('customerEditBtn');
+    const locationEditBtn = document.getElementById('locationEditBtn');
     const statusBadge = document.getElementById('statusBadge');
     const statusText = document.getElementById('statusText');
     const eventStatusField = document.getElementById('eventStatus');
@@ -32,6 +34,98 @@
     const eventCodeField = document.getElementById('eventCode');
     const refEventField = document.getElementById('refEventCode');
     const startDateWarning = document.getElementById('startDatePastWarning');
+    const customerModal = document.getElementById('customerModal');
+    const customerModalForm = document.getElementById('customerModalForm');
+    const customerModalMessage = document.getElementById('customerModalMessage');
+    const locationModal = document.getElementById('locationModal');
+    const locationModalForm = document.getElementById('locationModalForm');
+    const locationModalMessage = document.getElementById('locationModalMessage');
+    const customerModalSave = document.getElementById('customerModalSave');
+    const locationModalSave = document.getElementById('locationModalSave');
+    const customerModalFields = {
+        name: document.getElementById('customerModalName'),
+        org: document.getElementById('customerModalOrg'),
+        email: document.getElementById('customerModalEmail'),
+        phone: document.getElementById('customerModalPhone'),
+        tax: document.getElementById('customerModalTax'),
+        status: document.getElementById('customerModalStatus'),
+        notes: document.getElementById('customerModalNotes'),
+    };
+    const locationModalFields = {
+        name: document.getElementById('locationModalName'),
+        house: document.getElementById('locationModalHouse'),
+        village: document.getElementById('locationModalVillage'),
+        building: document.getElementById('locationModalBuilding'),
+        floor: document.getElementById('locationModalFloor'),
+        room: document.getElementById('locationModalRoom'),
+        street: document.getElementById('locationModalStreet'),
+        subdistrict: document.getElementById('locationModalSubdistrict'),
+        district: document.getElementById('locationModalDistrict'),
+        province: document.getElementById('locationModalProvince'),
+        postal: document.getElementById('locationModalPostal'),
+        country: document.getElementById('locationModalCountry'),
+        notes: document.getElementById('locationModalNotes'),
+    };
+
+    class RequestError extends Error {
+        constructor(code, status, message) {
+            super(message || '');
+            this.name = 'RequestError';
+            this.code = code || null;
+            this.status = status || null;
+            this.userMessage = message || '';
+        }
+    }
+
+    function translateCustomerError(code, status) {
+        switch (code) {
+            case 'missing_name':
+                return 'กรุณากรอกชื่อลูกค้า';
+            case 'invalid_id':
+                return 'ไม่พบลูกค้าที่ต้องการแก้ไข';
+            case 'invalid_payload':
+                return 'รูปแบบข้อมูลไม่ถูกต้อง กรุณาลองอีกครั้ง';
+            case 'unauthorized':
+                return 'คุณไม่มีสิทธิ์ในการแก้ไขข้อมูลลูกค้า';
+            case 'method_not_allowed':
+                return 'ไม่รองรับวิธีการที่ใช้ในการบันทึก';
+            case 'server':
+                return 'ระบบไม่สามารถบันทึกข้อมูลลูกค้าได้ในขณะนี้';
+            default:
+                if (status === 404) {
+                    return 'ไม่พบข้อมูลลูกค้าที่ต้องการแก้ไข';
+                }
+                if (status === 401) {
+                    return 'คุณไม่มีสิทธิ์ในการแก้ไขข้อมูลลูกค้า';
+                }
+                return 'ไม่สามารถบันทึกข้อมูลลูกค้าได้ โปรดลองใหม่อีกครั้ง';
+        }
+    }
+
+    function translateLocationError(code, status) {
+        switch (code) {
+            case 'missing_name':
+                return 'กรุณากรอกชื่อสถานที่';
+            case 'invalid_id':
+                return 'ไม่พบสถานที่ที่ต้องการแก้ไข';
+            case 'invalid_payload':
+                return 'รูปแบบข้อมูลไม่ถูกต้อง กรุณาลองอีกครั้ง';
+            case 'unauthorized':
+                return 'คุณไม่มีสิทธิ์ในการแก้ไขข้อมูลสถานที่';
+            case 'method_not_allowed':
+                return 'ไม่รองรับวิธีการที่ใช้ในการบันทึก';
+            case 'server':
+                return 'ระบบไม่สามารถบันทึกข้อมูลสถานที่ได้ในขณะนี้';
+            default:
+                if (status === 404) {
+                    return 'ไม่พบข้อมูลสถานที่ที่ต้องการแก้ไข';
+                }
+                if (status === 401) {
+                    return 'คุณไม่มีสิทธิ์ในการแก้ไขข้อมูลสถานที่';
+                }
+                return 'ไม่สามารถบันทึกข้อมูลสถานที่ได้ โปรดลองใหม่อีกครั้ง';
+        }
+    }
 
     const params = new URLSearchParams(window.location.search);
     const eventIdParam = params.get('event_id');
@@ -59,6 +153,7 @@
     let isSaving = false;
     let isPopulating = false;
     let pendingNavigationAction = null;
+    let activeModal = null;
 
     if (unsavedModal) {
         unsavedModal.setAttribute('aria-hidden', unsavedModal.hidden ? 'true' : 'false');
@@ -129,6 +224,20 @@
         };
     }
 
+    function formatCustomerLabelClient(id, name) {
+        const safeName = normalizeContactValue(name) || 'ไม่ระบุชื่อลูกค้า';
+        const numericId = Number(id);
+        const idText = Number.isFinite(numericId) ? numericId : normalizeContactValue(id) || '—';
+        return `${idText} - ${safeName}`;
+    }
+
+    function formatLocationLabelClient(id, name) {
+        const safeName = normalizeContactValue(name) || 'ไม่ระบุสถานที่';
+        const numericId = Number(id);
+        const idText = Number.isFinite(numericId) ? numericId : normalizeContactValue(id) || '—';
+        return `${idText} - ${safeName}`;
+    }
+    
     function formatCustomerMeta(name, phone, email) {
         const baseName = normalizeContactValue(name) || 'ไม่ระบุ';
         const phoneText = normalizeContactValue(phone);
@@ -155,6 +264,24 @@
         );
     }
 
+    function updateCustomerActionState() {
+        if (!customerEditBtn) {
+            return;
+        }
+        const hasId = Boolean(customerHidden?.value?.trim());
+        customerEditBtn.disabled = !hasId;
+        customerEditBtn.setAttribute('aria-disabled', hasId ? 'false' : 'true');
+    }
+
+    function updateLocationActionState() {
+        if (!locationEditBtn) {
+            return;
+        }
+        const hasId = Boolean(locationHidden?.value?.trim());
+        locationEditBtn.disabled = !hasId;
+        locationEditBtn.setAttribute('aria-disabled', hasId ? 'false' : 'true');
+    }
+    
     function syncCustomerDisplayFromForm(metaOverride = null) {
         if (!eventCustomer) {
             return;
@@ -162,12 +289,14 @@
         const idValue = customerHidden?.value?.trim() || '';
         if (!idValue) {
             eventCustomer.textContent = 'ลูกค้า : —';
+            updateCustomerActionState();
             return;
         }
         const meta = metaOverride
             ? buildCustomerMeta(metaOverride.name, metaOverride.phone, metaOverride.email)
             : readCustomerMetaFromHidden();
         eventCustomer.textContent = formatCustomerMeta(meta.name, meta.phone, meta.email);
+        updateCustomerActionState();
     }
 
     function lockForm(message, heading = 'ไม่พบข้อมูลอีเว้น') {
@@ -195,6 +324,65 @@
         formMessage.textContent = message;
         formMessage.hidden = false;
         formMessage.className = `form-alert ${variant}`;
+    }
+
+    function showInlineMessage(element, message, variant = 'info') {
+        if (!element) return;
+        if (!message) {
+            element.hidden = true;
+            element.textContent = '';
+            element.className = 'form-alert';
+            return;
+        }
+        element.hidden = false;
+        element.textContent = message;
+        element.className = `form-alert ${variant}`;
+    }
+
+    function toggleFormLoading(form, isLoading) {
+        if (!form) return;
+        form.querySelectorAll('input, textarea, select, button').forEach((el) => {
+            if (el.closest('[data-modal-dismiss]')) {
+                return;
+            }
+            if (isLoading) {
+                el.dataset.prevDisabled = el.disabled ? '1' : '0';
+                el.disabled = true;
+            } else {
+                if (el.dataset.prevDisabled !== '1') {
+                    el.disabled = false;
+                }
+                delete el.dataset.prevDisabled;
+            }
+        });
+    }
+
+    function anyModalVisible() {
+        return Boolean(document.querySelector('.modal:not([hidden])'));
+    }
+
+    function openModal(modal) {
+        if (!modal) return;
+        modal.hidden = false;
+        modal.setAttribute('aria-hidden', 'false');
+        activeModal = modal;
+        document.body.classList.add('modal-open');
+        const focusTarget = modal.querySelector('[data-autofocus]') || modal.querySelector('input, button, textarea, select');
+        if (focusTarget) {
+            focusTarget.focus();
+        }
+    }
+
+    function closeModal(modal) {
+        if (!modal) return;
+        modal.hidden = true;
+        modal.setAttribute('aria-hidden', 'true');
+        if (activeModal === modal) {
+            activeModal = null;
+        }
+        if (!anyModalVisible()) {
+            document.body.classList.remove('modal-open');
+        }
     }
 
     function setStatus(statusKey) {
@@ -525,6 +713,7 @@
             staff_label: document.getElementById('staffInput').value || '',
             location_id: document.getElementById('locationId').value || '',
             location_label: document.getElementById('locationInput').value || '',
+            location_name: locationHidden?.dataset.locationName || '',
             start_date: startDateInput?.value || '',
             end_date: endDateInput?.value || '',
             is_all_day: allDayToggle?.checked ? '1' : '0',
@@ -572,18 +761,23 @@
         updateSaveButtonState();
     }
 
-    function syncLocationDisplayFromForm() {
+    function syncLocationDisplayFromForm(metaOverride = null) {
         if (!locationHidden || !eventLocation) {
             return;
         }
         const idValue = locationHidden.value.trim();
         if (!idValue) {
             eventLocation.textContent = 'สถานที่: ไม่ระบุ';
+            locationHidden.dataset.locationName = '';
+            updateLocationActionState();
             return;
         }
         const label = locationInput?.value || '';
-        const text = extractLabelName(label);
+        const overrideName = metaOverride && typeof metaOverride === 'object' ? metaOverride.name : null;
+        const text = overrideName ? normalizeContactValue(overrideName) : extractLabelName(label);
+        locationHidden.dataset.locationName = text;
         eventLocation.textContent = `สถานที่: ${text || 'ไม่ระบุ'}`;
+        updateLocationActionState();
     }
 
     function handleFormMutated() {
@@ -657,7 +851,8 @@
             const staffField = findTypeaheadByType('staff');
             staffField?.setValue(snapshot.staff_id, snapshot.staff_label);
             const locationField = findTypeaheadByType('location');
-            locationField?.setValue(snapshot.location_id, snapshot.location_label);
+            const snapshotLocationMeta = { name: snapshot.location_name };
+            locationField?.setValue(snapshot.location_id, snapshot.location_label, snapshotLocationMeta);
             if (eventCodeField) {
                 eventCodeField.value = formatBaseEventCode(currentEventId);
             }
@@ -751,6 +946,7 @@
                     syncCustomerDisplayFromForm();
                 }
                 if (this.type === 'location') {
+                    this.hidden.dataset.locationName = '';
                     syncLocationDisplayFromForm();
                 }
             });
@@ -778,7 +974,9 @@
                 syncCustomerDisplayFromForm(normalizedMeta);
             }
             if (this.type === 'location') {
-                syncLocationDisplayFromForm();
+                const normalizedMeta = meta && typeof meta === 'object' ? meta : { name: '' };
+                this.hidden.dataset.locationName = normalizeContactValue(normalizedMeta.name || label);
+                syncLocationDisplayFromForm(normalizedMeta);
             }
             handleFormMutated();
         }
@@ -987,6 +1185,41 @@
         locationInput.addEventListener('change', syncLocationDisplayFromForm);
     }
 
+    document.querySelectorAll('[data-modal-dismiss]').forEach((el) => {
+        el.addEventListener('click', () => {
+            const modal = el.closest('.modal');
+            if (modal) {
+                closeModal(modal);
+            }
+        });
+    });
+
+    if (customerEditBtn) {
+        customerEditBtn.addEventListener('click', () => {
+            openCustomerModalEditor();
+        });
+    }
+
+    if (locationEditBtn) {
+        locationEditBtn.addEventListener('click', () => {
+            openLocationModalEditor();
+        });
+    }
+
+    if (customerModalForm) {
+        customerModalForm.addEventListener('submit', submitCustomerModal);
+    }
+
+    if (locationModalForm) {
+        locationModalForm.addEventListener('submit', submitLocationModal);
+    }
+
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && activeModal) {
+            closeModal(activeModal);
+        }
+    });
+    
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     async function loadEvent(options = {}) {
@@ -1031,6 +1264,293 @@
         }
     }
 
+    async function fetchCustomerDetail(customerId) {
+        if (!modelRoot) {
+            throw new Error('uninitialized');
+        }
+        const response = await fetch(`${modelRoot}/customer_detail.php?id=${encodeURIComponent(customerId)}`, {
+            credentials: 'same-origin',
+        });
+        if (!response.ok) {
+            const error = new Error(response.status === 404 ? 'notfound' : 'network');
+            error.code = response.status;
+            throw error;
+        }
+        const payload = await response.json();
+        if (!payload || !payload.data) {
+            throw new Error('invalid');
+        }
+        return payload.data;
+    }
+
+    async function fetchLocationDetail(locationId) {
+        if (!modelRoot) {
+            throw new Error('uninitialized');
+        }
+        const response = await fetch(`${modelRoot}/location_detail.php?id=${encodeURIComponent(locationId)}`, {
+            credentials: 'same-origin',
+        });
+        if (!response.ok) {
+            const error = new Error(response.status === 404 ? 'notfound' : 'network');
+            error.code = response.status;
+            throw error;
+        }
+        const payload = await response.json();
+        if (!payload || !payload.data) {
+            throw new Error('invalid');
+        }
+        return payload.data;
+    }
+
+    function populateCustomerModal(detail) {
+        if (!detail) {
+            return;
+        }
+        customerModalFields.name.value = detail.customer_name || '';
+        customerModalFields.org.value = detail.organization || '';
+        customerModalFields.email.value = detail.email || '';
+        customerModalFields.phone.value = detail.phone || '';
+        customerModalFields.tax.value = detail.tax_id || '';
+        const status = typeof detail.status === 'string' ? detail.status.toLowerCase() : 'active';
+        customerModalFields.status.value = status === 'inactive' ? 'inactive' : 'active';
+        customerModalFields.notes.value = detail.notes || '';
+    }
+
+    function populateLocationModal(detail) {
+        if (!detail) {
+            return;
+        }
+        locationModalFields.name.value = detail.location_name || '';
+        locationModalFields.house.value = detail.house_number || '';
+        locationModalFields.village.value = detail.village || '';
+        locationModalFields.building.value = detail.building_name || '';
+        locationModalFields.floor.value = detail.floor || '';
+        locationModalFields.room.value = detail.room || '';
+        locationModalFields.street.value = detail.street || '';
+        locationModalFields.subdistrict.value = detail.subdistrict || '';
+        locationModalFields.district.value = detail.district || '';
+        locationModalFields.province.value = detail.province || '';
+        locationModalFields.postal.value = detail.postal_code || '';
+        locationModalFields.country.value = detail.country || '';
+        locationModalFields.notes.value = detail.notes || '';
+    }
+
+    function readCustomerModalPayload() {
+        return {
+            customer_name: customerModalFields.name.value.trim(),
+            org_name: customerModalFields.org.value.trim(),
+            email: customerModalFields.email.value.trim(),
+            phone: customerModalFields.phone.value.trim(),
+            tax_id: customerModalFields.tax.value.trim(),
+            status: customerModalFields.status.value,
+            notes: customerModalFields.notes.value.trim(),
+        };
+    }
+
+    function readLocationModalPayload() {
+        return {
+            location_name: locationModalFields.name.value.trim(),
+            house_number: locationModalFields.house.value.trim(),
+            village: locationModalFields.village.value.trim(),
+            building_name: locationModalFields.building.value.trim(),
+            floor: locationModalFields.floor.value.trim(),
+            room: locationModalFields.room.value.trim(),
+            street: locationModalFields.street.value.trim(),
+            subdistrict: locationModalFields.subdistrict.value.trim(),
+            district: locationModalFields.district.value.trim(),
+            province: locationModalFields.province.value.trim(),
+            postal_code: locationModalFields.postal.value.trim(),
+            country: locationModalFields.country.value.trim(),
+            notes: locationModalFields.notes.value.trim(),
+        };
+    }
+
+    async function openCustomerModalEditor() {
+        if (!customerHidden || !customerModal || !customerModalForm) {
+            return;
+        }
+        const idValue = normalizeId(customerHidden.value);
+        if (!idValue) {
+            return;
+        }
+        customerModal.dataset.customerId = idValue;
+        showInlineMessage(customerModalMessage, 'กำลังโหลดข้อมูลลูกค้า...', 'info');
+        toggleFormLoading(customerModalForm, true);
+        if (customerModalSave) {
+            customerModalSave.disabled = true;
+        }
+        openModal(customerModal);
+        try {
+            const detail = await fetchCustomerDetail(idValue);
+            populateCustomerModal(detail);
+            showInlineMessage(customerModalMessage, '');
+            toggleFormLoading(customerModalForm, false);
+            if (customerModalSave) {
+                customerModalSave.disabled = false;
+            }
+        } catch (error) {
+            const message = error && error.message === 'notfound'
+                ? 'ไม่พบข้อมูลลูกค้าที่เลือก'
+                : 'ไม่สามารถโหลดข้อมูลลูกค้าได้';
+            showInlineMessage(customerModalMessage, message, 'error');
+            toggleFormLoading(customerModalForm, false);
+            if (customerModalSave) {
+                customerModalSave.disabled = true;
+            }
+        }
+    }
+
+    async function openLocationModalEditor() {
+        if (!locationHidden || !locationModal || !locationModalForm) {
+            return;
+        }
+        const idValue = normalizeId(locationHidden.value);
+        if (!idValue) {
+            return;
+        }
+        locationModal.dataset.locationId = idValue;
+        showInlineMessage(locationModalMessage, 'กำลังโหลดข้อมูลสถานที่...', 'info');
+        toggleFormLoading(locationModalForm, true);
+        if (locationModalSave) {
+            locationModalSave.disabled = true;
+        }
+        openModal(locationModal);
+        try {
+            const detail = await fetchLocationDetail(idValue);
+            populateLocationModal(detail);
+            showInlineMessage(locationModalMessage, '');
+            toggleFormLoading(locationModalForm, false);
+            if (locationModalSave) {
+                locationModalSave.disabled = false;
+            }
+        } catch (error) {
+            const message = error && error.message === 'notfound'
+                ? 'ไม่พบข้อมูลสถานที่ที่เลือก'
+                : 'ไม่สามารถโหลดข้อมูลสถานที่ได้';
+            showInlineMessage(locationModalMessage, message, 'error');
+            toggleFormLoading(locationModalForm, false);
+            if (locationModalSave) {
+                locationModalSave.disabled = true;
+            }
+        }
+    }
+
+    async function submitCustomerModal(event) {
+        event.preventDefault();
+        if (!modelRoot || !customerHidden) {
+            return;
+        }
+        const idValue = normalizeId(customerHidden.value);
+        if (!idValue) {
+            showInlineMessage(customerModalMessage, 'ไม่พบลูกค้าที่ต้องการแก้ไข', 'error');
+            return;
+        }
+        const payload = readCustomerModalPayload();
+        if (!payload.customer_name) {
+            showInlineMessage(customerModalMessage, 'กรุณากรอกชื่อลูกค้า', 'error');
+            return;
+        }
+        showInlineMessage(customerModalMessage, 'กำลังบันทึก...', 'info');
+        toggleFormLoading(customerModalForm, true);
+        try {
+            const response = await fetch(`${modelRoot}/customer_update.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ customer_id: idValue, ...payload }),
+            });
+            let result = null;
+            try {
+                result = await response.json();
+            } catch (parseError) {
+                result = null;
+            }
+            if (!response.ok || !result) {
+                const errorCode = result?.error || null;
+                throw new RequestError(errorCode, response.status, translateCustomerError(errorCode, response.status));
+            }
+            if (!result.success) {
+                const errorCode = result.error || null;
+                throw new RequestError(errorCode, response.status, translateCustomerError(errorCode, response.status));
+            }
+            const detail = result.data || {};
+            const meta = {
+                name: detail.customer_name || payload.customer_name,
+                phone: detail.phone || payload.phone,
+                email: detail.email || payload.email,
+            };
+            const field = findTypeaheadByType('customer');
+            const resolvedId = detail.customer_id ?? idValue;
+            const resolvedLabel = detail.customer_label || formatCustomerLabelClient(resolvedId, meta.name);
+            field?.setValue(resolvedId, resolvedLabel, meta);
+            showInlineMessage(customerModalMessage, 'บันทึกข้อมูลลูกค้าเรียบร้อยแล้ว', 'success');
+            toggleFormLoading(customerModalForm, false);
+            closeModal(customerModal);
+            showMessage('อัปเดตข้อมูลลูกค้าเรียบร้อยแล้ว อย่าลืมบันทึกอีเว้น', 'info');
+        } catch (error) {
+            toggleFormLoading(customerModalForm, false);
+            const fallback = translateCustomerError(error?.code, error?.status);
+            const message = error instanceof RequestError && error.userMessage ? error.userMessage : fallback;
+            showInlineMessage(customerModalMessage, message, 'error');
+        }
+    }
+
+    async function submitLocationModal(event) {
+        event.preventDefault();
+        if (!modelRoot || !locationHidden) {
+            return;
+        }
+        const idValue = normalizeId(locationHidden.value);
+        if (!idValue) {
+            showInlineMessage(locationModalMessage, 'ไม่พบสถานที่ที่ต้องการแก้ไข', 'error');
+            return;
+        }
+        const payload = readLocationModalPayload();
+        if (!payload.location_name) {
+            showInlineMessage(locationModalMessage, 'กรุณากรอกชื่อสถานที่', 'error');
+            return;
+        }
+        showInlineMessage(locationModalMessage, 'กำลังบันทึก...', 'info');
+        toggleFormLoading(locationModalForm, true);
+        try {
+            const response = await fetch(`${modelRoot}/location_update.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ location_id: idValue, ...payload }),
+            });
+            let result = null;
+            try {
+                result = await response.json();
+            } catch (parseError) {
+                result = null;
+            }
+            if (!response.ok || !result) {
+                const errorCode = result?.error || null;
+                throw new RequestError(errorCode, response.status, translateLocationError(errorCode, response.status));
+            }
+            if (!result.success) {
+                const errorCode = result.error || null;
+                throw new RequestError(errorCode, response.status, translateLocationError(errorCode, response.status));
+            }
+            const detail = result.data || {};
+            const meta = { name: detail.location_name || payload.location_name };
+            const field = findTypeaheadByType('location');
+            const resolvedId = detail.location_id ?? idValue;
+            const resolvedLabel = detail.location_label || formatLocationLabelClient(resolvedId, meta.name);
+            field?.setValue(resolvedId, resolvedLabel, meta);
+            showInlineMessage(locationModalMessage, 'บันทึกข้อมูลสถานที่เรียบร้อยแล้ว', 'success');
+            toggleFormLoading(locationModalForm, false);
+            closeModal(locationModal);
+            showMessage('อัปเดตข้อมูลสถานที่เรียบร้อยแล้ว อย่าลืมบันทึกอีเว้น', 'info');
+        } catch (error) {
+            toggleFormLoading(locationModalForm, false);
+            const fallback = translateLocationError(error?.code, error?.status);
+            const message = error instanceof RequestError && error.userMessage ? error.userMessage : fallback;
+            showInlineMessage(locationModalMessage, message, 'error');
+        }
+    }
+    
     function populateForm(data) {
         runWithPopulation(() => {
             const eventIdValue = data.event_id != null ? String(data.event_id) : null;
@@ -1093,7 +1613,8 @@
             const staffField = findTypeaheadByType('staff');
             staffField?.setValue(data.staff_id ?? '', data.staff_label || '');
             const locationField = findTypeaheadByType('location');
-            locationField?.setValue(data.location_id ?? '', data.location_label || '');
+            const locationMeta = { name: data.location_name || '' };
+            locationField?.setValue(data.location_id ?? '', data.location_label || '', locationMeta);
 
             lastUpdated.textContent = `อัปเดตล่าสุด: ${formatDisplayDate(data.updated_at)}`;
             setMetaPerson(updatedBy, 'ปรับปรุงโดย', data.updated_by_label);
@@ -1169,6 +1690,9 @@
                 customerHidden.dataset.customerName = '';
                 customerHidden.dataset.customerPhone = '';
                 customerHidden.dataset.customerEmail = '';
+            }
+            if (locationHidden) {
+                locationHidden.dataset.locationName = '';
             }
         });
         eventHeading.textContent = 'สร้างอีเว้นใหม่';
@@ -1313,7 +1837,9 @@
                 const locationIdValue = Object.prototype.hasOwnProperty.call(result, 'location_id')
                     ? result.location_id
                     : payload.location_id;
-                locationField?.setValue(locationIdValue ?? '', result.location_label || '');
+                const hasLocationMeta = Object.prototype.hasOwnProperty.call(result, 'location_name');
+                const locationMeta = hasLocationMeta ? { name: result.location_name ?? '' } : null;
+                locationField?.setValue(locationIdValue ?? '', result.location_label || '', locationMeta);
             }
             if (Object.prototype.hasOwnProperty.call(result, 'ref_event_id')) {
                 if (refEventField) {

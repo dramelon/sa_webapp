@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="th" data-root="../.." data-allowed="Administrator">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>จัดการสถานที่</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body>
+    <aside id="drawer" class="drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a class="item" href="./main_menu.html">
+                <span class="i home"></span><span>เมนูหลัก</span>
+            </a>
+            <a class="item" href="./home.html">
+                <span class="i news"></span><span>ข่าวสารทั่วไป</span>
+            </a>
+            <a class="item" href="./events.html">
+                <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
+            </a>
+            <a class="item" href="./event_manage.html">
+                <span class="i box"></span><span>จัดการอีเว้น</span>
+            </a>
+            <a class="item" href="./customers.html">
+                <span class="i contacts"></span><span>ลูกค้า</span>
+            </a>
+            <a class="item active" href="./locations.html">
+                <span class="i pin"></span><span>สถานที่</span>
+            </a>
+            <div class="drawer-sep"></div>
+            <a class="item" href="./admin_create_account.html">
+                <span class="i user"></span><span>สร้างบัญชีเจ้าหน้าที่</span>
+            </a>
+            <a class="item" href="../../Model/logout.php">
+                <span class="i power"></span><span>ออกจากระบบ</span>
+            </a>
+        </nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <div class="topbar">
+        <button id="btnMenu" class="hamburger" aria-label="เมนู">
+            <span></span><span></span><span></span>
+        </button>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - จัดการสถานที่</h1>
+
+        <div class="account">
+            <span class="pill">
+                <img class="avatar" id="avatar" alt="avatar" />
+                <span class="uid" id="fullName">...</span>
+            </span>
+            <a class="powerbtn" href="../../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
+        </div>
+    </div>
+
+    <main class="page">
+        <section class="page-head">
+            <div>
+                <h2>รายการสถานที่</h2>
+                <p class="date" id="pageDate">วัน...</p>
+            </div>
+            <div class="head-actions">
+                <button class="btn btn-secondary" id="btnNewLocation" data-target="./location_detail.html?mode=create">
+                    <span class="i plus"></span>
+                    เพิ่มสถานที่ใหม่
+                </button>
+            </div>
+            <a class="tile" href="./customers.html"><span class="i contacts"></span><strong>จัดการลูกค้า</strong></a>
+            <a class="tile" href="./locations.html"><span class="i pin"></span><strong>จัดการสถานที่</strong></a>
+        </section>
+
+        <section class="summary-cards" id="locationSummary" aria-label="จำนวนสถานที่ทั้งหมด">
+            <!-- Populated by JS -->
+        </section>
+
+        <section class="list-panel" id="locationList" aria-live="polite">
+            <header class="list-toolbar">
+                <div class="toolbar-group">
+                    <label class="field search">
+                        <span class="i search"></span>
+                        <input type="search" id="locationSearch" placeholder="ค้นหาชื่อสถานที่ อำเภอ จังหวัด หรือประเทศ..." />
+                    </label>
+                </div>
+                <div class="toolbar-group">
+                    <button class="ghost" id="btnLocationClear">ล้างการค้นหา</button>
+                </div>
+            </header>
+
+            <div class="table-wrap" role="region">
+                <table class="event-table location-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" data-sort-key="location_id" aria-sort="ascending">
+                                <button type="button" class="sort-button" data-sort-key="location_id" data-label="รหัสสถานที่">
+                                    รหัสสถานที่
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="location_name" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="location_name" data-label="ชื่อสถานที่">
+                                    ชื่อสถานที่
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="district" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="district" data-label="อำเภอ / เขต">
+                                    อำเภอ / เขต
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="province" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="province" data-label="จังหวัด">
+                                    จังหวัด
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="country" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="country" data-label="ประเทศ">
+                                    ประเทศ
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" class="col-actions">การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="locationTableBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+                <div class="empty-state" id="locationEmpty" aria-hidden="true">
+                    <span class="i inbox"></span>
+                    <p>ไม่พบสถานที่ตามเงื่อนไขที่เลือก</p>
+                </div>
+            </div>
+
+            <div class="table-pagination" id="locationPagination" aria-live="polite">
+                <button class="btn btn-ghost" id="locationPrev" type="button">ก่อนหน้า</button>
+                <span class="page-indicator" id="locationPage">หน้า 1</span>
+                <button class="btn btn-secondary" id="locationNext" type="button">หน้าถัดไป</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Administrator/locations.js" defer></script>
+</body>
+
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="th" data-root="../.." data-allowed="Administrator">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>รายละเอียดสถานที่</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body>
+    <aside id="drawer" class="drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a class="item" href="./main_menu.html">
+                <span class="i home"></span><span>เมนูหลัก</span>
+            </a>
+            <a class="item" href="./home.html">
+                <span class="i news"></span><span>ข่าวสารทั่วไป</span>
+            </a>
+            <a class="item" href="./events.html">
+                <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
+            </a>
+            <a class="item" href="./event_manage.html">
+                <span class="i box"></span><span>จัดการอีเว้น</span>
+            </a>
+            <a class="item" href="./customers.html">
+                <span class="i contacts"></span><span>ลูกค้า</span>
+            </a>
+            <a class="item active" href="./locations.html">
+                <span class="i pin"></span><span>สถานที่</span>
+            </a>
+            <div class="drawer-sep"></div>
+            <a class="item" href="./admin_create_account.html">
+                <span class="i user"></span><span>สร้างบัญชีเจ้าหน้าที่</span>
+            </a>
+            <a class="item" href="../../Model/logout.php">
+                <span class="i power"></span><span>ออกจากระบบ</span>
+            </a>
+        </nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <div class="topbar">
+        <button id="btnMenu" class="hamburger" aria-label="เมนู">
+            <span></span><span></span><span></span>
+        </button>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - รายละเอียดสถานที่</h1>
+
+        <div class="account">
+            <span class="pill">
+                <img class="avatar" id="avatar" alt="avatar" />
+                <span class="uid" id="fullName">...</span>
+            </span>
+            <a class="powerbtn" href="../../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
+        </div>
+    </div>
+
+    <main class="page detail-page">
+        <section class="page-head">
+            <div>
+                <p class="breadcrumb"><a href="./locations.html">← กลับไปหน้ารายการสถานที่</a></p>
+                <h2 id="locationHeading">กำลังโหลด...</h2>
+                <p class="date" id="pageDate">วัน...</p>
+            </div>
+            <div class="head-actions">
+                <button class="btn btn-ghost" type="button" id="locationBack">
+                    <span class="i back"></span>
+                    กลับ
+                </button>
+                <button class="btn btn-secondary" type="submit" form="locationForm" id="locationSave">
+                    <span class="i check"></span>
+                    บันทึกข้อมูลสถานที่
+                </button>
+            </div>
+        </section>
+
+        <section class="detail-card">
+            <header class="detail-card-head">
+                <h3>ข้อมูลสถานที่</h3>
+                <p class="detail-card-sub">ปรับปรุงรายละเอียดสถานที่จัดงาน</p>
+            </header>
+            <div id="locationMessage" class="form-alert" role="alert" hidden></div>
+            <form id="locationForm" class="detail-form" autocomplete="off">
+                <div class="detail-form-columns">
+                    <div class="detail-column">
+                        <label class="field-block">
+                            <span class="field-label">รหัสสถานที่</span>
+                            <input type="text" id="locationCode" value="ใหม่" readonly />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ชื่อสถานที่ *</span>
+                            <input type="text" name="location_name" id="locationName" required />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">บ้านเลขที่</span>
+                            <input type="text" name="house_number" id="locationHouse" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">หมู่บ้าน</span>
+                            <input type="text" name="village" id="locationVillage" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">อาคาร</span>
+                            <input type="text" name="building_name" id="locationBuilding" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ชั้น</span>
+                            <input type="text" name="floor" id="locationFloor" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ห้อง</span>
+                            <input type="text" name="room" id="locationRoom" />
+                        </label>
+                    </div>
+                    <div class="detail-column">
+                        <label class="field-block">
+                            <span class="field-label">ถนน</span>
+                            <input type="text" name="street" id="locationStreet" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ตำบล / แขวง</span>
+                            <input type="text" name="subdistrict" id="locationSubdistrict" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">อำเภอ / เขต</span>
+                            <input type="text" name="district" id="locationDistrict" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">จังหวัด</span>
+                            <input type="text" name="province" id="locationProvince" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">รหัสไปรษณีย์</span>
+                            <input type="text" name="postal_code" id="locationPostal" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ประเทศ</span>
+                            <input type="text" name="country" id="locationCountry" />
+                        </label>
+                        <label class="field-block field-span">
+                            <span class="field-label">บันทึกเพิ่มเติม</span>
+                            <textarea name="notes" id="locationNotes" rows="6" placeholder="ข้อมูลเพิ่มเติมเกี่ยวกับสถานที่"></textarea>
+                        </label>
+                    </div>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Administrator/location_detail.js" defer></script>
+</body>
+
+</html>

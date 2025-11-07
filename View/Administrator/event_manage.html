@@ -24,6 +24,12 @@
             <a class="item active" href="./event_manage.html">
                 <span class="i box"></span><span>จัดการอีเว้น</span>
             </a>
+            <a class="item" href="./customers.html">
+                <span class="i contacts"></span><span>ลูกค้า</span>
+            </a>
+            <a class="item" href="./locations.html">
+                <span class="i pin"></span><span>สถานที่</span>
+            </a>
             <div class="drawer-sep"></div>
             <a class="item" href="./admin_create_account.html">
                 <span class="i user"></span><span>สร้างบัญชีเจ้าหน้าที่</span>
@@ -125,7 +131,12 @@
                         <label class="field-block">
                             <span class="field-label">ลูกค้า *</span>
                             <div class="typeahead" data-type="customer">
-                                <input type="text" id="customerInput" placeholder="ค้นหาด้วยรหัสหรือชื่อลูกค้า" autocomplete="off" />
+                                <div class="typeahead-input">
+                                    <input type="text" id="customerInput" placeholder="ค้นหาด้วยรหัสหรือชื่อลูกค้า" autocomplete="off" />
+                                    <button class="typeahead-action" type="button" id="customerEditBtn" aria-label="แก้ไขข้อมูลลูกค้า" disabled>
+                                        <span class="i pencil"></span>
+                                    </button>
+                                </div>
                                 <input type="hidden" name="customer_id" id="customerId" />
                                 <div class="typeahead-list" id="customerList" hidden></div>
                             </div>
@@ -133,7 +144,12 @@
                         <label class="field-block">
                             <span class="field-label">สถานที่จัดงาน *</span>
                             <div class="typeahead" data-type="location">
-                                <input type="text" id="locationInput" placeholder="ค้นหาด้วยรหัสหรือชื่อสถานที่" autocomplete="off" />
+                                <div class="typeahead-input">
+                                    <input type="text" id="locationInput" placeholder="ค้นหาด้วยรหัสหรือชื่อสถานที่" autocomplete="off" />
+                                    <button class="typeahead-action" type="button" id="locationEditBtn" aria-label="แก้ไขข้อมูลสถานที่" disabled>
+                                        <span class="i pencil"></span>
+                                    </button>
+                                </div>
                                 <input type="hidden" name="location_id" id="locationId" />
                                 <div class="typeahead-list" id="locationList" hidden></div>
                             </div>
@@ -206,6 +222,135 @@
                 <button type="button" class="unsaved-btn unsaved-btn-muted" id="btnModalStay">อยู่ในหน้านี้</button>
                 <button type="button" class="unsaved-btn unsaved-btn-danger" id="btnModalDiscard">ละทิ้งการแก้ไข</button>
                 <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnModalSave">บันทึกและดำเนินการต่อ</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="customerModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="customerModalTitle">
+            <header class="modal-head">
+                <h3 id="customerModalTitle">แก้ไขข้อมูลลูกค้า</h3>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i x"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <div id="customerModalMessage" class="form-alert" role="alert" hidden></div>
+                <form id="customerModalForm" class="modal-form" autocomplete="off">
+                    <div class="modal-grid">
+                        <label class="field-block">
+                            <span class="field-label">ชื่อลูกค้า *</span>
+                            <input type="text" id="customerModalName" required data-autofocus />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ชื่อองค์กร</span>
+                            <input type="text" id="customerModalOrg" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">อีเมล</span>
+                            <input type="email" id="customerModalEmail" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">เบอร์โทร</span>
+                            <input type="text" id="customerModalPhone" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">เลขผู้เสียภาษี</span>
+                            <input type="text" id="customerModalTax" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">สถานะ *</span>
+                            <select id="customerModalStatus" required>
+                                <option value="active">ใช้งาน</option>
+                                <option value="inactive">ปิดใช้งาน</option>
+                            </select>
+                        </label>
+                        <label class="field-block field-span">
+                            <span class="field-label">บันทึกเพิ่มเติม</span>
+                            <textarea id="customerModalNotes" rows="4"></textarea>
+                        </label>
+                    </div>
+                    <footer class="modal-actions">
+                        <button class="btn btn-ghost" type="button" data-modal-dismiss>ปิด</button>
+                        <button class="btn btn-secondary" type="submit" id="customerModalSave">บันทึก</button>
+                    </footer>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="locationModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="locationModalTitle">
+            <header class="modal-head">
+                <h3 id="locationModalTitle">แก้ไขข้อมูลสถานที่</h3>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i x"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <div id="locationModalMessage" class="form-alert" role="alert" hidden></div>
+                <form id="locationModalForm" class="modal-form" autocomplete="off">
+                    <div class="modal-grid">
+                        <label class="field-block">
+                            <span class="field-label">ชื่อสถานที่ *</span>
+                            <input type="text" id="locationModalName" required data-autofocus />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">บ้านเลขที่</span>
+                            <input type="text" id="locationModalHouse" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">หมู่บ้าน</span>
+                            <input type="text" id="locationModalVillage" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">อาคาร</span>
+                            <input type="text" id="locationModalBuilding" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ชั้น</span>
+                            <input type="text" id="locationModalFloor" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ห้อง</span>
+                            <input type="text" id="locationModalRoom" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ถนน</span>
+                            <input type="text" id="locationModalStreet" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ตำบล / แขวง</span>
+                            <input type="text" id="locationModalSubdistrict" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">อำเภอ / เขต</span>
+                            <input type="text" id="locationModalDistrict" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">จังหวัด</span>
+                            <input type="text" id="locationModalProvince" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">รหัสไปรษณีย์</span>
+                            <input type="text" id="locationModalPostal" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ประเทศ</span>
+                            <input type="text" id="locationModalCountry" />
+                        </label>
+                        <label class="field-block field-span">
+                            <span class="field-label">บันทึกเพิ่มเติม</span>
+                            <textarea id="locationModalNotes" rows="4"></textarea>
+                        </label>
+                    </div>
+                    <footer class="modal-actions">
+                        <button class="btn btn-ghost" type="button" data-modal-dismiss>ปิด</button>
+                        <button class="btn btn-secondary" type="submit" id="locationModalSave">บันทึก</button>
+                    </footer>
+                </form>
             </div>
         </div>
     </div>

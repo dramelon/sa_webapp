@@ -92,6 +92,7 @@ try {
         'customer_phone' => $row['customer_phone'],
         'customer_email' => $row['customer_email'],
         'location_label' => formatLocationLabel($row['location_id'], $row['location_name']),
+        'location_name' => $row['location_name'],
         'staff_label' => formatStaffLabel($row['staff_id'], $row['staff_name'], $row['staff_role']),
         'created_by_label' => formatStaffLabel($row['created_by_id'], $row['created_by_name'], $row['created_by_role']),
         'updated_by_label' => formatStaffLabel($row['updated_by_id'], $row['updated_by_name'], $row['updated_by_role'])
