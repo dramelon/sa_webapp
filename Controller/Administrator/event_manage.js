@@ -449,7 +449,7 @@
     function handleFormMutated() {
         if (isPopulating || !initialSnapshot) {
             syncLocationDisplayFromForm();
-            yncCustomerDisplayFromForm();
+            syncCustomerDisplayFromForm();
             return;
         }
         syncLocationDisplayFromForm();
