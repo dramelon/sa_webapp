@@ -176,6 +176,9 @@
                         <label class="field-block">
                             <span class="field-label">วันและเวลาเริ่ม *</span>
                             <input type="datetime-local" name="start_date" id="startDate" required />
+                            <p class="field-warning" id="startDatePastWarning" hidden>
+                                วันที่เริ่มต้นที่ตั้งไว้เป็นวันย้อนหลัง (ย้อนหลังได้ไม่เกิน 14 วัน)
+                            </p>
                         </label>
                         <label class="field-block">
                             <span class="field-label">วันและเวลาสิ้นสุด *</span>
