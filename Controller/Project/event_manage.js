@@ -4,6 +4,7 @@
     const eventHeading = document.getElementById('eventHeading');
     const eventIdDisplay = document.getElementById('eventIdDisplay');
     const eventLocation = document.getElementById('eventLocation');
+    const eventCustomer = document.getElementById('eventCustomer');
     const statusBadge = document.getElementById('statusBadge');
     const statusText = document.getElementById('statusText');
     const statusDisplay = document.getElementById('statusDisplay');
@@ -18,7 +19,10 @@
     const endDateInput = document.getElementById('endDate');
     const allDayToggle = document.getElementById('allDayToggle');
     const eventCodeField = document.getElementById('eventCode');
+    const refEventField = document.getElementById('refEventCode');
     const locationInput = document.getElementById('locationInput');
+    const customerHidden = document.getElementById('customerId');
+    const customerInputField = document.getElementById('customerInput');
 
     const params = new URLSearchParams(window.location.search);
     const eventIdParam = params.get('event_id');
@@ -67,6 +71,78 @@
             el.textContent = `วัน${day}ที่ ${date} ${month} ${year} เวลา ${time}`;
         }
     };
+
+    function formatBaseEventCode(eventId) {
+        if (eventId === null || eventId === undefined) {
+            return '—';
+        }
+        const text = String(eventId).trim();
+        if (!text) {
+            return '—';
+        }
+        return `EV-${text}`;
+    }
+
+    function formatEventDisplay(refEventId, eventId) {
+        const baseCode = formatBaseEventCode(eventId);
+        if (refEventId) {
+            return `${refEventId} (${baseCode})`;
+        }
+        return baseCode;
+    }
+
+    function normalizeContactValue(value) {
+        return typeof value === 'string' ? value.trim() : '';
+    }
+
+    function buildCustomerMeta(name, phone, email) {
+        return {
+            name: normalizeContactValue(name),
+            phone: normalizeContactValue(phone),
+            email: normalizeContactValue(email),
+        };
+    }
+
+    function formatCustomerMeta(name, phone, email) {
+        const baseName = normalizeContactValue(name) || 'ไม่ระบุ';
+        const phoneText = normalizeContactValue(phone);
+        const emailText = normalizeContactValue(email);
+        const details = [];
+        if (phoneText) {
+            details.push(phoneText);
+        }
+        if (emailText) {
+            details.push(`< ${emailText} >`);
+        }
+        const suffix = details.length ? `, ${details.join(' ')}` : '';
+        return `ลูกค้า : ${baseName}${suffix}`;
+    }
+
+    function readCustomerMetaFromHidden() {
+        if (!customerHidden) {
+            return buildCustomerMeta('', '', '');
+        }
+        return buildCustomerMeta(
+            customerHidden.dataset.customerName || '',
+            customerHidden.dataset.customerPhone || '',
+            customerHidden.dataset.customerEmail || ''
+        );
+    }
+
+    function syncCustomerDisplayFromForm(metaOverride = null) {
+        if (!eventCustomer) {
+            return;
+        }
+        const idValue = customerHidden?.value?.trim() || '';
+        if (!idValue) {
+            eventCustomer.textContent = 'ลูกค้า : —';
+            return;
+        }
+        const meta = metaOverride
+            ? buildCustomerMeta(metaOverride.name, metaOverride.phone, metaOverride.email)
+            : readCustomerMetaFromHidden();
+        eventCustomer.textContent = formatCustomerMeta(meta.name, meta.phone, meta.email);
+    }
 
     function showMessage(message, variant = 'info') {
         if (!formMessage) return;
@@ -294,6 +370,18 @@
 
         init() {
             this.input?.addEventListener('input', () => {
+                if (this.hidden) {
+                    this.hidden.value = '';
+                    if (this.type === 'customer') {
+                        this.hidden.dataset.customerName = '';
+                        this.hidden.dataset.customerPhone = '';
+                        this.hidden.dataset.customerEmail = '';
+                        syncCustomerDisplayFromForm();
+                    }
+                }
+                if (this.type === 'location') {
+                    syncLocationDisplayFromForm();
+                }
                 this.scheduleFetch();
             });
             this.input?.addEventListener('focus', () => {
@@ -373,12 +461,15 @@
                 option.textContent = item.label;
                 option.dataset.value = item.id ?? '';
                 option.addEventListener('click', () => {
-                    this.hidden.value = item.id ?? '';
-                    this.input.value = item.label || '';
+                    const meta = this.type === 'customer'
+                        ? {
+                              name: item.name ?? '',
+                              phone: item.phone ?? '',
+                              email: item.email ?? '',
+                          }
+                        : null;
+                    this.setValue(item.id ?? '', item.label || '', meta);
                     this.closeList();
-                    if (this.type === 'location') {
-                        syncLocationDisplayFromForm();
-                    }
                 });
                 this.list.append(option);
             }
@@ -397,9 +488,16 @@
             this.items = [];
         }
 
-        setValue(id, label) {
+        setValue(id, label, meta = null) {
             if (this.hidden) {
                 this.hidden.value = id ?? '';
+                if (this.type === 'customer') {
+                    const normalizedMeta = meta && typeof meta === 'object' ? meta : { name: '', phone: '', email: '' };
+                    this.hidden.dataset.customerName = normalizeContactValue(normalizedMeta.name);
+                    this.hidden.dataset.customerPhone = normalizeContactValue(normalizedMeta.phone);
+                    this.hidden.dataset.customerEmail = normalizeContactValue(normalizedMeta.email);
+                    syncCustomerDisplayFromForm(normalizedMeta);
+                }
             }
             if (this.input) {
                 this.input.value = label || '';
@@ -427,6 +525,9 @@
         if (eventCodeField) {
             eventCodeField.value = 'ใหม่';
         }
+        if (refEventField) {
+            refEventField.value = '';
+        }
         if (allDayToggle) {
             allDayToggle.checked = false;
         }
@@ -435,6 +536,9 @@
         dateState.savedEnd = '';
         eventLocation.textContent = 'สถานที่: —';
         lastUpdated.textContent = 'อัปเดตล่าสุด: —';
+        if (eventCustomer) {
+            eventCustomer.textContent = 'ลูกค้า : —';
+        }
         updatedBy.textContent = 'ปรับปรุงโดย: —';
         createdAt.textContent = 'สร้างเมื่อ: —';
         createdBy.textContent = 'สร้างโดย: —';
@@ -454,14 +558,24 @@
             }
         });
         typeaheadFields.forEach((field) => field.setValue('', ''));
+        if (customerHidden) {
+            customerHidden.dataset.customerName = '';
+            customerHidden.dataset.customerPhone = '';
+            customerHidden.dataset.customerEmail = '';
+        }
         updateEndDateMinimum();
+        syncCustomerDisplayFromForm();
     }
 
     function populateForm(data) {
         eventHeading.textContent = data.event_name || `อีเว้น #${data.event_id}`;
-        eventIdDisplay.textContent = data.event_id ? `EV-${data.event_id}` : '—';
+        const displayCode = formatEventDisplay(data.ref_event_id, data.event_id);
+        eventIdDisplay.textContent = displayCode;
         if (eventCodeField) {
-            eventCodeField.value = data.event_id ? `EV-${data.event_id}` : '—';
+            eventCodeField.value = formatBaseEventCode(data.event_id);
+        }
+        if (refEventField) {
+            refEventField.value = data.ref_event_id || '';
         }
         const nameField = document.getElementById('eventName');
         if (nameField) {
@@ -504,7 +618,12 @@
         createdBy.textContent = `สร้างโดย: ${extractLabelName(data.created_by_label) || 'ไม่ระบุ'}`;
 
         const customerField = findTypeaheadByType('customer');
-        customerField?.setValue(data.customer_id ?? '', data.customer_label || '');
+        const customerMeta = {
+            name: data.customer_name || '',
+            phone: data.customer_phone || '',
+            email: data.customer_email || '',
+        };
+        customerField?.setValue(data.customer_id ?? '', data.customer_label || '', customerMeta);
         const staffField = findTypeaheadByType('staff');
         staffField?.setValue(data.staff_id ?? '', data.staff_label || '');
         const locationField = findTypeaheadByType('location');
@@ -544,6 +663,7 @@
             }
             populateForm(payload.data);
             syncLocationDisplayFromForm();
+            syncCustomerDisplayFromForm();
         } catch (error) {
             showMessage('ไม่สามารถโหลดข้อมูลอีเว้นได้', 'error');
             lockForm();
@@ -563,13 +683,14 @@
         const datePayload = getDatePayloadValues();
         return {
             event_name: document.getElementById('eventName').value.trim(),
-            customer_id: normalizeId(document.getElementById('customerId').value),
+            customer_id: normalizeId(customerHidden?.value),
             staff_id: normalizeId(document.getElementById('staffId').value),
             location_id: normalizeId(document.getElementById('locationId').value),
             start_date: datePayload.start,
             end_date: datePayload.end,
             description: document.getElementById('description').value.trim(),
             notes: document.getElementById('notes').value.trim(),
+            ref_event_id: refEventField ? refEventField.value.trim() : '',
             is_all_day: datePayload.allDay ? '1' : '0',
         };
     }
@@ -720,6 +841,15 @@
         }
         showMessage('สร้างอีเว้นแบบร่างเรียบร้อยแล้ว', 'success');
         currentEventId = String(result.event_id);
+        const baseCode = formatBaseEventCode(currentEventId);
+        const displayCode = formatEventDisplay(result.ref_event_id, currentEventId);
+        eventIdDisplay.textContent = displayCode;
+        if (eventCodeField) {
+            eventCodeField.value = baseCode;
+        }
+        if (refEventField) {
+            refEventField.value = result.ref_event_id || '';
+        }
         params.delete('mode');
         params.set('event_id', currentEventId);
         const newUrl = `${window.location.pathname}?${params.toString()}`;
@@ -757,7 +887,23 @@
             updatedBy.textContent = `ปรับปรุงโดย: ${extractLabelName(result.updated_by_label) || 'ไม่ระบุ'}`;
         }
         if (Object.prototype.hasOwnProperty.call(result, 'customer_label')) {
-            findTypeaheadByType('customer')?.setValue(result.customer_id ?? payload.customer_id ?? '', result.customer_label || '');
+            const customerField = findTypeaheadByType('customer');
+            const customerIdValue =
+                Object.prototype.hasOwnProperty.call(result, 'customer_id') && result.customer_id != null
+                    ? result.customer_id
+                    : payload.customer_id;
+            const hasCustomerMeta =
+                Object.prototype.hasOwnProperty.call(result, 'customer_name') ||
+                Object.prototype.hasOwnProperty.call(result, 'customer_phone') ||
+                Object.prototype.hasOwnProperty.call(result, 'customer_email');
+            const customerMeta = hasCustomerMeta
+                ? {
+                      name: result.customer_name ?? '',
+                      phone: result.customer_phone ?? '',
+                      email: result.customer_email ?? '',
+                  }
+                : null;
+            customerField?.setValue(customerIdValue ?? '', result.customer_label || '', customerMeta);
         }
         if (Object.prototype.hasOwnProperty.call(result, 'staff_label')) {
             findTypeaheadByType('staff')?.setValue(result.staff_id ?? payload.staff_id ?? '', result.staff_label || '');
@@ -765,7 +911,17 @@
         if (Object.prototype.hasOwnProperty.call(result, 'location_label')) {
             findTypeaheadByType('location')?.setValue(result.location_id ?? payload.location_id ?? '', result.location_label || '');
         }
+        if (Object.prototype.hasOwnProperty.call(result, 'ref_event_id')) {
+            if (refEventField) {
+                refEventField.value = result.ref_event_id || '';
+            }
+            eventIdDisplay.textContent = formatEventDisplay(result.ref_event_id, currentEventId);
+        }
+        if (eventCodeField) {
+            eventCodeField.value = formatBaseEventCode(currentEventId);
+        }
         syncLocationDisplayFromForm();
+        syncCustomerDisplayFromForm();
     }
 
     const boot = ({ root, user }) => {

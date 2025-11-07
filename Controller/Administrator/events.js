@@ -185,14 +185,24 @@
             const tr = document.createElement('tr');
             const statusKey = (ev.status || '').toLowerCase();
             const statusInfo = statusMeta[statusKey] ?? { label: 'ไม่ระบุ', icon: '' };
+            const baseEventId = formatEventId(ev.event_id);
+            const refEventId = ev.ref_event_id ? escapeHtml(ev.ref_event_id) : null;
+            const idCellTitle = refEventId || baseEventId;
+            const idCellSub = refEventId ? `<span class="cell-sub">${baseEventId}</span>` : '';
+            const locationDisplay = ev.location_name ? escapeHtml(ev.location_name) : 'ไม่ระบุสถานที่';
+            const customerDisplay = ev.customer_name ? escapeHtml(ev.customer_name) : '—';
+            const staffDisplay = ev.staff_name ? escapeHtml(ev.staff_name) : '—';
             tr.innerHTML = `
-        <td data-label="รหัสอีเว้น">${escapeHtml(ev.event_id)}</td>
+        <td data-label="รหัสอีเว้น">
+          <div class="cell-title">${idCellTitle}</div>
+          ${idCellSub}
+        </td>
         <td data-label="ชื่องาน / สถานที่">
           <div class="cell-title">${escapeHtml(ev.event_name)}</div>
-          <span class="cell-sub">${ev.location_name ? escapeHtml(ev.location_name) : 'ไม่ระบุสถานที่'}</span>
+          <span class="cell-sub">${locationDisplay}</span>
         </td>
-        <td data-label="ลูกค้า">${ev.customer_name ? escapeHtml(ev.customer_name) : '—'}</td>
-        <td data-label="ผู้รับผิดชอบ">${ev.staff_name ? escapeHtml(ev.staff_name) : '—'}</td>
+        <td data-label="ลูกค้า">${customerDisplay}</td>
+        <td data-label="ผู้รับผิดชอบ">${staffDisplay}</td>
         <td data-label="วันและเวลาเริ่ม">${formatDateTime(ev.start_date)}</td>
         <td data-label="สถานะ">
           <span class="status-badge ${statusKey}">${statusInfo.label}</span>
@@ -208,6 +218,14 @@
     function escapeHtml(value) {
         const s = value == null ? '' : String(value);
         return s.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    function formatEventId(value) {
+        if (value === null || value === undefined) {
+            return '—';
+        }
+        const text = String(value);
+        return text === '' ? '—' : escapeHtml(text);
     }
 
     function formatDateTime(value) {

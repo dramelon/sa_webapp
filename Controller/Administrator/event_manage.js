@@ -4,6 +4,7 @@
     const eventHeading = document.getElementById('eventHeading');
     const eventIdDisplay = document.getElementById('eventIdDisplay');
     const eventLocation = document.getElementById('eventLocation');
+    const eventCustomer = document.getElementById('eventCustomer');
     const statusBadge = document.getElementById('statusBadge');
     const statusText = document.getElementById('statusText');
     const eventStatusField = document.getElementById('eventStatus');
@@ -23,10 +24,13 @@
     const btnModalSave = document.getElementById('btnModalSave');
     const locationInput = document.getElementById('locationInput');
     const locationHidden = document.getElementById('locationId');
+    const customerHidden = document.getElementById('customerId');
+    const customerInputField = document.getElementById('customerInput');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const allDayToggle = document.getElementById('allDayToggle');
     const eventCodeField = document.getElementById('eventCode');
+    const refEventField = document.getElementById('refEventCode');
 
     const params = new URLSearchParams(window.location.search);
     const eventIdParam = params.get('event_id');
@@ -72,6 +76,78 @@
             el.textContent = `วัน${day}ที่ ${date} ${month} ${year} เวลา ${time}`;
         }
     };
+
+    function formatBaseEventCode(eventId) {
+        if (eventId === null || eventId === undefined) {
+            return '—';
+        }
+        const text = String(eventId).trim();
+        if (!text) {
+            return '—';
+        }
+        return `EV-${text}`;
+    }
+
+    function formatEventDisplay(refEventId, eventId) {
+        const baseCode = formatBaseEventCode(eventId);
+        if (refEventId) {
+            return `${refEventId} (${baseCode})`;
+        }
+        return baseCode;
+    }
+
+    function normalizeContactValue(value) {
+        return typeof value === 'string' ? value.trim() : '';
+    }
+
+    function buildCustomerMeta(name, phone, email) {
+        return {
+            name: normalizeContactValue(name),
+            phone: normalizeContactValue(phone),
+            email: normalizeContactValue(email),
+        };
+    }
+
+    function formatCustomerMeta(name, phone, email) {
+        const baseName = normalizeContactValue(name) || 'ไม่ระบุ';
+        const phoneText = normalizeContactValue(phone);
+        const emailText = normalizeContactValue(email);
+        const details = [];
+        if (phoneText) {
+            details.push(phoneText);
+        }
+        if (emailText) {
+            details.push(`< ${emailText} >`);
+        }
+        const suffix = details.length ? `, ${details.join(' ')}` : '';
+        return `ลูกค้า : ${baseName}${suffix}`;
+    }
+
+    function readCustomerMetaFromHidden() {
+        if (!customerHidden) {
+            return buildCustomerMeta('', '', '');
+        }
+        return buildCustomerMeta(
+            customerHidden.dataset.customerName || '',
+            customerHidden.dataset.customerPhone || '',
+            customerHidden.dataset.customerEmail || ''
+        );
+    }
+
+    function syncCustomerDisplayFromForm(metaOverride = null) {
+        if (!eventCustomer) {
+            return;
+        }
+        const idValue = customerHidden?.value?.trim() || '';
+        if (!idValue) {
+            eventCustomer.textContent = 'ลูกค้า : —';
+            return;
+        }
+        const meta = metaOverride
+            ? buildCustomerMeta(metaOverride.name, metaOverride.phone, metaOverride.email)
+            : readCustomerMetaFromHidden();
+        eventCustomer.textContent = formatCustomerMeta(meta.name, meta.phone, meta.email);
+    }
 
     function lockForm(message, heading = 'ไม่พบข้อมูลอีเว้น') {
         if (!eventForm) return;
@@ -308,11 +384,15 @@
     }
 
     function serializeForm() {
+        const customerMeta = readCustomerMetaFromHidden();
         return {
             event_name: document.getElementById('eventName').value || '',
             status: eventStatusField?.value || '',
-            customer_id: document.getElementById('customerId').value || '',
-            customer_label: document.getElementById('customerInput').value || '',
+            customer_id: customerHidden?.value || '',
+            customer_label: customerInputField?.value || '',
+            customer_name: customerMeta.name,
+            customer_phone: customerMeta.phone,
+            customer_email: customerMeta.email,
             staff_id: document.getElementById('staffId').value || '',
             staff_label: document.getElementById('staffInput').value || '',
             location_id: document.getElementById('locationId').value || '',
@@ -322,6 +402,7 @@
             is_all_day: allDayToggle?.checked ? '1' : '0',
             description: document.getElementById('description').value || '',
             notes: document.getElementById('notes').value || '',
+            ref_event_id: refEventField?.value || '',
         };
     }
 
@@ -368,9 +449,11 @@
     function handleFormMutated() {
         if (isPopulating || !initialSnapshot) {
             syncLocationDisplayFromForm();
+            yncCustomerDisplayFromForm();
             return;
         }
         syncLocationDisplayFromForm();
+        syncCustomerDisplayFromForm();
         const current = serializeForm();
         const dirty = !snapshotsEqual(current, initialSnapshot);
         setDirtyState(dirty);
@@ -424,7 +507,12 @@
                 notesField.value = snapshot.notes;
             }
             const customerField = findTypeaheadByType('customer');
-            customerField?.setValue(snapshot.customer_id, snapshot.customer_label);
+            const snapshotCustomerMeta = {
+                name: snapshot.customer_name,
+                phone: snapshot.customer_phone,
+                email: snapshot.customer_email,
+            };
+            customerField?.setValue(snapshot.customer_id, snapshot.customer_label, snapshotCustomerMeta);
             const staffField = findTypeaheadByType('staff');
             staffField?.setValue(snapshot.staff_id, snapshot.staff_label);
             const locationField = findTypeaheadByType('location');
@@ -507,6 +595,12 @@
                     this.fetch(value);
                 }, 250);
                 this.hidden.value = '';
+                if (this.type === 'customer') {
+                    this.hidden.dataset.customerName = '';
+                    this.hidden.dataset.customerPhone = '';
+                    this.hidden.dataset.customerEmail = '';
+                    syncCustomerDisplayFromForm();
+                }
                 if (this.type === 'location') {
                     syncLocationDisplayFromForm();
                 }
@@ -524,9 +618,16 @@
             });
         }
 
-        setValue(id, label) {
+        setValue(id, label, meta = null) {
             this.hidden.value = id == null ? '' : id;
             this.input.value = label || '';
+            if (this.type === 'customer') {
+                const normalizedMeta = meta && typeof meta === 'object' ? meta : { name: '', phone: '', email: '' };
+                this.hidden.dataset.customerName = normalizeContactValue(normalizedMeta.name);
+                this.hidden.dataset.customerPhone = normalizeContactValue(normalizedMeta.phone);
+                this.hidden.dataset.customerEmail = normalizeContactValue(normalizedMeta.email);
+                syncCustomerDisplayFromForm(normalizedMeta);
+            }
             if (this.type === 'location') {
                 syncLocationDisplayFromForm();
             }
@@ -586,13 +687,16 @@
                 option.textContent = item.label;
                 option.dataset.value = item.id ?? '';
                 option.addEventListener('click', () => {
-                    this.hidden.value = item.id ?? '';
-                    this.input.value = item.label || '';
+                    const meta = this.type === 'customer'
+                        ? {
+                            name: item.name ?? '',
+                            phone: item.phone ?? '',
+                            email: item.email ?? '',
+                        }
+                        : null;
+                    this.setValue(item.id ?? '', item.label || '', meta);
                     this.closeList();
-                    if (this.type === 'location') {
-                        syncLocationDisplayFromForm();
-                    }
-                    handleFormMutated();
+
                 });
                 this.list.append(option);
             }
@@ -684,7 +788,7 @@
             }
         });
     }
-    
+
     if (eventStatusField) {
         eventStatusField.addEventListener('change', () => {
             setStatus(eventStatusField.value);
@@ -734,7 +838,7 @@
 
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-   async function loadEvent(options = {}) {
+    async function loadEvent(options = {}) {
         const { lockOnError = true, eventId = currentEventId } = options;
         if (!modelRoot) {
             return false;
@@ -781,9 +885,12 @@
             const eventIdValue = data.event_id != null ? String(data.event_id) : null;
             currentEventId = eventIdValue;
             isCreateMode = false;
-            eventHeading.textContent = data.event_name || (eventIdValue ? `อีเว้น #${eventIdValue}` : 'ไม่พบข้อมูลอีเว้น');
-            eventIdDisplay.textContent = eventIdValue ? `EV-${eventIdValue}` : '—';
+            eventIdDisplay.textContent = formatEventDisplay(data.ref_event_id, eventIdValue);
             if (eventCodeField) {
+                eventCodeField.value = formatBaseEventCode(eventIdValue);
+            }
+            if (refEventField) {
+                refEventField.value = data.ref_event_id || '';
                 eventCodeField.value = eventIdValue ? `EV-${eventIdValue}` : '—';
             }
             const nameField = document.getElementById('eventName');
@@ -825,7 +932,12 @@
 
             setStatus(data.status || 'draft');
 
-            const customerField = findTypeaheadByType('customer');
+            const customerMeta = {
+                name: data.customer_name || '',
+                phone: data.customer_phone || '',
+                email: data.customer_email || '',
+            };
+            customerField?.setValue(data.customer_id ?? '', data.customer_label || '', customerMeta);
             customerField?.setValue(data.customer_id ?? '', data.customer_label || '');
             const staffField = findTypeaheadByType('staff');
             staffField?.setValue(data.staff_id ?? '', data.staff_label || '');
@@ -837,6 +949,7 @@
             createdAt.textContent = `สร้างเมื่อ: ${formatDisplayDate(data.created_at)}`;
             setMetaPerson(createdBy, 'สร้างโดย', data.created_by_label);
         });
+        syncCustomerDisplayFromForm();
         syncLocationDisplayFromForm();
         initialSnapshot = serializeForm();
         setDirtyState(false);
@@ -897,17 +1010,29 @@
                 }
             });
             typeaheadFields.forEach((field) => field.setValue('', ''));
+            if (refEventField) {
+                refEventField.value = '';
+            }
+            if (customerHidden) {
+                customerHidden.dataset.customerName = '';
+                customerHidden.dataset.customerPhone = '';
+                customerHidden.dataset.customerEmail = '';
+            }
         });
         eventHeading.textContent = 'สร้างอีเว้นใหม่';
         eventIdDisplay.textContent = 'ใหม่';
         if (eventCodeField) {
             eventCodeField.value = 'ใหม่';
         }
+        if (eventCustomer) {
+            eventCustomer.textContent = 'ลูกค้า : —';
+        }
         eventLocation.textContent = 'สถานที่: —';
         lastUpdated.textContent = 'อัปเดตล่าสุด: —';
         updatedBy.textContent = 'ปรับปรุงโดย: —';
         createdAt.textContent = 'สร้างเมื่อ: —';
         createdBy.textContent = 'สร้างโดย: —';
+        syncCustomerDisplayFromForm();
         syncLocationDisplayFromForm();
         updateEndDateMinimum();
         initialSnapshot = serializeForm();
@@ -934,10 +1059,12 @@
         const resolvedStatus = (result.status || payload.status || 'draft').toLowerCase();
         currentEventId = newEventId;
         isCreateMode = false;
-        eventHeading.textContent = payload.event_name || `อีเว้น #${newEventId}`;
-        eventIdDisplay.textContent = `EV-${newEventId}`;
+        eventIdDisplay.textContent = formatEventDisplay(result.ref_event_id, newEventId);
         if (eventCodeField) {
-            eventCodeField.value = `EV-${newEventId}`;
+            eventCodeField.value = formatBaseEventCode(newEventId);
+        }
+        if (refEventField) {
+            refEventField.value = result.ref_event_id || '';
         }
         setStatus(resolvedStatus);
         params.set('event_id', newEventId);
@@ -1005,7 +1132,18 @@
                 const customerIdValue = Object.prototype.hasOwnProperty.call(result, 'customer_id')
                     ? result.customer_id
                     : payload.customer_id;
-                customerField?.setValue(customerIdValue ?? '', result.customer_label || '');
+                const hasCustomerMeta =
+                    Object.prototype.hasOwnProperty.call(result, 'customer_name') ||
+                    Object.prototype.hasOwnProperty.call(result, 'customer_phone') ||
+                    Object.prototype.hasOwnProperty.call(result, 'customer_email');
+                const customerMeta = hasCustomerMeta
+                    ? {
+                          name: result.customer_name ?? '',
+                          phone: result.customer_phone ?? '',
+                          email: result.customer_email ?? '',
+                      }
+                    : null;
+                customerField?.setValue(customerIdValue ?? '', result.customer_label || '', customerMeta);
             }
             if (Object.prototype.hasOwnProperty.call(result, 'staff_label')) {
                 const staffField = findTypeaheadByType('staff');
@@ -1021,8 +1159,18 @@
                     : payload.location_id;
                 locationField?.setValue(locationIdValue ?? '', result.location_label || '');
             }
+        if (Object.prototype.hasOwnProperty.call(result, 'ref_event_id')) {
+                if (refEventField) {
+                    refEventField.value = result.ref_event_id || '';
+                }
+                eventIdDisplay.textContent = formatEventDisplay(result.ref_event_id, currentEventId);
+            }
+            if (eventCodeField) {
+                eventCodeField.value = formatBaseEventCode(currentEventId);
+            }
         });
         syncLocationDisplayFromForm();
+        syncCustomerDisplayFromForm();
         initialSnapshot = serializeForm();
         setDirtyState(false);
         closeUnsavedModal();
@@ -1051,7 +1199,7 @@
                 showMessage('กรุณาเลือกผู้รับผิดชอบ', 'error');
                 return;
             }
-            const customerIdValue = normalizeId(document.getElementById('customerId').value);
+            const customerIdValue = normalizeId(customerHidden?.value);
             if (!customerIdValue) {
                 showMessage('กรุณาเลือกลูกค้า', 'error');
                 return;
@@ -1093,6 +1241,7 @@
                 end_date: datePayload.end,
                 description: descriptionField?.value.trim() || '',
                 notes: notesField?.value.trim() || '',
+                ref_event_id: refEventField?.value.trim() || '',
             };
             if (datePayload.allDay) {
                 payload.is_all_day = true;

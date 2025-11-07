@@ -27,7 +27,11 @@ try {
     switch ($type) {
         case 'customer':
             $sql = "
-                SELECT CustomerID AS id, Customer_Name AS name
+                SELECT
+                    CustomerID AS id,
+                    Customer_Name AS name,
+                    COALESCE(Phone, '') AS phone,
+                    COALESCE(Email, '') AS email
                 FROM customers
                 WHERE Customer_Name LIKE :term OR CAST(CustomerID AS CHAR) LIKE :term
                 ORDER BY Customer_Name ASC
@@ -71,7 +75,10 @@ try {
             case 'customer':
                 return [
                     'id' => (int) $row['id'],
-                    'label' => formatCustomerLabel($row['id'], $row['name'])
+                    'label' => formatCustomerLabel($row['id'], $row['name']),
+                    'name' => $row['name'],
+                    'phone' => $row['phone'] ?? '',
+                    'email' => $row['email'] ?? ''
                 ];
             case 'location':
                 return [

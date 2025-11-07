@@ -209,8 +209,15 @@
             const statusKey = (ev.status || '').toLowerCase();
             const statusInfo = statusMeta[statusKey] ?? { label: 'ไม่ระบุ', icon: '' };
             const location = ev.location_name ? escapeHtml(ev.location_name) : 'ไม่ระบุสถานที่';
+            const baseEventId = formatEventId(ev.event_id);
+            const refEventId = ev.ref_event_id ? escapeHtml(ev.ref_event_id) : null;
+            const idCellTitle = refEventId || baseEventId;
+            const idCellSub = refEventId ? `<span class="cell-sub">${baseEventId}</span>` : '';
             tr.innerHTML = `
-        <td data-label="รหัสอีเว้น">${escapeHtml(ev.event_id)}</td>
+        <td data-label="รหัสอีเว้น">
+          <div class="cell-title">${idCellTitle}</div>
+          ${idCellSub}
+        </td>
         <td data-label="ชื่องาน">
           <div class="cell-title">${escapeHtml(ev.event_name)}</div>
           <span class="cell-sub">${location}</span>
@@ -230,6 +237,14 @@
     function escapeHtml(value) {
         const s = value == null ? '' : String(value);
         return s.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    function formatEventId(value) {
+        if (value === null || value === undefined) {
+            return '—';
+        }
+        const text = String(value);
+        return text === '' ? '—' : escapeHtml(text);
     }
 
     function formatDateTime(value) {

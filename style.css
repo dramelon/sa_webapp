@@ -1194,6 +1194,8 @@ body {
 .detail-column {
     display: grid;
     gap: 20px;
+    align-content: start;
+    align-items: start;
 }
 
 .form-grid {

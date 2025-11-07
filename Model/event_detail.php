@@ -26,6 +26,7 @@ try {
     $sql = "
         SELECT
             e.EventID AS event_id,
+            e.RefEventID AS ref_event_id,
             e.EventName AS event_name,
             e.Status AS status,
             e.Description AS description,
@@ -40,6 +41,8 @@ try {
             e.CreatedBy AS created_by_id,
             e.UpdatedBy AS updated_by_id,
             c.Customer_Name AS customer_name,
+            c.Phone AS customer_phone,
+            c.Email AS customer_email,
             l.Loc_Name AS location_name,
             s.FullName AS staff_name,
             s.Role AS staff_role,
@@ -70,6 +73,7 @@ try {
 
     $payload = [
         'event_id' => (int) $row['event_id'],
+        'ref_event_id' => $row['ref_event_id'],
         'event_name' => $row['event_name'],
         'status' => $row['status'],
         'description' => $row['description'],
@@ -84,6 +88,9 @@ try {
         'created_by_id' => $row['created_by_id'] !== null ? (int) $row['created_by_id'] : null,
         'updated_by_id' => $row['updated_by_id'] !== null ? (int) $row['updated_by_id'] : null,
         'customer_label' => formatCustomerLabel($row['customer_id'], $row['customer_name']),
+        'customer_name' => $row['customer_name'],
+        'customer_phone' => $row['customer_phone'],
+        'customer_email' => $row['customer_email'],
         'location_label' => formatLocationLabel($row['location_id'], $row['location_name']),
         'staff_label' => formatStaffLabel($row['staff_id'], $row['staff_name'], $row['staff_role']),
         'created_by_label' => formatStaffLabel($row['created_by_id'], $row['created_by_name'], $row['created_by_role']),

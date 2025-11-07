@@ -75,6 +75,7 @@
                 <p class="meta-label">รหัสอีเว้น</p>
                 <h3 id="eventIdDisplay">—</h3>
                 <p class="meta-sub" id="eventLocation">สถานที่: —</p>
+                <p class="meta-sub" id="eventCustomer">ลูกค้า : —</p>
             </div>
             <div class="meta-secondary">
                 <span class="status-chip" id="statusBadge" aria-live="polite">
@@ -104,6 +105,10 @@
                         <label class="field-block">
                             <span class="field-label">รหัสอีเว้น</span>
                             <input type="text" id="eventCode" value="—" readonly />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">รหัสอ้างอิง</span>
+                            <input type="text" name="ref_event_id" id="refEventCode" maxlength="20" placeholder="เช่น 01EV25040001" />
                         </label>
                         <label class="field-block">
                             <span class="field-label">ชื่องาน *</span>

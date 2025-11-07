@@ -93,9 +93,10 @@ CREATE TABLE customers (
 
 
 
--- EVENTS [requirement: staffs, customers, locations] v1
+-- EVENTS [requirement: staffs, customers, locations] v2
 CREATE TABLE events (
     EventID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    RefEventID   VARCHAR(20) DEFAULT NULL,
     EventName    VARCHAR(200) NOT NULL,
     StaffID      INT UNSIGNED DEFAULT NULL,
     CustomerID   INT UNSIGNED DEFAULT NULL,
@@ -135,3 +136,6 @@ CREATE TABLE events (
         FOREIGN KEY (UpdatedBy) REFERENCES staffs(StaffID)
         ON DELETE SET NULL ON UPDATE CASCADE
 )
+-- in case if missing only "RefEventID" (this added in v2)
+ALTER TABLE events
+  ADD COLUMN RefEventID VARCHAR(20) DEFAULT NULL AFTER EventID;
