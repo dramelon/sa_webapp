@@ -100,6 +100,23 @@
         return baseCode;
     }
 
+    function applyEventHeading(name, refEventId, eventId) {
+        if (!eventHeading) {
+            return;
+        }
+        const normalizedName = typeof name === 'string' ? name.trim() : '';
+        if (normalizedName) {
+            eventHeading.textContent = normalizedName;
+            return;
+        }
+        const fallback = formatEventDisplay(refEventId, eventId);
+        if (fallback && fallback !== '—') {
+            eventHeading.textContent = fallback;
+            return;
+        }
+        eventHeading.textContent = 'รายละเอียดอีเว้น';
+    }
+    
     function normalizeContactValue(value) {
         return typeof value === 'string' ? value.trim() : '';
     }
@@ -641,9 +658,8 @@
             staffField?.setValue(snapshot.staff_id, snapshot.staff_label);
             const locationField = findTypeaheadByType('location');
             locationField?.setValue(snapshot.location_id, snapshot.location_label);
-            if (eventCodeField && eventIdDisplay) {
-                const codeValue = eventIdDisplay.textContent?.trim() || '—';
-                eventCodeField.value = codeValue;
+            if (eventCodeField) {
+                eventCodeField.value = formatBaseEventCode(currentEventId);
             }
             if (refEventField) {
                 refEventField.value = snapshot.ref_event_id || '';
@@ -651,6 +667,7 @@
             if (eventIdDisplay) {
                 eventIdDisplay.textContent = formatEventDisplay(snapshot.ref_event_id, currentEventId);
             }
+            applyEventHeading(snapshot.event_name, snapshot.ref_event_id, currentEventId);
             setStatus(snapshot.status);
         });
         syncLocationDisplayFromForm();
@@ -1020,12 +1037,12 @@
             currentEventId = eventIdValue;
             isCreateMode = false;
             eventIdDisplay.textContent = formatEventDisplay(data.ref_event_id, eventIdValue);
+            applyEventHeading(data.event_name, data.ref_event_id, eventIdValue);
             if (eventCodeField) {
                 eventCodeField.value = formatBaseEventCode(eventIdValue);
             }
             if (refEventField) {
                 refEventField.value = data.ref_event_id || '';
-                eventCodeField.value = eventIdValue ? `EV-${eventIdValue}` : '—';
             }
             const nameField = document.getElementById('eventName');
             if (nameField) {
@@ -1251,9 +1268,13 @@
         }
         runWithPopulation(() => {
             const latestName = payload.event_name;
-            if (latestName) {
-                eventHeading.textContent = latestName;
-            }
+            const resultHasName = Object.prototype.hasOwnProperty.call(result, 'event_name');
+            const resolvedHeadingName = resultHasName ? result.event_name : latestName;
+            const resultHasRef = Object.prototype.hasOwnProperty.call(result, 'ref_event_id');
+            const headingRefId = resultHasRef
+                ? result.ref_event_id
+                : refEventField?.value || initialSnapshot?.ref_event_id || '';
+            applyEventHeading(resolvedHeadingName, headingRefId, currentEventId);
             const resolvedStatus = (result.status || requestBody.status || 'draft').toLowerCase();
             setStatus(resolvedStatus);
             if (Object.prototype.hasOwnProperty.call(result, 'updated_at')) {
@@ -1294,7 +1315,7 @@
                     : payload.location_id;
                 locationField?.setValue(locationIdValue ?? '', result.location_label || '');
             }
-        if (Object.prototype.hasOwnProperty.call(result, 'ref_event_id')) {
+            if (Object.prototype.hasOwnProperty.call(result, 'ref_event_id')) {
                 if (refEventField) {
                     refEventField.value = result.ref_event_id || '';
                 }
