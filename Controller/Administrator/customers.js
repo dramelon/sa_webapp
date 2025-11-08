@@ -137,8 +137,10 @@
                 <td>${escapeHtml(buildContact(row))}</td>
                 <td>${formatStatus(row.status)}</td>
                 <td>${locationName ? escapeHtml(locationName) : '—'}</td>
-                <td class="actions">
-                    <a class="ghost" href="./customer_detail.html?customer_id=${row.customer_id}">รายละเอียด</a>
+                <td class="col-actions">
+                    <button class="action-btn" type="button" data-action="open" data-id="${escapeHtml(String(row.customer_id ?? ''))}">
+                        <span class="i list"></span>รายละเอียด
+                    </button>
                 </td>
             `;
             tableBody.append(tr);
@@ -347,6 +349,21 @@
         });
     }
 
+    if (tableBody) {
+        tableBody.addEventListener('click', (event) => {
+            const actionBtn = event.target.closest('button[data-action="open"]');
+            if (!actionBtn || !tableBody.contains(actionBtn)) {
+                return;
+            }
+            const customerId = actionBtn.dataset.id;
+            if (!customerId) {
+                return;
+            }
+            const params = new URLSearchParams({ customer_id: customerId });
+            window.location.href = `./customer_detail.html?${params.toString()}`;
+        });
+    }
+    
     const boot = ({ root }) => {
         modelRoot = `${root}/Model`;
         updateThaiDate();

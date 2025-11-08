@@ -82,8 +82,10 @@
                 <td>${row.district ? escapeHtml(row.district) : '—'}</td>
                 <td>${row.province ? escapeHtml(row.province) : '—'}</td>
                 <td>${row.country ? escapeHtml(row.country) : '—'}</td>
-                <td class="actions">
-                    <a class="ghost" href="./location_detail.html?location_id=${row.location_id}">รายละเอียด</a>
+                <td class="col-actions">
+                    <button class="action-btn" type="button" data-action="open" data-id="${escapeHtml(String(row.location_id ?? ''))}">
+                        <span class="i list"></span>รายละเอียด
+                    </button>
                 </td>
             `;
             tableBody.append(tr);
@@ -102,6 +104,21 @@
         }
     }
 
+    if (tableBody) {
+        tableBody.addEventListener('click', (event) => {
+            const actionBtn = event.target.closest('button[data-action="open"]');
+            if (!actionBtn || !tableBody.contains(actionBtn)) {
+                return;
+            }
+            const locationId = actionBtn.dataset.id;
+            if (!locationId) {
+                return;
+            }
+            const params = new URLSearchParams({ location_id: locationId });
+            window.location.href = `./location_detail.html?${params.toString()}`;
+        });
+    }
+    
     function updateSortIndicators() {
         tableHeaders.forEach((th) => {
             const key = th.dataset.sortKey;
