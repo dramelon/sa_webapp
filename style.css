@@ -27,6 +27,7 @@ body {
     font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     color: var(--text);
     background: var(--bg);
+    padding-top: 60px; 
 }
 
 .auth {
@@ -201,7 +202,13 @@ body {
     padding: 10px 16px;
     background: linear-gradient(#ffe39a, #ffd564);
     border-bottom: 3px solid var(--yellow-d);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
 }
+
 
 .hamburger {
     width: 42px;
