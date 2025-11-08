@@ -49,79 +49,122 @@ CREATE TABLE Announcement (
 
 
 
--- LOCATIONS v1
+-- LOCATIONS v2 [requirement: staffs]
 CREATE TABLE locations (
-    LocationID    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Loc_Name      VARCHAR(150) DEFAULT NULL,
-    House_Number  VARCHAR(50)  DEFAULT NULL,
-    Village       VARCHAR(150) DEFAULT NULL,
-    Building_Name VARCHAR(150) DEFAULT NULL,
-    Floor         VARCHAR(50)  DEFAULT NULL,
-    Room          VARCHAR(50)  DEFAULT NULL,
-    Street        VARCHAR(150) DEFAULT NULL,
-    Subdistrict   VARCHAR(150) DEFAULT NULL,
-    District      VARCHAR(150) DEFAULT NULL,
-    Province      VARCHAR(150) DEFAULT NULL,
-    Postal_Code   VARCHAR(20)  DEFAULT NULL,
-    Country       VARCHAR(100) DEFAULT NULL,
-    Notes         TEXT         DEFAULT NULL,
-    PRIMARY KEY (LocationID)
-);
+    LocationID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    RefLocationID   VARCHAR(30)      DEFAULT NULL,
+    LocationName    VARCHAR(200)     NOT NULL,
+    Email           VARCHAR(254)     DEFAULT NULL,
+    Phone           VARCHAR(32)      DEFAULT NULL,
+    Village         VARCHAR(100)     DEFAULT NULL,
+    HouseNumber     VARCHAR(30)      DEFAULT NULL,
+    BuildingName    VARCHAR(150)     DEFAULT NULL,
+    Room            VARCHAR(30)      DEFAULT NULL,
+    Floor           VARCHAR(30)      DEFAULT NULL,
+    Street          VARCHAR(150)     DEFAULT NULL,
+    Subdistrict     VARCHAR(100)     DEFAULT NULL,
+    District        VARCHAR(100)     DEFAULT NULL,
+    Province        VARCHAR(100)     DEFAULT NULL,
+    Country         VARCHAR(100)     DEFAULT NULL,
+    PostalCode      VARCHAR(20)      DEFAULT NULL,
 
+    Note            TEXT             DEFAULT NULL,
+    Status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
 
+    CreatedAt       DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy       INT UNSIGNED     DEFAULT NULL,
+    UpdatedAt       DATETIME         DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    UpdatedBy       INT UNSIGNED     DEFAULT NULL,
 
-
--- CUSTOMERS [requirement: locations] v1
-CREATE TABLE customers (
-    CustomerID    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    LocationID    INT UNSIGNED DEFAULT NULL,     -- billing/contact address
-    Customer_Name VARCHAR(150) NOT NULL,
-    OrgName       VARCHAR(150) DEFAULT NULL,
-    Email         VARCHAR(150) DEFAULT NULL,
-    Phone         VARCHAR(50)  DEFAULT NULL,
-    TaxID         VARCHAR(50)  DEFAULT NULL,
-    Status        ENUM('active','inactive') NOT NULL DEFAULT 'active',
-    Notes         TEXT DEFAULT NULL,
-    PRIMARY KEY (CustomerID),
-    KEY idx_customer_location (LocationID),
-    CONSTRAINT fk_customer_location
-        FOREIGN KEY (LocationID)
-        REFERENCES locations(LocationID)
+    PRIMARY KEY (LocationID),
+    UNIQUE KEY uq_locations_ref (RefLocationID),
+    CONSTRAINT fk_location_createdby FOREIGN KEY (CreatedBy)
+        REFERENCES staffs(StaffID)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_location_updatedby FOREIGN KEY (UpdatedBy)
+        REFERENCES staffs(StaffID)
         ON DELETE SET NULL ON UPDATE CASCADE
-);
+)
 
 
 
 
--- EVENTS [requirement: staffs, customers, locations] v2
+-- CUSTOMERS v2 [requirement: locations, staffs]
+CREATE TABLE customers (
+    CustomerID      BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    RefCustomerID   VARCHAR(30)      DEFAULT NULL,
+    LocationID      BIGINT UNSIGNED  DEFAULT NULL,
+    CustomerName    VARCHAR(200)     NOT NULL,
+    OrgName         VARCHAR(200)     DEFAULT NULL,
+    Email           VARCHAR(254)     DEFAULT NULL,
+    Phone           VARCHAR(32)      DEFAULT NULL,
+    TaxID           VARCHAR(32)      DEFAULT NULL,
+    ContactPerson   VARCHAR(200)     DEFAULT NULL,
+
+    Notes           TEXT             DEFAULT NULL,
+    Status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
+
+    CreatedAt       DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy       INT UNSIGNED     DEFAULT NULL,
+    UpdatedAt       DATETIME         DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    UpdatedBy       INT UNSIGNED     DEFAULT NULL,
+
+    PRIMARY KEY (CustomerID),
+    UNIQUE KEY uq_customers_ref (RefCustomerID),
+    KEY idx_customer_location (LocationID),
+    CONSTRAINT fk_customer_location FOREIGN KEY (LocationID)
+        REFERENCES locations(LocationID)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_customer_createdby FOREIGN KEY (CreatedBy)
+        REFERENCES staffs(StaffID)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT fk_customer_updatedby FOREIGN KEY (UpdatedBy)
+        REFERENCES staffs(StaffID)
+        ON DELETE SET NULL ON UPDATE CASCADE
+)
+
+
+
+
+-- EVENTS [requirement: staffs, customers, locations] v3
 CREATE TABLE events (
     EventID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    RefEventID   VARCHAR(20) DEFAULT NULL,
-    EventName    VARCHAR(200) NOT NULL,
-    StaffID      INT UNSIGNED DEFAULT NULL,
-    CustomerID   INT UNSIGNED DEFAULT NULL,
-    LocationID   INT UNSIGNED DEFAULT NULL,
-
-    CreatedAt    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy    INT UNSIGNED DEFAULT NULL,
-    UpdatedAt    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UpdatedBy    INT UNSIGNED DEFAULT NULL,
-    StartDate    DATETIME DEFAULT NULL,
-    EndDate      DATETIME DEFAULT NULL,
-    Description  TEXT DEFAULT NULL,
-    Notes        TEXT DEFAULT NULL,
+    RefEventID   VARCHAR(30)      DEFAULT NULL,
+    EventName    VARCHAR(200)     NOT NULL,
+    StaffID      INT  UNSIGNED    DEFAULT NULL,
+    CustomerID   BIGINT UNSIGNED  DEFAULT NULL,
+    LocationID   BIGINT UNSIGNED  DEFAULT NULL,
+    StartDate    DATETIME         DEFAULT NULL,
+    EndDate      DATETIME         DEFAULT NULL,
+    
+    Description  TEXT             DEFAULT NULL,
+    Notes        TEXT             DEFAULT NULL,
     Status       ENUM('draft','planning','waiting','processing','billing','completed','cancelled') NOT NULL DEFAULT 'draft',
 
+    CreatedAt    DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy    INT  UNSIGNED    DEFAULT NULL,
+    UpdatedAt    DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UpdatedBy    INT  UNSIGNED    DEFAULT NULL,
+
+    
+
     PRIMARY KEY (EventID),
+    UNIQUE KEY uq_events_ref (RefEventID),
+
     KEY idx_status_start (Status, StartDate),
+    KEY idx_dates (StartDate, EndDate),
     KEY idx_staff (StaffID),
     KEY idx_customer (CustomerID),
     KEY idx_location (LocationID),
     KEY idx_createdby (CreatedBy),
     KEY idx_updatedby (UpdatedBy),
 
+    CONSTRAINT chk_event_dates CHECK (
+        StartDate IS NULL OR EndDate IS NULL OR EndDate >= StartDate
+    ),
+
     CONSTRAINT fk_event_staff
-        FOREIGN KEY (StaffID) REFERENCES staffs(StaffID)
+        FOREIGN KEY (StaffID)   REFERENCES staffs(StaffID)
         ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT fk_event_customer
         FOREIGN KEY (CustomerID) REFERENCES customers(CustomerID)
@@ -136,6 +179,3 @@ CREATE TABLE events (
         FOREIGN KEY (UpdatedBy) REFERENCES staffs(StaffID)
         ON DELETE SET NULL ON UPDATE CASCADE
 )
--- in case if missing only "RefEventID" (this added in v2)
-ALTER TABLE events
-  ADD COLUMN RefEventID VARCHAR(20) DEFAULT NULL AFTER EventID;
