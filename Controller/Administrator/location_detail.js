@@ -8,7 +8,7 @@
     const breadcrumbLink = document.querySelector('.breadcrumb a');
 
     const fields = {
-        name: document.getElementById('locationName'),
+        location_name: document.getElementById('locationName'),
         house_number: document.getElementById('locationHouse'),
         village: document.getElementById('locationVillage'),
         building_name: document.getElementById('locationBuilding'),
@@ -176,10 +176,10 @@
 
     async function handleSubmit(event) {
         event.preventDefault();
-        const nameValue = fields.name?.value.trim();
+        const nameValue = fields.location_name?.value.trim();
         if (!nameValue) {
             showMessage('กรุณากรอกชื่อสถานที่', 'error');
-            fields.name?.focus();
+            fields.location_name?.focus();
             return;
         }
         const payload = getPayload();

@@ -16,7 +16,7 @@
     let currentPage = 1;
     let hasNext = false;
     let hasPrev = false;
-    const defaultSort = Object.freeze({ key: 'location_id', direction: 'asc' });
+    const defaultSort = Object.freeze({ key: 'location_id', direction: 'desc' });
     let sortKey = defaultSort.key;
     let sortDirection = defaultSort.direction;
     let modelRoot = '';
