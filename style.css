@@ -664,6 +664,7 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 12px;
     margin-bottom: 24px;
+    justify-content: flex-start;
 }
 
 .summary-card {
@@ -680,6 +681,7 @@ body {
     color: inherit;
     appearance: none;
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    width: 100%;
 }
 
 .summary-card header {
@@ -706,6 +708,21 @@ body {
     outline-offset: 3px;
 }
 
+.summary-card[data-status="all"] {
+    border-color: #ffd37a;
+    background: #fff4cc;
+}
+
+.summary-card[data-status="active"] {
+    border-color: #a8e89b;
+    background: #f4fff1;
+}
+
+.summary-card[data-status="inactive"] {
+    border-color: #ffb3ab;
+    background: #fff0ed;
+}
+
 .summary-card.active {
     background: #fff7dd;
     box-shadow: 0 12px 30px rgba(255, 190, 70, 0.26);
@@ -713,30 +730,37 @@ body {
 
 .summary-card.draft {
     border-color: #d5d7de;
+    background: #f5f7ff;
 }
 
 .summary-card.planning {
     border-color: #c5dcff;
+    background: #f0f6ff;
 }
 
 .summary-card.waiting {
     border-color: #ffd37a;
+    background: #fff4dd;
 }
 
 .summary-card.processing {
     border-color: #ffc05a;
+    background: #ffe1b2;
 }
 
 .summary-card.billing {
     border-color: #ffb8d9;
+    background: #ffe8f3;
 }
 
 .summary-card.completed {
     border-color: #a8e89b;
+    background: #f4fff1;
 }
 
 .summary-card.cancelled {
     border-color: #ffb3ab;
+    background: #fff0ed;
 }
 
 .list-panel {

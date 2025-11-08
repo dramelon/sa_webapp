@@ -16,6 +16,7 @@
     const prevPageBtn = document.getElementById('prevPage');
     const nextPageBtn = document.getElementById('nextPage');
     const pageIndicator = document.getElementById('pageIndicator');
+    const tableHeaders = document.querySelectorAll('.customer-table thead th[data-sort-key]');
     const sortButtons = document.querySelectorAll('.customer-table thead .sort-button');
 
     let customers = [];
@@ -23,8 +24,9 @@
     let currentPage = 1;
     let hasNext = false;
     let hasPrev = false;
-    let sortKey = 'customer_name';
-    let sortDirection = 'asc';
+    const defaultSort = Object.freeze({ key: 'customer_id', direction: 'asc' });
+    let sortKey = defaultSort.key;
+    let sortDirection = defaultSort.direction;
     let modelRoot = '';
     let lastRequestToken = 0;
     let searchDebounce = null;
@@ -70,7 +72,7 @@
             if (!meta) continue;
             const card = document.createElement('button');
             card.type = 'button';
-            card.className = `summary-card ${key}`;
+            card.className = 'summary-card';
             card.dataset.status = key;
             card.innerHTML = `
                 <header>
@@ -110,9 +112,9 @@
     function formatStatus(status) {
         const normalized = typeof status === 'string' ? status.toLowerCase() : 'active';
         if (normalized === 'inactive') {
-            return '<span class="status-chip cancelled"><span class="dot"></span>ปิดใช้งาน</span>';
+            return '<span class="status-badge cancelled"><span class="dot"></span>ปิดใช้งาน</span>';
         }
-        return '<span class="status-chip completed"><span class="dot"></span>ใช้งาน</span>';
+        return '<span class="status-badge completed"><span class="dot"></span>ใช้งาน</span>';
     }
 
     function renderTable(items) {
@@ -165,14 +167,28 @@
     }
 
     function updateSortIndicators() {
-        sortButtons.forEach((button) => {
-            const key = button.dataset.sortKey;
-            const th = button.closest('th');
-            if (!key || !th) return;
-            if (key === sortKey) {
-                th.setAttribute('aria-sort', sortDirection === 'asc' ? 'ascending' : 'descending');
-            } else {
-                th.setAttribute('aria-sort', 'none');
+        tableHeaders.forEach((th) => {
+            const key = th.dataset.sortKey;
+            const isActive = key === sortKey;
+            const ariaState = isActive ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none';
+            th.setAttribute('aria-sort', ariaState);
+            const indicator = th.querySelector('.sort-indicator');
+            if (indicator) {
+                let symbol = '↕';
+                if (ariaState === 'ascending') symbol = '▲';
+                if (ariaState === 'descending') symbol = '▼';
+                indicator.textContent = symbol;
+            }
+            const button = th.querySelector('.sort-button');
+            if (button) {
+                const label = button.dataset.label || button.textContent.trim();
+                if (ariaState === 'ascending') {
+                    button.setAttribute('aria-label', `จัดเรียงตาม${label} (น้อยไปมาก)`);
+                } else if (ariaState === 'descending') {
+                    button.setAttribute('aria-label', `จัดเรียงตาม${label} (มากไปน้อย)`);
+                } else {
+                    button.setAttribute('aria-label', `จัดเรียงตาม${label}`);
+                }
             }
         });
     }
@@ -314,8 +330,9 @@
                 sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
             } else {
                 sortKey = key;
-                sortDirection = key === 'customer_id' ? 'asc' : 'asc';
+                sortDirection = key === defaultSort.key ? defaultSort.direction : 'asc';
             }
+            updateSortIndicators();
             currentPage = 1;
             fetchCustomers();
         });

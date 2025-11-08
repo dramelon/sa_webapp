@@ -7,6 +7,7 @@
     const prevButton = document.getElementById('locationPrev');
     const nextButton = document.getElementById('locationNext');
     const pageIndicator = document.getElementById('locationPage');
+    const tableHeaders = document.querySelectorAll('.location-table thead th[data-sort-key]');
     const sortButtons = document.querySelectorAll('.location-table thead .sort-button');
     const newLocationBtn = document.getElementById('btnNewLocation');
 
@@ -15,8 +16,9 @@
     let currentPage = 1;
     let hasNext = false;
     let hasPrev = false;
-    let sortKey = 'location_name';
-    let sortDirection = 'asc';
+    const defaultSort = Object.freeze({ key: 'location_id', direction: 'asc' });
+    let sortKey = defaultSort.key;
+    let sortDirection = defaultSort.direction;
     let modelRoot = '';
     let lastRequestToken = 0;
     let searchDebounce = null;
@@ -40,7 +42,9 @@
         if (!summaryWrap) return;
         summaryWrap.innerHTML = '';
         const card = document.createElement('div');
-        card.className = 'summary-card all active';
+        card.className = 'summary-card all';
+        card.dataset.status = 'all';
+        card.classList.add('active');
         card.innerHTML = `
             <header>
                 <span class="i stack"></span>
@@ -99,14 +103,28 @@
     }
 
     function updateSortIndicators() {
-        sortButtons.forEach((button) => {
-            const key = button.dataset.sortKey;
-            const th = button.closest('th');
-            if (!key || !th) return;
-            if (key === sortKey) {
-                th.setAttribute('aria-sort', sortDirection === 'asc' ? 'ascending' : 'descending');
-            } else {
-                th.setAttribute('aria-sort', 'none');
+        tableHeaders.forEach((th) => {
+            const key = th.dataset.sortKey;
+            const isActive = key === sortKey;
+            const ariaState = isActive ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none';
+            th.setAttribute('aria-sort', ariaState);
+            const indicator = th.querySelector('.sort-indicator');
+            if (indicator) {
+                let symbol = '↕';
+                if (ariaState === 'ascending') symbol = '▲';
+                if (ariaState === 'descending') symbol = '▼';
+                indicator.textContent = symbol;
+            }
+            const button = th.querySelector('.sort-button');
+            if (button) {
+                const label = button.dataset.label || button.textContent.trim();
+                if (ariaState === 'ascending') {
+                    button.setAttribute('aria-label', `จัดเรียงตาม${label} (น้อยไปมาก)`);
+                } else if (ariaState === 'descending') {
+                    button.setAttribute('aria-label', `จัดเรียงตาม${label} (มากไปน้อย)`);
+                } else {
+                    button.setAttribute('aria-label', `จัดเรียงตาม${label}`);
+                }
             }
         });
     }
@@ -221,8 +239,9 @@
                 sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
             } else {
                 sortKey = key;
-                sortDirection = key === 'location_id' ? 'asc' : 'asc';
+                sortDirection = key === defaultSort.key ? defaultSort.direction : 'asc';
             }
+            updateSortIndicators();
             currentPage = 1;
             fetchLocations();
         });
