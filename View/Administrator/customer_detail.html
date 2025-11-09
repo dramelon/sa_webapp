@@ -74,6 +74,29 @@
             </div>
         </section>
 
+        <section class="detail-meta" aria-live="polite">
+            <div class="meta-primary">
+                <p class="meta-label">รหัสลูกค้า</p>
+                <h3 id="customerIdDisplay">—</h3>
+                <p class="meta-sub" id="customerRef">รหัสอ้างอิง: —</p>
+                <p class="meta-sub" id="customerStatusMeta">สถานะ: —</p>
+            </div>
+            <div class="meta-secondary">
+                <span class="status-chip" id="customerStatusBadge" aria-live="polite">
+                    <span class="dot"></span>
+                    <span id="customerStatusText">สถานะ: —</span>
+                </span>
+                <div class="meta-group">
+                    <p class="meta-updated" id="customerUpdatedAt">อัปเดตล่าสุด: —</p>
+                    <p class="meta-updated-by" id="customerUpdatedBy">ปรับปรุงโดย: —</p>
+                </div>
+                <div class="meta-group">
+                    <p class="meta-created" id="customerCreatedAt">สร้างเมื่อ: —</p>
+                    <p class="meta-created-by" id="customerCreatedBy">สร้างโดย: —</p>
+                </div>
+            </div>
+        </section>
+
         <section class="detail-card">
             <header class="detail-card-head">
                 <h3>ข้อมูลลูกค้า</h3>
@@ -88,12 +111,20 @@
                             <input type="text" id="customerCode" value="ใหม่" readonly />
                         </label>
                         <label class="field-block">
+                            <span class="field-label">รหัสอ้างอิง</span>
+                            <input type="text" name="ref_customer_id" id="customerRefCode" maxlength="30" />
+                        </label>
+                        <label class="field-block">
                             <span class="field-label">ชื่อลูกค้า *</span>
                             <input type="text" name="customer_name" id="customerName" required />
                         </label>
                         <label class="field-block">
                             <span class="field-label">ชื่อองค์กร</span>
                             <input type="text" name="org_name" id="customerOrg" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ผู้ติดต่อ</span>
+                            <input type="text" name="contact_person" id="customerContact" />
                         </label>
                         <label class="field-block">
                             <span class="field-label">อีเมล</span>

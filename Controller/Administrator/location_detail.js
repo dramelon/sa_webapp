@@ -7,8 +7,23 @@
     const saveButton = document.getElementById('locationSave');
     const breadcrumbLink = document.querySelector('.breadcrumb a');
 
+    const meta = {
+        id: document.getElementById('locationIdDisplay'),
+        ref: document.getElementById('locationRef'),
+        statusMeta: document.getElementById('locationStatusMeta'),
+        statusBadge: document.getElementById('locationStatusBadge'),
+        statusText: document.getElementById('locationStatusText'),
+        createdAt: document.getElementById('locationCreatedAt'),
+        createdBy: document.getElementById('locationCreatedBy'),
+        updatedAt: document.getElementById('locationUpdatedAt'),
+        updatedBy: document.getElementById('locationUpdatedBy'),
+    };
+
     const fields = {
+        ref_location_id: document.getElementById('locationRefCode'),
         location_name: document.getElementById('locationName'),
+        email: document.getElementById('locationEmail'),
+        phone: document.getElementById('locationPhone'),
         house_number: document.getElementById('locationHouse'),
         village: document.getElementById('locationVillage'),
         building_name: document.getElementById('locationBuilding'),
@@ -20,6 +35,7 @@
         province: document.getElementById('locationProvince'),
         postal_code: document.getElementById('locationPostal'),
         country: document.getElementById('locationCountry'),
+        status: document.getElementById('locationStatus'),
         notes: document.getElementById('locationNotes'),
     };
 
@@ -36,7 +52,20 @@
     const updateThaiDate = () => {
         const now = new Date();
         const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
-        const months = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        const months = [
+            'มกราคม',
+            'กุมภาพันธ์',
+            'มีนาคม',
+            'เมษายน',
+            'พฤษภาคม',
+            'มิถุนายน',
+            'กรกฎาคม',
+            'สิงหาคม',
+            'กันยายน',
+            'ตุลาคม',
+            'พฤศจิกายน',
+            'ธันวาคม',
+        ];
         const day = days[now.getDay()];
         const date = now.getDate();
         const month = months[now.getMonth()];
@@ -62,9 +91,16 @@
     }
 
     function serializeForm() {
-        return Object.fromEntries(
-            Object.entries(fields).map(([key, input]) => [key, input?.value.trim() || ''])
-        );
+        const snapshot = {};
+        Object.entries(fields).forEach(([key, input]) => {
+            if (!input) return;
+            if (key === 'status') {
+                snapshot[key] = input.value || 'active';
+            } else {
+                snapshot[key] = input.value.trim();
+            }
+        });
+        return snapshot;
     }
 
     function setDirty(next) {
@@ -77,11 +113,76 @@
         }
     }
 
-    function populateForm(data) {
-        for (const [key, input] of Object.entries(fields)) {
-            if (!input) continue;
-            input.value = data[key] || '';
+    function formatDateTime(value) {
+        if (!value) {
+            return '—';
         }
+        const date = new Date(value.replace(' ', 'T'));
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+        return date.toLocaleString('th-TH', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+        });
+    }
+
+    function applyStatusChip(status) {
+        if (!meta.statusBadge || !meta.statusText) return;
+        const normalized = typeof status === 'string' ? status.toLowerCase() : '';
+        let displayText = '—';
+        if (normalized === 'active') displayText = 'เปิดใช้งาน';
+        if (normalized === 'inactive') displayText = 'ปิดใช้งาน';
+        meta.statusText.textContent = `สถานะ: ${displayText}`;
+        if (normalized === 'active' || normalized === 'inactive') {
+            meta.statusBadge.dataset.status = normalized;
+        } else {
+            delete meta.statusBadge.dataset.status;
+        }
+    }
+
+    function updateMeta(data) {
+        if (meta.id) {
+            meta.id.textContent = data?.location_id != null ? String(data.location_id) : '—';
+        }
+        if (meta.ref) {
+            const refText = data?.ref_location_id ? data.ref_location_id : '—';
+            meta.ref.textContent = `รหัสอ้างอิง: ${refText}`;
+        }
+        if (meta.statusMeta) {
+            const label = data?.status === 'active' ? 'เปิดใช้งาน' : data?.status === 'inactive' ? 'ปิดใช้งาน' : '—';
+            meta.statusMeta.textContent = `สถานะ: ${label}`;
+        }
+        applyStatusChip(data?.status);
+        if (meta.createdAt) {
+            meta.createdAt.textContent = `สร้างเมื่อ: ${formatDateTime(data?.created_at)}`;
+        }
+        if (meta.createdBy) {
+            meta.createdBy.textContent = `สร้างโดย: ${data?.created_by_label || '—'}`;
+        }
+        if (meta.updatedAt) {
+            meta.updatedAt.textContent = `อัปเดตล่าสุด: ${formatDateTime(data?.updated_at)}`;
+        }
+        if (meta.updatedBy) {
+            meta.updatedBy.textContent = `ปรับปรุงโดย: ${data?.updated_by_label || '—'}`;
+        }
+    }
+
+    function resetMeta() {
+        updateMeta({});
+    }
+
+    function populateForm(data) {
+        Object.entries(fields).forEach(([key, input]) => {
+            if (!input) return;
+            const value = data?.[key];
+            if (key === 'status') {
+                input.value = value || 'active';
+            } else {
+                input.value = value || '';
+            }
+        });
+        updateMeta(data);
         initialSnapshot = serializeForm();
         setDirty(false);
     }
@@ -96,6 +197,10 @@
             codeField.value = 'ใหม่';
         }
         form?.reset();
+        if (fields.status) {
+            fields.status.value = 'active';
+        }
+        resetMeta();
         initialSnapshot = serializeForm();
         setDirty(false);
         showMessage('');
@@ -122,17 +227,19 @@
             if (!payload || !payload.data) {
                 throw new Error('invalid');
             }
-            currentLocationId = String(payload.data.location_id);
+            const data = payload.data;
+            currentLocationId = String(data.location_id);
             isCreateMode = false;
             if (heading) {
-                heading.textContent = payload.data.location_name || `สถานที่ #${currentLocationId}`;
+                heading.textContent = data.location_name || `สถานที่ #${currentLocationId}`;
             }
             if (codeField) {
                 codeField.value = currentLocationId;
             }
-            populateForm(payload.data);
+            populateForm(data);
         } catch (error) {
             showMessage('ไม่สามารถโหลดข้อมูลสถานที่ได้', 'error');
+            prepareCreateMode();
         }
     }
 
@@ -148,6 +255,9 @@
             body: JSON.stringify(payload),
         });
         if (!response.ok) {
+            if (response.status === 409) {
+                throw new Error('ref_location_exists');
+            }
             throw new Error('network');
         }
         const result = await response.json();
@@ -165,6 +275,9 @@
             body: JSON.stringify({ location_id: currentLocationId, ...payload }),
         });
         if (!response.ok) {
+            if (response.status === 409) {
+                throw new Error('ref_location_exists');
+            }
             throw new Error('network');
         }
         const result = await response.json();
@@ -199,7 +312,6 @@
                 codeField.value = currentLocationId;
             }
             populateForm(data);
-            setDirty(false);
             showMessage(isCreateMode ? 'สร้างสถานที่เรียบร้อยแล้ว' : 'บันทึกข้อมูลสถานที่เรียบร้อยแล้ว', 'success');
             if (isCreateMode) {
                 params.set('location_id', currentLocationId);
@@ -211,7 +323,11 @@
             }
         } catch (error) {
             setDirty(true);
-            showMessage('ไม่สามารถบันทึกข้อมูลสถานที่ได้ โปรดลองอีกครั้ง', 'error');
+            if (error.message === 'ref_location_exists') {
+                showMessage('รหัสอ้างอิงนี้ถูกใช้แล้ว กรุณาใช้รหัสอื่น', 'error');
+            } else {
+                showMessage('ไม่สามารถบันทึกข้อมูลสถานที่ได้ โปรดลองอีกครั้ง', 'error');
+            }
         } finally {
             isSaving = false;
             if (saveButton) {

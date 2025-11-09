@@ -88,8 +88,8 @@ try {
             :end_date,
             :description,
             :notes,
-            :ref_event_id,
             :created_by,
+            :ref_event_id,
             :updated_by
         )
     ";
@@ -104,8 +104,8 @@ try {
     bindNullableDateTime($stmt, ':end_date', $endDate);
     bindNullableString($stmt, ':description', $description);
     bindNullableString($stmt, ':notes', $notes);
-    bindNullableString($stmt, ':ref_event_id', $refEventId);
     $stmt->bindValue(':created_by', $createdBy, PDO::PARAM_INT);
+    bindNullableString($stmt, ':ref_event_id', $refEventId);
     $stmt->bindValue(':updated_by', $createdBy, PDO::PARAM_INT);
     $stmt->execute();
 

@@ -29,12 +29,12 @@ try {
             $sql = "
                 SELECT
                     CustomerID AS id,
-                    Customer_Name AS name,
+                    CustomerName AS name,
                     COALESCE(Phone, '') AS phone,
                     COALESCE(Email, '') AS email
                 FROM customers
-                WHERE Customer_Name LIKE :term OR CAST(CustomerID AS CHAR) LIKE :term
-                ORDER BY Customer_Name ASC
+                WHERE CustomerName LIKE :term OR CAST(CustomerID AS CHAR) LIKE :term OR RefCustomerID LIKE :term
+                ORDER BY CustomerName ASC
                 LIMIT :limit
             ";
             $stmt = $db->prepare($sql);
@@ -42,10 +42,10 @@ try {
             break;
         case 'location':
             $sql = "
-                SELECT LocationID AS id, COALESCE(Loc_Name, '') AS name
+                SELECT LocationID AS id, COALESCE(LocationName, '') AS name
                 FROM locations
-                WHERE COALESCE(Loc_Name, '') LIKE :term OR CAST(LocationID AS CHAR) LIKE :term
-                ORDER BY Loc_Name ASC
+                WHERE COALESCE(LocationName, '') LIKE :term OR CAST(LocationID AS CHAR) LIKE :term OR RefLocationID LIKE :term
+                ORDER BY LocationName ASC
                 LIMIT :limit
             ";
             $stmt = $db->prepare($sql);

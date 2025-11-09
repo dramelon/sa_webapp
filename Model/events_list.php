@@ -25,7 +25,7 @@ try {
         'event_id' => 'e.EventID',
         'ref_event_id' => 'e.RefEventID',
         'event_name' => 'e.EventName',
-        'customer_name' => 'c.Customer_Name',
+        'customer_name' => 'c.CustomerName',
         'staff_name' => 's.FullName',
         'start_date' => 'e.StartDate',
         'status' => 'e.Status',
@@ -66,9 +66,9 @@ try {
             e.EventID LIKE :search
             OR e.RefEventID LIKE :search
             OR e.EventName LIKE :search
-            OR c.Customer_Name LIKE :search
+            OR c.CustomerName LIKE :search
             OR s.FullName LIKE :search
-            OR l.Loc_Name LIKE :search
+            OR l.LocationName LIKE :search
         )';
         $params[':search'] = '%' . $search . '%';
     }
@@ -135,10 +135,10 @@ try {
             e.CreatedAt AS created_at,
             e.StartDate AS start_date,
             e.Status AS status,
-            c.Customer_Name AS customer_name,
+            c.CustomerName AS customer_name,
             s.StaffID AS staff_id,
             s.FullName AS staff_name,
-            l.Loc_Name AS location_name
+            l.LocationName AS location_name
         FROM events e
         LEFT JOIN customers c ON c.CustomerID = e.CustomerID
         LEFT JOIN staffs s ON s.StaffID = e.StaffID
@@ -150,7 +150,6 @@ try {
 
     $stmt = $db->prepare($dataSql);
     foreach ($dataParams as $key => $value) {
-        $stmt->bindValue($key, $value, $key === ':search' ? PDO::PARAM_STR : PDO::PARAM_STR);
         $paramType = PDO::PARAM_STR;
         if ($key === ':current_staff') {
             $paramType = PDO::PARAM_INT;

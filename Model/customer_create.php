@@ -28,18 +28,22 @@ if ($customerName === '') {
     exit;
 }
 
+$refCustomerId = sanitizeRefId($input['ref_customer_id'] ?? null);
+$orgName = trimNullable($input['org_name'] ?? null);
+$email = trimNullable($input['email'] ?? null);
+$phone = trimNullable($input['phone'] ?? null);
+$taxId = trimNullable($input['tax_id'] ?? null);
+$contactPerson = trimNullable($input['contact_person'] ?? null);
+$notes = trimNullable($input['notes'] ?? null);
+$locationId = parseNullableInt($input['location_id'] ?? null);
+
 $allowedStatuses = ['active', 'inactive'];
 $status = strtolower((string) ($input['status'] ?? 'active'));
 if (!in_array($status, $allowedStatuses, true)) {
     $status = 'active';
 }
 
-$orgName = trimNullable($input['org_name'] ?? null);
-$email = trimNullable($input['email'] ?? null);
-$phone = trimNullable($input['phone'] ?? null);
-$taxId = trimNullable($input['tax_id'] ?? null);
-$notes = trimNullable($input['notes'] ?? null);
-$locationId = parseNullableInt($input['location_id'] ?? null);
+$staffId = (int) $_SESSION['staff_id'];
 
 try {
     $db = new PDO(
@@ -59,63 +63,126 @@ try {
     }
 
     $sql = "
-        INSERT INTO customers (Customer_Name, OrgName, Email, Phone, TaxID, Status, Notes, LocationID)
-        VALUES (:name, :org, :email, :phone, :tax_id, :status, :notes, :location_id)
+        INSERT INTO customers (
+            RefCustomerID,
+            CustomerName,
+            OrgName,
+            Email,
+            Phone,
+            TaxID,
+            ContactPerson,
+            Status,
+            Notes,
+            LocationID,
+            CreatedBy,
+            UpdatedBy
+        ) VALUES (
+            :ref_customer_id,
+            :name,
+            :org,
+            :email,
+            :phone,
+            :tax_id,
+            :contact_person,
+            :status,
+            :notes,
+            :location_id,
+            :created_by,
+            :updated_by
+        )
     ";
+
     $stmt = $db->prepare($sql);
+    bindNullableString($stmt, ':ref_customer_id', $refCustomerId);
     $stmt->bindValue(':name', $customerName, PDO::PARAM_STR);
     bindNullableString($stmt, ':org', $orgName);
     bindNullableString($stmt, ':email', $email);
     bindNullableString($stmt, ':phone', $phone);
     bindNullableString($stmt, ':tax_id', $taxId);
+    bindNullableString($stmt, ':contact_person', $contactPerson);
     $stmt->bindValue(':status', $status, PDO::PARAM_STR);
     bindNullableString($stmt, ':notes', $notes);
     bindNullableInt($stmt, ':location_id', $locationId);
+    $stmt->bindValue(':created_by', $staffId, PDO::PARAM_INT);
+    $stmt->bindValue(':updated_by', $staffId, PDO::PARAM_INT);
     $stmt->execute();
 
     $customerId = (int) $db->lastInsertId();
 
-    $detailSql = "
+    $detail = fetchCustomerDetail($db, $customerId);
+
+    echo json_encode(['success' => true, 'data' => $detail], JSON_UNESCAPED_UNICODE);
+} catch (PDOException $e) {
+    if ((int) $e->getCode() === 23000) {
+        http_response_code(409);
+        echo json_encode(['error' => 'ref_customer_exists']);
+        return;
+    }
+    http_response_code(500);
+    echo json_encode(['error' => 'server']);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'server']);
+}
+
+function fetchCustomerDetail(PDO $db, int $customerId): array
+{
+    $sql = "
         SELECT
             c.CustomerID AS customer_id,
+            c.RefCustomerID AS ref_customer_id,
+            c.CustomerName AS customer_name,
             c.Customer_Name AS customer_name,
             c.OrgName AS organization,
             c.Email AS email,
             c.Phone AS phone,
+            c.ContactPerson AS contact_person,
             c.TaxID AS tax_id,
             c.Status AS status,
             c.Notes AS notes,
-            c.LocationID AS location_id,
+            c.CreatedAt AS created_at,
+            c.UpdatedAt AS updated_at,
+            c.CreatedBy AS created_by_id,
+            c.UpdatedBy AS updated_by_id,
+            l.LocationName AS location_name,
+            created.FullName AS created_by_name,
+            created.Role AS created_by_role,
+            updated.FullName AS updated_by_name,
+            updated.Role AS updated_by_role
             l.Loc_Name AS location_name
         FROM customers c
+        LEFT JOIN staffs created ON created.StaffID = c.CreatedBy
+        LEFT JOIN staffs updated ON updated.StaffID = c.UpdatedBy
         LEFT JOIN locations l ON l.LocationID = c.LocationID
         WHERE c.CustomerID = :id
         LIMIT 1
     ";
 
-    $detailStmt = $db->prepare($detailSql);
-    $detailStmt->bindValue(':id', $customerId, PDO::PARAM_INT);
-    $detailStmt->execute();
-    $row = $detailStmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare($sql);
+    $stmt->bindValue(':id', $customerId, PDO::PARAM_INT);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
-    $payload = [
-        'customer_id' => $customerId,
-        'customer_name' => $row['customer_name'] ?? $customerName,
-        'organization' => $row['organization'] ?? $orgName,
-        'email' => $row['email'] ?? $email,
-        'phone' => $row['phone'] ?? $phone,
-        'tax_id' => $row['tax_id'] ?? $taxId,
-        'status' => $row['status'] ?? $status,
-        'notes' => $row['notes'] ?? $notes,
-        'location_id' => isset($row['location_id']) ? (int) $row['location_id'] : $locationId,
+    return [
+        'ref_customer_id' => $row['ref_customer_id'] ?? null,
+        'customer_name' => $row['customer_name'] ?? null,
+        'organization' => $row['organization'] ?? null,
+        'email' => $row['email'] ?? null,
+        'phone' => $row['phone'] ?? null,
+        'tax_id' => $row['tax_id'] ?? null,
+        'contact_person' => $row['contact_person'] ?? null,
+        'status' => $row['status'] ?? null,
+        'notes' => $row['notes'] ?? null,
+        'location_id' => isset($row['location_id']) ? (int) $row['location_id'] : null,
         'location_name' => $row['location_name'] ?? null,
-        'customer_label' => formatCustomerLabel($customerId, $row['customer_name'] ?? $customerName),
+        'created_at' => $row['created_at'] ?? null,
+        'updated_at' => $row['updated_at'] ?? null,
+        'created_by_id' => isset($row['created_by_id']) ? (int) $row['created_by_id'] : null,
+        'updated_by_id' => isset($row['updated_by_id']) ? (int) $row['updated_by_id'] : null,
+        'created_by_label' => formatStaffLabel($row['created_by_id'] ?? null, $row['created_by_name'] ?? null, $row['created_by_role'] ?? null),
+        'updated_by_label' => formatStaffLabel($row['updated_by_id'] ?? null, $row['updated_by_name'] ?? null, $row['updated_by_role'] ?? null),
+        'customer_label' => formatCustomerLabel($customerId, $row['customer_name'] ?? ''),
     ];
-
-    echo json_encode(['success' => true, 'data' => $payload], JSON_UNESCAPED_UNICODE);
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'server']);
 }
 
 function trimNullable($value)
@@ -125,6 +192,18 @@ function trimNullable($value)
     }
     $text = trim((string) $value);
     return $text === '' ? null : $text;
+}
+
+function sanitizeRefId($value)
+{
+    $value = trimNullable($value);
+    if ($value === null) {
+        return null;
+    }
+    if (mb_strlen($value, 'UTF-8') > 30) {
+        $value = mb_substr($value, 0, 30, 'UTF-8');
+    }
+    return $value;
 }
 
 function parseNullableInt($value)
@@ -161,4 +240,14 @@ function formatCustomerLabel($id, $name)
 {
     $labelName = $name !== null && $name !== '' ? $name : 'ไม่ระบุชื่อลูกค้า';
     return sprintf('%d - %s', $id, $labelName);
+}
+
+function formatStaffLabel($id, $name, $role)
+{
+    if ($id === null) {
+        return '';
+    }
+    $displayName = $name !== null && $name !== '' ? $name : 'ไม่ทราบชื่อผู้รับผิดชอบ';
+    $roleInitial = $role !== null && $role !== '' ? mb_strtoupper(mb_substr($role, 0, 1, 'UTF-8'), 'UTF-8') : 'S';
+    return sprintf('%s%d - %s', $roleInitial, $id, $displayName);
 }

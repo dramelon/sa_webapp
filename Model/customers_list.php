@@ -28,12 +28,12 @@ try {
 
     $allowedSorts = [
         'customer_id' => 'c.CustomerID',
-        'customer_name' => 'c.Customer_Name',
+        'customer_name' => 'c.CustomerName',
         'organization' => 'c.OrgName',
         'email' => 'c.Email',
         'phone' => 'c.Phone',
         'status' => 'c.Status',
-        'location_name' => 'l.Loc_Name',
+        'ref_customer_id' => 'c.RefCustomerID',
     ];
     $sortKey = $_GET['sort_key'] ?? 'customer_name';
     if (!isset($allowedSorts[$sortKey])) {
@@ -53,11 +53,12 @@ try {
 
     if ($search !== '') {
         $whereClauses[] = '(
-            c.Customer_Name LIKE :search
+            c.CustomerName LIKE :search
             OR c.OrgName LIKE :search
             OR c.Email LIKE :search
             OR c.Phone LIKE :search
             OR c.TaxID LIKE :search
+            OR c.RefCustomerID LIKE :search
             OR CAST(c.CustomerID AS CHAR) LIKE :search
         )';
         $params[':search'] = '%' . $search . '%';
@@ -95,15 +96,17 @@ try {
     $dataSql = "
         SELECT
             c.CustomerID AS customer_id,
-            c.Customer_Name AS customer_name,
+            c.RefCustomerID AS ref_customer_id,
+            c.CustomerName AS customer_name,
             c.OrgName AS organization,
             c.Email AS email,
             c.Phone AS phone,
             c.TaxID AS tax_id,
+            c.ContactPerson AS contact_person,
             c.Status AS status,
             c.Notes AS notes,
             c.LocationID AS location_id,
-            l.Loc_Name AS location_name
+            l.LocationName AS location_name
         FROM customers c
         LEFT JOIN locations l ON l.LocationID = c.LocationID
         $whereSql

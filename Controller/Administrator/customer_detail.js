@@ -5,15 +5,31 @@
     const codeField = document.getElementById('customerCode');
     const nameField = document.getElementById('customerName');
     const orgField = document.getElementById('customerOrg');
+    const contactField = document.getElementById('customerContact');
     const emailField = document.getElementById('customerEmail');
     const phoneField = document.getElementById('customerPhone');
     const taxField = document.getElementById('customerTax');
     const statusField = document.getElementById('customerStatus');
     const locationField = document.getElementById('customerLocation');
     const notesField = document.getElementById('customerNotes');
+    const refField = document.getElementById('customerRefCode');
     const backButton = document.getElementById('btnBack');
     const saveButton = document.getElementById('btnSave');
     const breadcrumbLink = document.querySelector('.breadcrumb a');
+
+    const meta = {
+        ref_customer_id: refField?.value.trim() || '',
+        customer_name: nameField?.value.trim() || '',
+        org_name: orgField?.value.trim() || '',
+        contact_person: contactField?.value.trim() || '',
+        statusMeta: document.getElementById('customerStatusMeta'),
+        statusBadge: document.getElementById('customerStatusBadge'),
+        statusText: document.getElementById('customerStatusText'),
+        createdAt: document.getElementById('customerCreatedAt'),
+        createdBy: document.getElementById('customerCreatedBy'),
+        updatedAt: document.getElementById('customerUpdatedAt'),
+        updatedBy: document.getElementById('customerUpdatedBy'),
+    };
 
     const params = new URLSearchParams(window.location.search);
     const customerIdParam = params.get('customer_id');
@@ -76,10 +92,71 @@
         }
     }
 
+    function formatDateTime(value) {
+        if (!value) {
+            return '—';
+        }
+        const date = new Date(value.replace(' ', 'T'));
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+        return date.toLocaleString('th-TH', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+        });
+    }
+
+    function applyStatusChip(status) {
+        if (!meta.statusBadge || !meta.statusText) return;
+        const normalized = typeof status === 'string' ? status.toLowerCase() : '';
+        let displayText = '—';
+        if (normalized === 'active') displayText = 'ใช้งาน';
+        if (normalized === 'inactive') displayText = 'ปิดใช้งาน';
+        meta.statusText.textContent = `สถานะ: ${displayText}`;
+        if (normalized === 'active' || normalized === 'inactive') {
+            meta.statusBadge.dataset.status = normalized;
+        } else {
+            delete meta.statusBadge.dataset.status;
+        }
+    }
+
+    function updateMeta(data) {
+        if (meta.id) {
+            meta.id.textContent = data?.customer_id != null ? String(data.customer_id) : '—';
+        }
+        if (meta.ref) {
+            const refText = data?.ref_customer_id ? data.ref_customer_id : '—';
+            meta.ref.textContent = `รหัสอ้างอิง: ${refText}`;
+        }
+        if (meta.statusMeta) {
+            const label = data?.status === 'active' ? 'ใช้งาน' : data?.status === 'inactive' ? 'ปิดใช้งาน' : '—';
+            meta.statusMeta.textContent = `สถานะ: ${label}`;
+        }
+        applyStatusChip(data?.status);
+        if (meta.createdAt) {
+            meta.createdAt.textContent = `สร้างเมื่อ: ${formatDateTime(data?.created_at)}`;
+        }
+        if (meta.createdBy) {
+            meta.createdBy.textContent = `สร้างโดย: ${data?.created_by_label || '—'}`;
+        }
+        if (meta.updatedAt) {
+            meta.updatedAt.textContent = `อัปเดตล่าสุด: ${formatDateTime(data?.updated_at)}`;
+        }
+        if (meta.updatedBy) {
+            meta.updatedBy.textContent = `ปรับปรุงโดย: ${data?.updated_by_label || '—'}`;
+        }
+    }
+
+    function resetMeta() {
+        updateMeta({});
+    }
+
     function populateForm(data) {
         const snapshot = {
+            ref_customer_id: data.ref_customer_id || '',
             customer_name: data.customer_name || '',
             org_name: data.organization || '',
+            contact_person: data.contact_person || '',
             email: data.email || '',
             phone: data.phone || '',
             tax_id: data.tax_id || '',
@@ -87,14 +164,17 @@
             location_id: data.location_id != null ? String(data.location_id) : '',
             notes: data.notes || '',
         };
-        nameField.value = snapshot.customer_name;
-        orgField.value = snapshot.org_name;
-        emailField.value = snapshot.email;
-        phoneField.value = snapshot.phone;
-        taxField.value = snapshot.tax_id;
-        statusField.value = snapshot.status;
-        locationField.value = snapshot.location_id;
-        notesField.value = snapshot.notes;
+        if (refField) refField.value = snapshot.ref_customer_id;
+        if (nameField) nameField.value = snapshot.customer_name;
+        if (orgField) orgField.value = snapshot.org_name;
+        if (contactField) contactField.value = snapshot.contact_person;
+        if (emailField) emailField.value = snapshot.email;
+        if (phoneField) phoneField.value = snapshot.phone;
+        if (taxField) taxField.value = snapshot.tax_id;
+        if (statusField) statusField.value = snapshot.status;
+        if (locationField) locationField.value = snapshot.location_id;
+        if (notesField) notesField.value = snapshot.notes;
+        updateMeta(data);
         initialSnapshot = serializeForm();
         setDirty(false);
     }
@@ -112,6 +192,7 @@
         if (statusField) {
             statusField.value = 'active';
         }
+        resetMeta();
         initialSnapshot = serializeForm();
         setDirty(false);
         showMessage('');
@@ -146,6 +227,7 @@
             populateForm(data);
         } catch (error) {
             showMessage('ไม่สามารถโหลดข้อมูลลูกค้าได้', 'error');
+            prepareCreateMode();
         }
     }
 
@@ -166,6 +248,9 @@
             body: JSON.stringify(payload),
         });
         if (!response.ok) {
+            if (response.status === 409) {
+                throw new Error('ref_customer_exists');
+            }
             throw new Error('network');
         }
         const result = await response.json();
@@ -183,6 +268,9 @@
             body: JSON.stringify({ customer_id: currentCustomerId, ...payload }),
         });
         if (!response.ok) {
+            if (response.status === 409) {
+                throw new Error('ref_customer_exists');
+            }
             throw new Error('network');
         }
         const result = await response.json();
@@ -201,13 +289,7 @@
             nameField.focus();
             return;
         }
-        const statusValue = statusField.value;
-        if (!['active', 'inactive'].includes(statusValue)) {
-            showMessage('สถานะไม่ถูกต้อง', 'error');
-            return;
-        }
         const payload = getPayload();
-        payload.status = statusValue;
         isSaving = true;
         setDirty(false);
         if (saveButton) {
@@ -215,28 +297,26 @@
         }
         showMessage('กำลังบันทึก...', 'info');
         try {
-            const data = isCreateMode ? await createCustomer(payload) : await updateCustomer(payload);
+            const wasCreate = isCreateMode;
+            const data = wasCreate ? await createCustomer(payload) : await updateCustomer(payload);
             currentCustomerId = String(data.customer_id);
-            if (codeField) {
-                codeField.value = currentCustomerId;
-            }
-            if (heading) {
-                heading.textContent = data.customer_name || `ลูกค้า #${currentCustomerId}`;
-            }
+            isCreateMode = false;
+            heading.textContent = data.customer_name || `ลูกค้า #${currentCustomerId}`;
+            codeField.value = currentCustomerId;
             populateForm(data);
-            setDirty(false);
-            showMessage(isCreateMode ? 'สร้างลูกค้าเรียบร้อยแล้ว' : 'บันทึกข้อมูลลูกค้าเรียบร้อยแล้ว', 'success');
-            if (isCreateMode) {
-                params.set('customer_id', currentCustomerId);
-                params.delete('mode');
-                const newQuery = params.toString();
-                const newUrl = newQuery ? `${window.location.pathname}?${newQuery}` : window.location.pathname;
-                window.history.replaceState({}, '', newUrl);
-                isCreateMode = false;
-            }
+            showMessage(wasCreate ? 'สร้างลูกค้าเรียบร้อยแล้ว' : 'บันทึกข้อมูลลูกค้าเรียบร้อยแล้ว', 'success');
+            params.set('customer_id', currentCustomerId);
+            params.delete('mode');
+            const newQuery = params.toString();
+            const newUrl = newQuery ? `${window.location.pathname}?${newQuery}` : window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
         } catch (error) {
             setDirty(true);
-            showMessage('ไม่สามารถบันทึกข้อมูลลูกค้าได้ โปรดลองอีกครั้ง', 'error');
+            if (error.message === 'ref_customer_exists') {
+                showMessage('รหัสอ้างอิงนี้ถูกใช้แล้ว กรุณาเลือกใหม่', 'error');
+            } else {
+                showMessage('ไม่สามารถบันทึกข้อมูลลูกค้าได้ โปรดลองอีกครั้ง', 'error');
+            }
         } finally {
             isSaving = false;
             if (saveButton) {
@@ -261,8 +341,7 @@
         form.addEventListener('input', () => {
             if (!initialSnapshot) return;
             const snapshot = serializeForm();
-            const keys = Object.keys(snapshot);
-            const dirty = keys.some((key) => snapshot[key] !== initialSnapshot[key]);
+            const dirty = Object.keys(snapshot).some((key) => snapshot[key] !== initialSnapshot[key]);
             setDirty(dirty);
         });
     }

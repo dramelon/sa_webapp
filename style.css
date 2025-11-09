@@ -1191,6 +1191,16 @@ body {
     color: #297d1f;
 }
 
+.status-chip[data-status="active"] {
+    background: #d9f4d1;
+    color: #297d1f;
+}
+
+.status-chip[data-status="inactive"] {
+    background: #ececf0;
+    color: #555770;
+}
+
 .status-chip[data-status="cancelled"] {
     background: #ffd7d2;
     color: #b02020;

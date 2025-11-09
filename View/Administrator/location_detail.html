@@ -74,6 +74,29 @@
             </div>
         </section>
 
+        <section class="detail-meta" aria-live="polite">
+            <div class="meta-primary">
+                <p class="meta-label">รหัสสถานที่</p>
+                <h3 id="locationIdDisplay">—</h3>
+                <p class="meta-sub" id="locationRef">รหัสอ้างอิง: —</p>
+                <p class="meta-sub" id="locationStatusMeta">สถานะ: —</p>
+            </div>
+            <div class="meta-secondary">
+                <span class="status-chip" id="locationStatusBadge" aria-live="polite">
+                    <span class="dot"></span>
+                    <span id="locationStatusText">สถานะ: —</span>
+                </span>
+                <div class="meta-group">
+                    <p class="meta-updated" id="locationUpdatedAt">อัปเดตล่าสุด: —</p>
+                    <p class="meta-updated-by" id="locationUpdatedBy">ปรับปรุงโดย: —</p>
+                </div>
+                <div class="meta-group">
+                    <p class="meta-created" id="locationCreatedAt">สร้างเมื่อ: —</p>
+                    <p class="meta-created-by" id="locationCreatedBy">สร้างโดย: —</p>
+                </div>
+            </div>
+        </section>
+        
         <section class="detail-card">
             <header class="detail-card-head">
                 <h3>ข้อมูลสถานที่</h3>
@@ -88,8 +111,20 @@
                             <input type="text" id="locationCode" value="ใหม่" readonly />
                         </label>
                         <label class="field-block">
+                            <span class="field-label">รหัสอ้างอิง</span>
+                            <input type="text" name="ref_location_id" id="locationRefCode" maxlength="30" />
+                        </label>
+                        <label class="field-block">
                             <span class="field-label">ชื่อสถานที่ *</span>
                             <input type="text" name="location_name" id="locationName" required />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">อีเมลติดต่อ</span>
+                            <input type="email" name="email" id="locationEmail" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">เบอร์โทรศัพท์</span>
+                            <input type="text" name="phone" id="locationPhone" />
                         </label>
                         <label class="field-block">
                             <span class="field-label">บ้านเลขที่</span>
@@ -107,12 +142,12 @@
                             <span class="field-label">ชั้น</span>
                             <input type="text" name="floor" id="locationFloor" />
                         </label>
+                        </div>
+                    <div class="detail-column">
                         <label class="field-block">
                             <span class="field-label">ห้อง</span>
                             <input type="text" name="room" id="locationRoom" />
                         </label>
-                    </div>
-                    <div class="detail-column">
                         <label class="field-block">
                             <span class="field-label">ถนน</span>
                             <input type="text" name="street" id="locationStreet" />
@@ -136,6 +171,13 @@
                         <label class="field-block">
                             <span class="field-label">ประเทศ</span>
                             <input type="text" name="country" id="locationCountry" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">สถานะ *</span>
+                            <select name="status" id="locationStatus" required>
+                                <option value="active">เปิดใช้งาน</option>
+                                <option value="inactive">ปิดใช้งาน</option>
+                            </select>
                         </label>
                         <label class="field-block field-span">
                             <span class="field-label">บันทึกเพิ่มเติม</span>

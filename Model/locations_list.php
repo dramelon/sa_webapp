@@ -22,10 +22,11 @@ try {
 
     $allowedSorts = [
         'location_id' => 'l.LocationID',
-        'location_name' => 'l.Loc_Name',
+        'location_name' => 'l.LocationName',
         'district' => 'l.District',
         'province' => 'l.Province',
         'country' => 'l.Country',
+        'status' => 'l.Status',
     ];
     $sortKey = $_GET['sort_key'] ?? 'location_name';
     if (!isset($allowedSorts[$sortKey])) {
@@ -45,11 +46,14 @@ try {
 
     if ($search !== '') {
         $whereClauses[] = '(
-            l.Loc_Name LIKE :search
+            l.LocationName LIKE :search
             OR l.District LIKE :search
             OR l.Province LIKE :search
             OR l.Country LIKE :search
             OR l.Subdistrict LIKE :search
+            OR l.RefLocationID LIKE :search
+            OR l.Email LIKE :search
+            OR l.Phone LIKE :search
             OR CAST(l.LocationID AS CHAR) LIKE :search
         )';
         $params[':search'] = '%' . $search . '%';
@@ -68,19 +72,25 @@ try {
     $dataSql = "
         SELECT
             l.LocationID AS location_id,
-            l.Loc_Name AS location_name,
-            l.House_Number AS house_number,
+            l.RefLocationID AS ref_location_id,
+            l.LocationName AS location_name,
+            l.Email AS email,
+            l.Phone AS phone,
+            l.HouseNumber AS house_number,
             l.Village AS village,
-            l.Building_Name AS building_name,
+            l.BuildingName AS building_name,
             l.Floor AS floor,
             l.Room AS room,
             l.Street AS street,
             l.Subdistrict AS subdistrict,
             l.District AS district,
             l.Province AS province,
-            l.Postal_Code AS postal_code,
+            l.PostalCode AS postal_code,
             l.Country AS country,
-            l.Notes AS notes
+            l.Note AS notes,
+            l.Status AS status,
+            l.CreatedAt AS created_at,
+            l.UpdatedAt AS updated_at
         FROM locations l
         $whereSql
         ORDER BY $orderSql
