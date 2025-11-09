@@ -48,11 +48,11 @@ try {
         $orderSql .= ', c.CustomerID ASC';
     }
 
-    $whereClauses = [];
-    $params = [];
+    $searchClauses = [];
+    $searchParams = [];
 
     if ($search !== '') {
-        $whereClauses[] = '(
+        $searchClauses[] = '(
             c.CustomerName LIKE :search
             OR c.OrgName LIKE :search
             OR c.Email LIKE :search
@@ -61,15 +61,19 @@ try {
             OR c.RefCustomerID LIKE :search
             OR CAST(c.CustomerID AS CHAR) LIKE :search
         )';
-        $params[':search'] = '%' . $search . '%';
+        $searchParams[':search'] = '%' . $search . '%';
     }
+
+    $dataClauses = $searchClauses;
+    $dataParams = $searchParams;
 
     if ($status !== 'all') {
-        $whereClauses[] = 'c.Status = :status';
-        $params[':status'] = $status;
+        $dataClauses[] = 'c.Status = :status';
+        $dataParams[':status'] = $status;
     }
 
-    $whereSql = $whereClauses ? 'WHERE ' . implode(' AND ', $whereClauses) : '';
+    $whereSql = $dataClauses ? 'WHERE ' . implode(' AND ', $dataClauses) : '';
+    $countWhereSql = $searchClauses ? 'WHERE ' . implode(' AND ', $searchClauses) : '';
 
     $counts = [
         'all' => 0,
@@ -77,11 +81,10 @@ try {
         'inactive' => 0,
     ];
 
-    $countsSql = "SELECT c.Status AS status, COUNT(*) AS total FROM customers c $whereSql GROUP BY c.Status";
+    $countsSql = "SELECT c.Status AS status, COUNT(*) AS total FROM customers c $countWhereSql GROUP BY c.Status";
     $countsStmt = $db->prepare($countsSql);
-    foreach ($params as $key => $value) {
-        $paramType = $key === ':status' ? PDO::PARAM_STR : PDO::PARAM_STR;
-        $countsStmt->bindValue($key, $value, $paramType);
+    foreach ($searchParams as $key => $value) {
+        $countsStmt->bindValue($key, $value, PDO::PARAM_STR);
     }
     $countsStmt->execute();
     foreach ($countsStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -115,9 +118,8 @@ try {
     ";
 
     $stmt = $db->prepare($dataSql);
-    foreach ($params as $key => $value) {
-        $paramType = $key === ':status' ? PDO::PARAM_STR : PDO::PARAM_STR;
-        $stmt->bindValue($key, $value, $paramType);
+    foreach ($dataParams as $key => $value) {
+        $stmt->bindValue($key, $value, PDO::PARAM_STR);
     }
     $stmt->bindValue(':limit', CUSTOMERS_PER_PAGE + 1, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);

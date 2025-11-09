@@ -132,7 +132,6 @@ function fetchCustomerDetail(PDO $db, int $customerId): array
             c.CustomerID AS customer_id,
             c.RefCustomerID AS ref_customer_id,
             c.CustomerName AS customer_name,
-            c.Customer_Name AS customer_name,
             c.OrgName AS organization,
             c.Email AS email,
             c.Phone AS phone,
@@ -140,6 +139,7 @@ function fetchCustomerDetail(PDO $db, int $customerId): array
             c.TaxID AS tax_id,
             c.Status AS status,
             c.Notes AS notes,
+            c.LocationID AS location_id,
             c.CreatedAt AS created_at,
             c.UpdatedAt AS updated_at,
             c.CreatedBy AS created_by_id,
@@ -149,11 +149,10 @@ function fetchCustomerDetail(PDO $db, int $customerId): array
             created.Role AS created_by_role,
             updated.FullName AS updated_by_name,
             updated.Role AS updated_by_role
-            l.Loc_Name AS location_name
         FROM customers c
+        LEFT JOIN locations l ON l.LocationID = c.LocationID
         LEFT JOIN staffs created ON created.StaffID = c.CreatedBy
         LEFT JOIN staffs updated ON updated.StaffID = c.UpdatedBy
-        LEFT JOIN locations l ON l.LocationID = c.LocationID
         WHERE c.CustomerID = :id
         LIMIT 1
     ";
@@ -164,6 +163,7 @@ function fetchCustomerDetail(PDO $db, int $customerId): array
     $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
     return [
+        'customer_id' => $customerId,
         'ref_customer_id' => $row['ref_customer_id'] ?? null,
         'customer_name' => $row['customer_name'] ?? null,
         'organization' => $row['organization'] ?? null,

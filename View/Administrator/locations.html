@@ -80,6 +80,14 @@
                         <span class="i search"></span>
                         <input type="search" id="locationSearch" placeholder="ค้นหาชื่อสถานที่ อำเภอ จังหวัด หรือประเทศ..." />
                     </label>
+                    <label class="field select">
+                        <span class="i filter"></span>
+                        <select id="locationStatusFilter" aria-label="กรองตามสถานะ">
+                            <option value="all">สถานะทั้งหมด</option>
+                            <option value="active">เปิดใช้งาน</option>
+                            <option value="inactive">ปิดใช้งาน</option>
+                        </select>
+                    </label>
                 </div>
                 <div class="toolbar-group">
                     <button class="ghost" id="btnLocationClear">ล้างการค้นหา</button>
@@ -117,6 +125,12 @@
                             <th scope="col" data-sort-key="country" aria-sort="none">
                                 <button type="button" class="sort-button" data-sort-key="country" data-label="ประเทศ">
                                     ประเทศ
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="status" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="status" data-label="สถานะ">
+                                    สถานะ
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>

@@ -33,8 +33,8 @@ try {
                     COALESCE(Phone, '') AS phone,
                     COALESCE(Email, '') AS email
                 FROM customers
-                WHERE CustomerName LIKE :term OR CAST(CustomerID AS CHAR) LIKE :term OR RefCustomerID LIKE :term
-                ORDER BY CustomerName ASC
+                WHERE Status = 'active' AND (CustomerName LIKE :term OR CAST(CustomerID AS CHAR) LIKE :term OR RefCustomerID LIKE :term)
+                ORDER BY CustomerID DESC
                 LIMIT :limit
             ";
             $stmt = $db->prepare($sql);
@@ -44,8 +44,8 @@ try {
             $sql = "
                 SELECT LocationID AS id, COALESCE(LocationName, '') AS name
                 FROM locations
-                WHERE COALESCE(LocationName, '') LIKE :term OR CAST(LocationID AS CHAR) LIKE :term OR RefLocationID LIKE :term
-                ORDER BY LocationName ASC
+                WHERE Status = 'active' AND (COALESCE(LocationName, '') LIKE :term OR CAST(LocationID AS CHAR) LIKE :term OR RefLocationID LIKE :term)
+                ORDER BY LocationID DESC
                 LIMIT :limit
             ";
             $stmt = $db->prepare($sql);
@@ -55,8 +55,8 @@ try {
             $sql = "
                 SELECT StaffID AS id, COALESCE(FullName, Username) AS name, Role
                 FROM staffs
-                WHERE (COALESCE(FullName, Username) LIKE :term OR CAST(StaffID AS CHAR) LIKE :term OR Role LIKE :term)
-                ORDER BY FullName ASC
+                WHERE Status = 'active' AND (COALESCE(FullName, Username) LIKE :term OR CAST(StaffID AS CHAR) LIKE :term OR Role LIKE :term)
+                ORDER BY StaffID DESC
                 LIMIT :limit
             ";
             $stmt = $db->prepare($sql);

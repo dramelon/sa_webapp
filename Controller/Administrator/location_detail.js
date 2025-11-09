@@ -313,6 +313,11 @@
             }
             populateForm(data);
             showMessage(isCreateMode ? 'สร้างสถานที่เรียบร้อยแล้ว' : 'บันทึกข้อมูลสถานที่เรียบร้อยแล้ว', 'success');
+            try {
+                sessionStorage.setItem('locations:refresh', '1');
+            } catch (storageError) {
+                // ignore storage errors
+            }
             if (isCreateMode) {
                 params.set('location_id', currentLocationId);
                 params.delete('mode');

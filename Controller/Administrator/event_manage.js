@@ -1028,17 +1028,10 @@
 
         renderList(emptyText = 'ไม่พบข้อมูลที่เกี่ยวข้อง') {
             this.list.innerHTML = '';
-            if (!this.items.length) {
-                if (this.supportsInstantCreate) {
-                    this.list.hidden = false;
-                    if (emptyText && emptyText !== 'ไม่พบข้อมูลที่เกี่ยวข้อง') {
-                        const empty = document.createElement('div');
-                        empty.className = 'typeahead-empty';
-                        empty.textContent = emptyText;
-                        this.list.append(empty);
-                    }
-                    this.list.append(this.buildInstantCreateOption());
-                } else if (emptyText) {
+            const hasItems = Array.isArray(this.items) && this.items.length > 0;
+
+            if (!hasItems && !this.supportsInstantCreate) {
+                if (emptyText) {
                     const empty = document.createElement('div');
                     empty.className = 'typeahead-empty';
                     empty.textContent = emptyText;
@@ -1049,30 +1042,52 @@
                 }
                 return;
             }
-            this.list.hidden = false;
-            for (const item of this.items) {
-                const option = document.createElement('button');
-                option.type = 'button';
-                option.className = 'typeahead-option';
-                option.textContent = item.label;
-                option.dataset.value = item.id ?? '';
-                option.addEventListener('click', () => {
-                    const meta = this.type === 'customer'
-                        ? {
-                            name: item.name ?? '',
-                            phone: item.phone ?? '',
-                            email: item.email ?? '',
-                        }
-                        : null;
-                    this.setValue(item.id ?? '', item.label || '', meta);
-                    this.closeList();
 
-                });
-                this.list.append(option);
-            }
+            const fragment = document.createDocumentFragment();
+
             if (this.supportsInstantCreate) {
-                this.list.append(this.buildInstantCreateOption());
+                fragment.append(this.buildInstantCreateOption());
             }
+
+            if (hasItems) {
+                const sortedItems = [...this.items].sort((a, b) => {
+                    const aId = Number(a.id);
+                    const bId = Number(b.id);
+                    if (Number.isFinite(aId) && Number.isFinite(bId)) {
+                        return bId - aId;
+                    }
+                    return String(b.id ?? '').localeCompare(String(a.id ?? ''));
+                });
+                for (const item of sortedItems) {
+                    const option = document.createElement('button');
+                    option.type = 'button';
+                    option.className = 'typeahead-option';
+                    option.textContent = item.label;
+                    option.dataset.value = item.id ?? '';
+                    option.addEventListener('click', () => {
+                        const meta = this.type === 'customer'
+                            ? {
+                                  name: item.name ?? '',
+                                  phone: item.phone ?? '',
+                                  email: item.email ?? '',
+                              }
+                            : this.type === 'location'
+                                ? { name: item.name ?? '' }
+                                : null;
+                        this.setValue(item.id ?? '', item.label || '', meta);
+                        this.closeList();
+                    });
+                    fragment.append(option);
+                }
+            } else if (this.supportsInstantCreate && emptyText) {
+                const empty = document.createElement('div');
+                empty.className = 'typeahead-empty';
+                empty.textContent = emptyText;
+                fragment.append(empty);
+            }
+
+            this.list.append(fragment);
+            this.list.hidden = this.list.children.length === 0;
         }
 
         closeList() {
@@ -2065,6 +2080,11 @@
         refreshDateUiState();
         initialSnapshot = serializeForm();
         setDirtyState(false);
+        try {
+            sessionStorage.setItem('events:refresh', '1');
+        } catch (storageError) {
+            // ignore storage errors
+        }
         closeUnsavedModal();
         showMessage('บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว', 'success');
         if (typeof pendingNavigationAction === 'function') {

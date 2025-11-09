@@ -19,6 +19,11 @@ try {
     $offset = ($page - 1) * LOCATIONS_PER_PAGE;
 
     $search = trim((string) ($_GET['search'] ?? ''));
+    $status = strtolower((string) ($_GET['status'] ?? 'all'));
+    $allowedStatuses = ['all', 'active', 'inactive'];
+    if (!in_array($status, $allowedStatuses, true)) {
+        $status = 'all';
+    }
 
     $allowedSorts = [
         'location_id' => 'l.LocationID',
@@ -41,11 +46,11 @@ try {
         $orderSql .= ', l.LocationID ASC';
     }
 
-    $whereClauses = [];
-    $params = [];
+    $searchClauses = [];
+    $searchParams = [];
 
     if ($search !== '') {
-        $whereClauses[] = '(
+        $searchClauses[] = '(
             l.LocationName LIKE :search
             OR l.District LIKE :search
             OR l.Province LIKE :search
@@ -56,18 +61,36 @@ try {
             OR l.Phone LIKE :search
             OR CAST(l.LocationID AS CHAR) LIKE :search
         )';
-        $params[':search'] = '%' . $search . '%';
+        $searchParams[':search'] = '%' . $search . '%';
     }
 
-    $whereSql = $whereClauses ? 'WHERE ' . implode(' AND ', $whereClauses) : '';
+    $dataClauses = $searchClauses;
+    $dataParams = $searchParams;
 
-    $countSql = "SELECT COUNT(*) AS total FROM locations l $whereSql";
+    if ($status !== 'all') {
+        $dataClauses[] = 'l.Status = :status';
+        $dataParams[':status'] = $status;
+    }
+
+    $whereSql = $dataClauses ? 'WHERE ' . implode(' AND ', $dataClauses) : '';
+    $countWhereSql = $searchClauses ? 'WHERE ' . implode(' AND ', $searchClauses) : '';
+
+    $counts = ['all' => 0, 'active' => 0, 'inactive' => 0];
+
+    $countSql = "SELECT l.Status AS status, COUNT(*) AS total FROM locations l $countWhereSql GROUP BY l.Status";
     $countStmt = $db->prepare($countSql);
-    foreach ($params as $key => $value) {
+    foreach ($searchParams as $key => $value) {
         $countStmt->bindValue($key, $value, PDO::PARAM_STR);
     }
     $countStmt->execute();
-    $total = (int) ($countStmt->fetchColumn() ?: 0);
+    foreach ($countStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $statusKey = strtolower((string) ($row['status'] ?? ''));
+        $total = (int) ($row['total'] ?? 0);
+        if (isset($counts[$statusKey])) {
+            $counts[$statusKey] = $total;
+        }
+        $counts['all'] += $total;
+    }
 
     $dataSql = "
         SELECT
@@ -98,7 +121,7 @@ try {
     ";
 
     $stmt = $db->prepare($dataSql);
-    foreach ($params as $key => $value) {
+    foreach ($dataParams as $key => $value) {
         $stmt->bindValue($key, $value, PDO::PARAM_STR);
     }
     $stmt->bindValue(':limit', LOCATIONS_PER_PAGE + 1, PDO::PARAM_INT);
@@ -118,7 +141,7 @@ try {
         'per_page' => LOCATIONS_PER_PAGE,
         'has_next' => $hasNext,
         'has_prev' => $page > 1,
-        'counts' => ['all' => $total],
+        'counts' => $counts,
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     http_response_code(500);

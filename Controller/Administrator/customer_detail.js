@@ -310,6 +310,11 @@
             const newQuery = params.toString();
             const newUrl = newQuery ? `${window.location.pathname}?${newQuery}` : window.location.pathname;
             window.history.replaceState({}, '', newUrl);
+            try {
+                sessionStorage.setItem('customers:refresh', '1');
+            } catch (storageError) {
+                // ignore storage errors
+            }
         } catch (error) {
             setDirty(true);
             if (error.message === 'ref_customer_exists') {
@@ -366,6 +371,19 @@
 
     window.addEventListener('beforeunload', (event) => {
         if (!isDirty) return;
+        window.addEventListener('pageshow', (event) => {
+        const needsRefresh = sessionStorage.getItem('customers:refresh') === '1';
+        const shouldReload = (event.persisted || needsRefresh) && modelRoot;
+        if (shouldReload) {
+            if (needsRefresh) {
+                sessionStorage.removeItem('customers:refresh');
+            }
+            fetchCustomers();
+        } else if (needsRefresh) {
+            sessionStorage.removeItem('customers:refresh');
+        }
+    });
+
         event.preventDefault();
         event.returnValue = '';
     });

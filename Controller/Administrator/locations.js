@@ -1,5 +1,13 @@
 (function () {
+    const statusOrder = ['all', 'active', 'inactive'];
+    const statusMeta = {
+        all: { label: 'ทั้งหมด', icon: 'stack' },
+        active: { label: 'เปิดใช้งาน', icon: 'check' },
+        inactive: { label: 'ปิดใช้งาน', icon: 'x' },
+    };
+
     const searchInput = document.getElementById('locationSearch');
+    const statusFilter = document.getElementById('locationStatusFilter');
     const clearButton = document.getElementById('btnLocationClear');
     const tableBody = document.getElementById('locationTableBody');
     const emptyState = document.getElementById('locationEmpty');
@@ -12,7 +20,7 @@
     const newLocationBtn = document.getElementById('btnNewLocation');
 
     let locations = [];
-    let totalCount = 0;
+    let counts = { all: 0, active: 0, inactive: 0 };
     let currentPage = 1;
     let hasNext = false;
     let hasPrev = false;
@@ -38,21 +46,58 @@
         }
     };
 
+    function normalizeCounts(source = {}) {
+        const result = { all: 0, active: 0, inactive: 0 };
+        for (const key of Object.keys(result)) {
+            if (key === 'all') {
+                continue;
+            }
+            const value = Number(source[key]);
+            result[key] = Number.isFinite(value) ? value : 0;
+            result.all += result[key];
+        }
+        if (source.all != null && Number.isFinite(Number(source.all))) {
+            result.all = Number(source.all);
+        }
+        return result;
+    }
+
     function renderSummary() {
         if (!summaryWrap) return;
         summaryWrap.innerHTML = '';
-        const card = document.createElement('div');
-        card.className = 'summary-card all';
-        card.dataset.status = 'all';
-        card.classList.add('active');
-        card.innerHTML = `
-            <header>
-                <span class="i stack"></span>
-                <p>สถานที่ทั้งหมด</p>
-            </header>
-            <strong>${totalCount}</strong>
-        `;
-        summaryWrap.append(card);
+        for (const key of statusOrder) {
+            const meta = statusMeta[key];
+            if (!meta) continue;
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'summary-card';
+            card.dataset.status = key;
+            card.innerHTML = `
+                <header>
+                    <span class="i ${meta.icon}"></span>
+                    <p>${meta.label}</p>
+                </header>
+                <strong>${counts[key] ?? 0}</strong>
+            `;
+            summaryWrap.append(card);
+        }
+        updateActiveSummary();
+    }
+
+    function updateActiveSummary() {
+        if (!summaryWrap) return;
+        const current = statusFilter?.value || 'all';
+        summaryWrap.querySelectorAll('.summary-card').forEach((card) => {
+            card.classList.toggle('active', card.dataset.status === current);
+        });
+    }
+
+    function formatStatus(status) {
+        const normalized = typeof status === 'string' ? status.toLowerCase() : 'active';
+        if (normalized === 'inactive') {
+            return '<span class="status-badge cancelled"><span class="dot"></span>ปิดใช้งาน</span>';
+        }
+        return '<span class="status-badge completed"><span class="dot"></span>เปิดใช้งาน</span>';
     }
 
     function escapeHtml(text) {
@@ -76,14 +121,16 @@
         emptyState?.setAttribute('aria-hidden', 'true');
         for (const row of items) {
             const tr = document.createElement('tr');
+            const locationId = row.location_id ?? '';
             tr.innerHTML = `
-                <td>${row.location_id ?? '—'}</td>
+                <td>${locationId || '—'}</td>
                 <td>${row.location_name ? escapeHtml(row.location_name) : '—'}</td>
                 <td>${row.district ? escapeHtml(row.district) : '—'}</td>
                 <td>${row.province ? escapeHtml(row.province) : '—'}</td>
                 <td>${row.country ? escapeHtml(row.country) : '—'}</td>
+                <td>${formatStatus(row.status)}</td>
                 <td class="col-actions">
-                    <button class="action-btn" type="button" data-action="open" data-id="${escapeHtml(String(row.location_id ?? ''))}">
+                    <button class="action-btn" type="button" data-action="open" data-id="${escapeHtml(String(locationId))}">
                         <span class="i list"></span>รายละเอียด
                     </button>
                 </td>
@@ -150,7 +197,7 @@
         if (!tableBody) return;
         tableBody.innerHTML = `
             <tr>
-                <td colspan="6" class="loading">กำลังโหลด...</td>
+                <td colspan="7" class="loading">กำลังโหลด...</td>
             </tr>
         `;
         emptyState?.classList.remove('show');
@@ -165,6 +212,8 @@
         params.set('page', currentPage);
         params.set('sort_key', sortKey);
         params.set('sort_direction', sortDirection);
+        const statusValue = statusFilter?.value || 'all';
+        params.set('status', statusValue);
         const term = searchInput?.value.trim();
         if (term) {
             params.set('search', term);
@@ -179,7 +228,7 @@
                 return;
             }
             locations = Array.isArray(payload.data) ? payload.data : [];
-            totalCount = Number(payload?.counts?.all) || 0;
+            counts = normalizeCounts(payload.counts);
             hasNext = Boolean(payload.has_next);
             hasPrev = Boolean(payload.has_prev);
             renderSummary();
@@ -191,7 +240,7 @@
                 return;
             }
             locations = [];
-            totalCount = 0;
+            counts = normalizeCounts();
             hasNext = false;
             hasPrev = currentPage > 1;
             renderSummary();
@@ -201,7 +250,7 @@
             if (tableBody) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="loading">ไม่สามารถโหลดข้อมูลสถานที่ได้</td>
+                        <td colspan="7" class="loading">ไม่สามารถโหลดข้อมูลสถานที่ได้</td>
                     </tr>
                 `;
             }
@@ -218,6 +267,18 @@
         }, 250);
     }
 
+    function setStatusFilter(value) {
+        if (!statusMeta[value]) {
+            value = 'all';
+        }
+        if (statusFilter) {
+            statusFilter.value = value;
+        }
+        currentPage = 1;
+        updateActiveSummary();
+        fetchLocations();
+    }
+
     if (searchInput) {
         searchInput.addEventListener('input', handleSearchInput);
     }
@@ -227,8 +288,27 @@
             if (searchInput) {
                 searchInput.value = '';
             }
-            currentPage = 1;
-            fetchLocations();
+            if (searchDebounce) {
+                clearTimeout(searchDebounce);
+                searchDebounce = null;
+            }
+            setStatusFilter('all');
+        });
+    }
+
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            setStatusFilter(statusFilter.value || 'all');
+        });
+    }
+
+    if (summaryWrap) {
+        summaryWrap.addEventListener('click', (event) => {
+            const card = event.target.closest('.summary-card');
+            if (!card) {
+                return;
+            }
+            setStatusFilter(card.dataset.status || 'all');
         });
     }
 
@@ -280,6 +360,19 @@
         fetchLocations();
     };
 
+    window.addEventListener('pageshow', (event) => {
+        const needsRefresh = sessionStorage.getItem('locations:refresh') === '1';
+        const shouldReload = (event.persisted || needsRefresh) && modelRoot;
+        if (shouldReload) {
+            if (needsRefresh) {
+                sessionStorage.removeItem('locations:refresh');
+            }
+            fetchLocations();
+        } else if (needsRefresh) {
+            sessionStorage.removeItem('locations:refresh');
+        }
+    });
+    
     if (typeof window.onAppReady === 'function') {
         window.onAppReady(boot);
     }

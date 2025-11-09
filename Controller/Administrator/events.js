@@ -393,6 +393,19 @@
         fetchEvents();
     };
 
+    window.addEventListener('pageshow', (event) => {
+        const needsRefresh = sessionStorage.getItem('events:refresh') === '1';
+        const shouldReload = (event.persisted || needsRefresh) && modelRoot;
+        if (shouldReload) {
+            if (needsRefresh) {
+                sessionStorage.removeItem('events:refresh');
+            }
+            fetchEvents();
+        } else if (needsRefresh) {
+            sessionStorage.removeItem('events:refresh');
+        }
+    });
+
     if (typeof window.onAppReady === 'function') {
         window.onAppReady(boot);
     }
