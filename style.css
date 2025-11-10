@@ -1027,6 +1027,62 @@ body {
     color: #c0392b;
 }
 
+.cell-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.cell-stack .cell-primary {
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.cell-stack .cell-secondary {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: #fff4dd;
+    border: 1px solid #ffd37a;
+    color: #9a6510;
+    line-height: 1;
+}
+
+.type-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.type-badge[data-summary="equipment"] {
+    background: #f5f7ff;
+    border-color: #d5d7de;
+    color: #4c5bb5;
+}
+
+.type-badge[data-summary="material"] {
+    background: #f0fff4;
+    border-color: #bfe8c9;
+    color: #2d7a3a;
+}
+
+.type-badge[data-summary="service"] {
+    background: #ffe8f3;
+    border-color: #ffb8d9;
+    color: #a8437f;
+}
+
 .status-badge {
     display: inline-flex;
     align-items: center;

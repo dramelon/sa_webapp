@@ -31,6 +31,7 @@
 
     let itemUnits = [];
     let counts = normalizeCounts();
+    let baselineCounts = null;
     let currentPage = 1;
     let hasNext = false;
     let hasPrev = false;
@@ -72,6 +73,13 @@
         return next;
     }
 
+    function hasActiveFilters() {
+        const term = searchInput?.value.trim();
+        const statusValue = statusFilter?.value || 'all';
+        const ownershipValue = ownershipFilter?.value || 'all';
+        return Boolean(term) || statusValue !== 'all' || ownershipValue !== 'all';
+    }
+    
     function renderSummary() {
         if (!summaryWrap) return;
         summaryWrap.innerHTML = '';
@@ -110,7 +118,7 @@
         if (!tableBody) return;
         tableBody.innerHTML = `
             <tr>
-                <td colspan="9" class="loading">กำลังโหลด...</td>
+                <td colspan="7" class="loading">กำลังโหลด...</td>
             </tr>
         `;
         emptyState?.classList.remove('show');
@@ -143,7 +151,11 @@
             const payload = await response.json();
             if (token !== lastRequestToken) return;
             itemUnits = Array.isArray(payload.data) ? payload.data : [];
-            counts = normalizeCounts(payload.counts);
+            const normalizedCounts = normalizeCounts(payload.counts);
+            if (!baselineCounts || !hasActiveFilters()) {
+                baselineCounts = normalizedCounts;
+            }
+            counts = baselineCounts || normalizedCounts;
             hasNext = Boolean(payload.has_next);
             hasPrev = Boolean(payload.has_prev);
             renderSummary();
@@ -153,7 +165,8 @@
         } catch (err) {
             if (token !== lastRequestToken) return;
             itemUnits = [];
-            counts = normalizeCounts();
+            const fallbackCounts = baselineCounts || normalizeCounts();
+            counts = fallbackCounts;
             hasNext = false;
             hasPrev = false;
             renderSummary();
@@ -177,14 +190,12 @@
         for (const row of rows) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${escapeHtml(row.item_unit_id ?? '—')}</td>
+                <td>${formatUnitIdentifier(row.serial_number, row.item_unit_id)}</td>
                 <td>${row.item_name ? escapeHtml(row.item_name) : '—'}</td>
-                <td>${row.serial_number ? escapeHtml(row.serial_number) : '—'}</td>
                 <td>${formatStatus(row.status)}</td>
                 <td>${formatOwnership(row.ownership)}</td>
                 <td>${formatDateTime(row.expected_return_at)}</td>
                 <td>${formatDateTime(row.return_at)}</td>
-                <td>${formatDateTime(row.updated_at)}</td>
                 <td class="col-actions">
                     <button class="action-btn" type="button" data-action="open" data-id="${escapeHtml(String(row.item_unit_id ?? ''))}">
                         <span class="i pencil"></span>จัดการ
@@ -195,6 +206,23 @@
         }
     }
 
+    function formatUnitIdentifier(serial, id) {
+        const serialText = (serial || '').trim();
+        const idText = (id || '').trim();
+        if (!serialText && !idText) {
+            return '—';
+        }
+        const parts = [];
+        if (serialText) {
+            parts.push(`<span class="cell-primary">${escapeHtml(serialText)}</span>`);
+        }
+        if (idText) {
+            const className = serialText ? 'cell-secondary' : 'cell-primary';
+            parts.push(`<span class="${className}">${escapeHtml(idText)}</span>`);
+        }
+        return `<div class="cell-stack">${parts.join('')}</div>`;
+    }
+    
     function formatStatus(status) {
         const normalized = typeof status === 'string' ? status.toLowerCase() : 'useable';
         const displayKey = normalized;

@@ -25,6 +25,7 @@
 
     let items = [];
     let counts = normalizeCounts();
+    let baselineCounts = null;
     let currentPage = 1;
     let hasNext = false;
     let hasPrev = false;
@@ -66,6 +67,13 @@
         return next;
     }
 
+    function hasActiveFilters() {
+        const term = searchInput?.value.trim();
+        const typeValue = typeFilter?.value || 'all';
+        const categoryValue = categoryFilter?.value || 'all';
+        return Boolean(term) || typeValue !== 'all' || categoryValue !== 'all';
+    }
+    
     function renderSummary() {
         if (!summaryWrap) return;
         summaryWrap.innerHTML = '';
@@ -140,7 +148,7 @@
         if (!tableBody) return;
         tableBody.innerHTML = `
             <tr>
-                <td colspan="10" class="loading">กำลังโหลด...</td>
+                <td colspan="6" class="loading">กำลังโหลด...</td>
             </tr>
         `;
         emptyState?.classList.remove('show');
@@ -177,7 +185,11 @@
                 return;
             }
             items = Array.isArray(payload.data) ? payload.data : [];
-            counts = normalizeCounts(payload.counts);
+            const normalizedCounts = normalizeCounts(payload.counts);
+            if (!baselineCounts || !hasActiveFilters()) {
+                baselineCounts = normalizedCounts;
+            }
+            counts = baselineCounts || normalizedCounts;
             hasNext = Boolean(payload.has_next);
             hasPrev = Boolean(payload.has_prev);
             renderSummary();
@@ -189,7 +201,8 @@
                 return;
             }
             items = [];
-            counts = normalizeCounts();
+            const fallbackCounts = baselineCounts || normalizeCounts();
+            counts = fallbackCounts;
             hasNext = false;
             hasPrev = false;
             renderSummary();
@@ -212,17 +225,12 @@
 
         for (const row of rows) {
             const tr = document.createElement('tr');
-            const rateText = formatRate(row.rate);
             tr.innerHTML = `
-                <td>${escapeHtml(row.item_id ?? '—')}</td>
-                <td>${row.ref_item_id ? escapeHtml(row.ref_item_id) : '—'}</td>
-                <td>${row.item_name ? escapeHtml(row.item_name) : '—'}</td>
-                <td>${formatType(row.item_type)}</td>
+                <td>${formatItemIdentifier(row.ref_item_id, row.item_id)}</td>
+                <td>${formatItemName(row.item_name, row.brand, row.model)}</td>
+                <td>${formatTypeBadge(row.item_type)}</td>
                 <td>${row.category_name ? escapeHtml(row.category_name) : '—'}</td>
-                <td>${formatBrandModel(row.brand, row.model)}</td>
-                <td>${row.uom ? escapeHtml(row.uom) : '—'}</td>
-                <td>${rateText}</td>
-                <td>${formatDateTime(row.updated_at)}</td>
+                <td>${formatUnit(row.uom)}</td>
                 <td class="col-actions">
                     <button class="action-btn" type="button" data-action="open" data-id="${escapeHtml(String(row.item_id ?? ''))}">
                         <span class="i pencil"></span>จัดการ
@@ -233,47 +241,76 @@
         }
     }
 
-    function formatType(type) {
-        if (!type) return '—';
-        switch (type) {
-            case 'อุปกร':
-                return 'อุปกรณ์';
-            case 'วัสดุ':
-                return 'วัสดุ';
-            case 'บริการ':
-                return 'บริการ';
-            default:
-                return escapeHtml(type);
+    function formatItemIdentifier(refId, itemId) {
+        const reference = (refId || '').trim();
+        const current = (itemId || '').trim();
+        if (!reference && !current) {
+            return '—';
         }
+        const pieces = [];
+        if (reference) {
+            pieces.push(`<span class="cell-primary">${escapeHtml(reference)}</span>`);
+        }
+        if (current) {
+            const className = reference ? 'cell-secondary' : 'cell-primary';
+            pieces.push(`<span class="${className}">${escapeHtml(current)}</span>`);
+        }
+        return `<div class="cell-stack">${pieces.join('')}</div>`;
     }
 
-    function formatBrandModel(brand, model) {
+    function formatItemName(name, brand, model) {
+        const main = (name || '').trim();
+        const brandLine = formatBrandLine(brand, model);
+        if (!main && !brandLine) {
+            return '—';
+        }
+        const parts = [];
+        if (main) {
+            parts.push(`<span class="cell-primary">${escapeHtml(main)}</span>`);
+        }
+        if (brandLine) {
+            parts.push(`<span class="cell-secondary">${brandLine}</span>`);
+        }
+        return `<div class="cell-stack">${parts.join('')}</div>`;
+    }
+
+    function formatBrandLine(brand, model) {
         const b = (brand || '').trim();
         const m = (model || '').trim();
         if (b && m) return `${escapeHtml(b)} / ${escapeHtml(m)}`;
         if (b) return escapeHtml(b);
         if (m) return escapeHtml(m);
-        return '—';
+        return '';
     }
 
-    function formatRate(rate) {
-        if (rate == null || rate === '') {
+    function formatTypeBadge(type) {
+        const normalized = typeof type === 'string' ? type.trim() : '';
+        if (!normalized) {
             return '—';
         }
-        const value = Number(rate);
-        if (!Number.isFinite(value)) {
-            return escapeHtml(String(rate));
-        }
-        return `${value.toFixed(2)} บาท`;
+        const meta = getTypeMeta(normalized);
+        const label = escapeHtml(meta.label);
+        const dataAttr = meta.slug ? ` data-summary="${meta.slug}"` : '';
+        return `<span class="type-badge"${dataAttr}><span class="dot"></span>${label}</span>`;
     }
 
-    function formatDateTime(value) {
-        if (!value) return '—';
-        const date = new Date(value.replace(' ', 'T'));
-        if (Number.isNaN(date.getTime())) {
-            return escapeHtml(String(value));
+    function getTypeMeta(type) {
+        switch (type) {
+            case 'อุปกร':
+            case 'อุปกรณ์':
+                return { label: 'อุปกรณ์', slug: 'equipment' };
+            case 'วัสดุ':
+                return { label: 'วัสดุ', slug: 'material' };
+            case 'บริการ':
+                return { label: 'บริการ', slug: 'service' };
+            default:
+                return { label: type, slug: '' };
         }
-        return date.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function formatUnit(value) {
+        const text = (value || '').trim();
+        return text ? escapeHtml(text) : '—';
     }
 
     function escapeHtml(text) {

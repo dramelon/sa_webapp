@@ -22,6 +22,7 @@
 
     let categories = [];
     let counts = normalizeCounts();
+    let baselineCounts = null;
     let currentPage = 1;
     let hasNext = false;
     let hasPrev = false;
@@ -65,6 +66,11 @@
         return next;
     }
 
+    function hasActiveFilters() {
+        const term = searchInput?.value.trim();
+        return Boolean(term);
+    }
+    
     function renderSummary() {
         if (!summaryWrap) return;
         summaryWrap.innerHTML = '';
@@ -119,7 +125,11 @@
             const payload = await response.json();
             if (token !== lastRequestToken) return;
             categories = Array.isArray(payload.data) ? payload.data : [];
-            counts = normalizeCounts(payload.counts);
+            const normalizedCounts = normalizeCounts(payload.counts);
+            if (!baselineCounts || !hasActiveFilters()) {
+                baselineCounts = normalizedCounts;
+            }
+            counts = baselineCounts || normalizedCounts;
             hasNext = Boolean(payload.has_next);
             hasPrev = Boolean(payload.has_prev);
             renderSummary();
@@ -129,7 +139,8 @@
         } catch (err) {
             if (token !== lastRequestToken) return;
             categories = [];
-            counts = normalizeCounts();
+            const fallbackCounts = baselineCounts || normalizeCounts();
+            counts = fallbackCounts;
             hasNext = false;
             hasPrev = false;
             renderSummary();
