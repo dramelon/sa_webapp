@@ -73,7 +73,7 @@ CREATE TABLE locations (
 
     CreatedAt       DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CreatedBy       INT UNSIGNED     DEFAULT NULL,
-    UpdatedAt       DATETIME         DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    UpdatedAt       DATETIME         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UpdatedBy       INT UNSIGNED     DEFAULT NULL,
 
     PRIMARY KEY (LocationID),
@@ -106,7 +106,7 @@ CREATE TABLE customers (
 
     CreatedAt       DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CreatedBy       INT UNSIGNED     DEFAULT NULL,
-    UpdatedAt       DATETIME         DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    UpdatedAt       DATETIME         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UpdatedBy       INT UNSIGNED     DEFAULT NULL,
 
     PRIMARY KEY (CustomerID),
@@ -146,8 +146,6 @@ CREATE TABLE events (
     UpdatedAt    DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UpdatedBy    INT  UNSIGNED    DEFAULT NULL,
 
-    
-
     PRIMARY KEY (EventID),
     UNIQUE KEY uq_events_ref (RefEventID),
 
@@ -178,4 +176,68 @@ CREATE TABLE events (
     CONSTRAINT fk_event_updatedby
         FOREIGN KEY (UpdatedBy) REFERENCES staffs(StaffID)
         ON DELETE SET NULL ON UPDATE CASCADE
+)
+
+
+
+
+-- ITEMCATEGORY [requirement: staffs] v1
+CREATE TABLE itemcategory (
+    ItemCategoryID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Name           VARCHAR(150) NOT NULL,
+    Note           TEXT DEFAULT NULL,
+    PRIMARY KEY (ItemCategoryID)
+)
+
+
+
+
+-- ITEMS [requirement: staffs, itemcategory] v1
+CREATE TABLE items (
+    ItemID          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    RefItemID       VARCHAR(30) DEFAULT NULL,
+    ItemName        VARCHAR(200) NOT NULL,
+    ItemType        ENUM('อุปกร','วัสดุ','บริการ') NULL DEFAULT 'อุปกร';
+    ItemCategoryID  BIGINT UNSIGNED DEFAULT NULL,
+    Brand           VARCHAR(100) DEFAULT NULL,
+    Model           VARCHAR(100) DEFAULT NULL,
+    UOM             VARCHAR(50) NOT NULL DEFAULT 'unit',
+    Rate            DECIMAL(10,2) DEFAULT NULL,
+    Period          VARCHAR(50) DEFAULT 'day',
+    CreatedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy       INT UNSIGNED DEFAULT NULL,
+    UpdatedAt       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UpdatedBy       INT UNSIGNED DEFAULT NULL,
+    PRIMARY KEY (ItemID),
+    KEY idx_item_category (ItemCategoryID),
+    CONSTRAINT fk_item_category FOREIGN KEY (ItemCategoryID)
+        REFERENCES itemcategory(ItemCategoryID)
+        ON DELETE SET NULL ON UPDATE CASCADE
+)
+
+
+
+
+-- ITEM_UNIT [requirement: staffs, itemcategory, ITEMS] v1
+CREATE TABLE item_unit (
+    ItemUnitID       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    ItemID           BIGINT UNSIGNED NOT NULL,
+    WarehouseID      BIGINT UNSIGNED DEFAULT NULL,
+    SupplierID       BIGINT UNSIGNED DEFAULT NULL,
+    SerialNumber     VARCHAR(150) DEFAULT NULL,
+    OwnerShip        ENUM('company','rented') NULL DEFAULT 'company',
+    ConditionIn      ENUM('good','damaged') NULL DEFAULT 'good',
+    ConditionOut     ENUM('good','damaged') NULL DEFAULT 'good',
+    ExpectedReturnAt DATETIME DEFAULT NULL,
+    ReturnAt         DATETIME DEFAULT NULL,
+    Status           ENUM('useable','in use','pending booking','booked','damaged','reparing','delivering','returned','depreciated') NOT NULL DEFAULT 'useable',
+    CreatedAt        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy        INT UNSIGNED DEFAULT NULL,
+    UpdatedAt        DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UpdatedBy        INT UNSIGNED DEFAULT NULL,
+    PRIMARY KEY (ItemUnitID),
+    KEY idx_itemunit_item (ItemID),
+    CONSTRAINT fk_itemunit_item FOREIGN KEY (ItemID)
+        REFERENCES items(ItemID)
+        ON DELETE CASCADE ON UPDATE CASCADE
 )

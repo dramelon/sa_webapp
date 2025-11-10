@@ -4,11 +4,12 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>จัดการสถานที่</title>
+    <title>หมวดหมู่สินค้า</title>
     <link rel="stylesheet" href="../../style.css" />
 </head>
 
 <body>
+    <!-- Slide-out drawer -->
     <aside id="drawer" class="drawer" aria-hidden="true">
         <nav class="drawer-nav">
             <a class="item" href="./main_menu.html">
@@ -43,11 +44,12 @@
     </aside>
     <div id="scrim" class="scrim" hidden></div>
 
+    <!-- App shell -->
     <div class="topbar">
         <button id="btnMenu" class="hamburger" aria-label="เมนู">
             <span></span><span></span><span></span>
         </button>
-        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - จัดการสถานที่</h1>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - คลังสินค้า</h1>
 
         <div class="account">
             <span class="pill">
@@ -61,106 +63,85 @@
     <main class="page">
         <section class="page-head">
             <div>
-                <h2>รายการสถานที่</h2>
+                <h2>หมวดหมู่สินค้า</h2>
                 <p class="date" id="pageDate">วัน...</p>
             </div>
             <div class="head-actions">
-                <button class="btn btn-secondary" id="btnNewLocation" data-target="./location_detail.html?mode=create">
+                <button class="btn btn-secondary" id="btnNewCategory" data-target="./item_category_manage.html?mode=create">
                     <span class="i plus"></span>
-                    เพิ่มสถานที่ใหม่
+                    เพิ่มหมวดหมู่ใหม่
                 </button>
             </div>
         </section>
 
-        <section class="summary-cards" id="locationSummary" aria-label="จำนวนสถานที่ทั้งหมด">
+        <section class="summary-cards" id="summaryCards" aria-label="ภาพรวมหมวดหมู่สินค้า">
             <!-- Populated by JS -->
         </section>
 
-        <section class="list-panel" id="locationList" aria-live="polite">
+        <section class="list-panel" id="item-category-panel">
             <header class="list-toolbar">
                 <div class="toolbar-group">
                     <label class="field search">
                         <span class="i search"></span>
-                        <input type="search" id="locationSearch" placeholder="ค้นหาชื่อสถานที่ อำเภอ จังหวัด หรือประเทศ..." />
-                    </label>
-                    <label class="field select">
-                        <span class="i filter"></span>
-                        <select id="locationStatusFilter" aria-label="กรองตามสถานะ">
-                            <option value="all">สถานะทั้งหมด</option>
-                            <option value="active">เปิดใช้งาน</option>
-                            <option value="inactive">ปิดใช้งาน</option>
-                        </select>
+                        <input type="search" id="searchInput" placeholder="ค้นหาชื่อหมวดหมู่หรือหมายเหตุ..." />
                     </label>
                 </div>
                 <div class="toolbar-group">
-                    <button class="ghost" id="btnLocationClear">ล้างการค้นหา</button>
+                    <button class="ghost" id="btnClearFilters">ล้างการค้นหา</button>
                 </div>
             </header>
 
             <div class="table-wrap" role="region" aria-live="polite">
-                <table class="event-table location-table">
+                <table class="event-table item-category-table">
                     <thead>
                         <tr>
-                            <th scope="col" data-sort-key="location_id" aria-sort="ascending">
-                                <button type="button" class="sort-button" data-sort-key="location_id" data-label="รหัสสถานที่">
-                                    รหัสสถานที่
+                            <th scope="col" data-sort-key="item_category_id" aria-sort="descending">
+                                <button type="button" class="sort-button" data-sort-key="item_category_id" data-label="รหัสหมวดหมู่">
+                                    รหัสหมวดหมู่
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
-                            <th scope="col" data-sort-key="location_name" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="location_name" data-label="ชื่อสถานที่">
-                                    ชื่อสถานที่
+                            <th scope="col" data-sort-key="name" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="name" data-label="ชื่อหมวดหมู่">
+                                    ชื่อหมวดหมู่
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
-                            <th scope="col" data-sort-key="district" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="district" data-label="อำเภอ / เขต">
-                                    อำเภอ / เขต
+                            <th scope="col" data-sort-key="notes" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="notes" data-label="หมายเหตุ">
+                                    หมายเหตุ
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
-                            <th scope="col" data-sort-key="province" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="province" data-label="จังหวัด">
-                                    จังหวัด
-                                    <span class="sort-indicator" aria-hidden="true"></span>
-                                </button>
-                            </th>
-                            <th scope="col" data-sort-key="country" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="country" data-label="ประเทศ">
-                                    ประเทศ
-                                    <span class="sort-indicator" aria-hidden="true"></span>
-                                </button>
-                            </th>
-                            <th scope="col" data-sort-key="status" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="status" data-label="สถานะ">
-                                    สถานะ
+                            <th scope="col" data-sort-key="item_count" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="item_count" data-label="จำนวนสินค้า">
+                                    จำนวนสินค้า
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
                             <th scope="col" class="col-actions">การจัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="locationTableBody">
+                    <tbody id="categoryTableBody">
                         <!-- Populated by JS -->
                     </tbody>
                 </table>
-                <div class="empty-state" id="locationEmpty" aria-hidden="true">
+                <div class="empty-state" id="emptyState" aria-hidden="true">
                     <span class="i inbox"></span>
-                    <p>ไม่พบสถานที่ตามเงื่อนไขที่เลือก</p>
+                    <p>ไม่พบหมวดหมู่สินค้าตามคำค้นหา</p>
                 </div>
             </div>
-
-            <div class="table-pagination" id="locationPagination" aria-live="polite">
-                <button class="btn btn-ghost" id="locationPrev" type="button">ก่อนหน้า</button>
-                <span class="page-indicator" id="locationPage">หน้า 1</span>
-                <button class="btn btn-secondary" id="locationNext" type="button">หน้าถัดไป</button>
+            <div class="table-pagination" id="paginationControls" aria-live="polite">
+                <button class="btn btn-ghost" id="prevPage" type="button">ก่อนหน้า</button>
+                <span class="page-indicator" id="pageIndicator">หน้า 1</span>
+                <button class="btn btn-secondary" id="nextPage" type="button">หน้าถัดไป</button>
             </div>
         </section>
     </main>
 
     <script src="../../Controller/common/role_guard.js" defer></script>
     <script src="../../Controller/common/ui_shell.js" defer></script>
-    <script src="../../Controller/Administrator/locations.js" defer></script>
+    <script src="../../Controller/Administrator/item_categorys.js" defer></script>
 </body>
 
 </html>

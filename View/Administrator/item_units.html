@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>รายการอีเว้น</title>
+    <title>หน่วยสินค้า</title>
     <link rel="stylesheet" href="../../style.css" />
 </head>
 
@@ -49,7 +49,7 @@
         <button id="btnMenu" class="hamburger" aria-label="เมนู">
             <span></span><span></span><span></span>
         </button>
-        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - ฝ่ายจัดการอีเว้น</h1>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - คลังสินค้า</h1>
 
         <div class="account">
             <span class="pill">
@@ -63,83 +63,77 @@
     <main class="page">
         <section class="page-head">
             <div>
-                <h2>รายการอีเว้น</h2>
+                <h2>รายการหน่วยสินค้า</h2>
                 <p class="date" id="pageDate">วัน...</p>
             </div>
             <div class="head-actions">
-                <button class="btn btn-secondary" id="btnNewEvent" data-target="./event_manage.html?mode=create">
+                <button class="btn btn-secondary" id="btnNewItemUnit" data-target="./item_unit_manage.html?mode=create">
                     <span class="i plus"></span>
-                    สร้างอีเว้นใหม่
+                    เพิ่มหน่วยสินค้าใหม่
                 </button>
             </div>
         </section>
 
-        <section class="summary-cards" id="summaryCards" aria-label="ภาพรวมสถานะอีเว้น">
+        <section class="summary-cards" id="summaryCards" aria-label="ภาพรวมสถานะหน่วยสินค้า">
             <!-- Populated by JS -->
         </section>
 
-        <section class="list-panel" id="my-events">
+        <section class="list-panel" id="item-unit-panel">
             <header class="list-toolbar">
                 <div class="toolbar-group">
                     <label class="field search">
                         <span class="i search"></span>
                         <input type="search" id="searchInput"
-                            placeholder="ค้นหารหัสอ้างอิง รหัสอีเว้น ชื่องาน หรือชื่อผู้ดูแล..." />
+                            placeholder="ค้นหาด้วยรหัสหน่วยสินค้า หมายเลขซีเรียล หรือชื่อสินค้า..." />
                     </label>
                     <label class="field select">
                         <span class="i filter"></span>
                         <select id="statusFilter" aria-label="กรองตามสถานะ">
                             <option value="all">สถานะทั้งหมด</option>
-                            <option value="draft">ร่าง</option>
-                            <option value="planning">วางแผน</option>
-                            <option value="waiting">รอดำเนินการ</option>
-                            <option value="processing">กำลังดำเนินการ</option>
-                            <option value="billing">เรียกเก็บเงิน</option>
-                            <option value="completed">เสร็จสิ้น</option>
-                            <option value="cancelled">ยกเลิก</option>
+                            <option value="useable">พร้อมใช้งาน</option>
+                            <option value="in use">กำลังใช้งาน</option>
+                            <option value="pending booking">รอการจอง</option>
+                            <option value="booked">ถูกจอง</option>
+                            <option value="damaged">ชำรุด</option>
+                            <option value="reparing">กำลังซ่อม</option>
+                            <option value="delivering">กำลังขนส่ง</option>
+                            <option value="returned">ส่งคืนแล้ว</option>
+                            <option value="depreciated">ตัดจำหน่าย</option>
+                        </select>
+                    </label>
+                    <label class="field select">
+                        <span class="i filter"></span>
+                        <select id="ownershipFilter" aria-label="กรองตามความเป็นเจ้าของ">
+                            <option value="all">เจ้าของทั้งหมด</option>
+                            <option value="company">ของบริษัท</option>
+                            <option value="rented">เช่า</option>
                         </select>
                     </label>
                 </div>
                 <div class="toolbar-group">
                     <button class="ghost" id="btnClearFilters">ล้างตัวกรอง</button>
-                    <button class="btn btn-ghost" id="btnExport">
-                        <span class="i download"></span>
-                        ส่งออก
-                    </button>
                 </div>
             </header>
 
             <div class="table-wrap" role="region" aria-live="polite">
-                <table class="event-table">
+                <table class="event-table item-unit-table">
                     <thead>
                         <tr>
-                            <th scope="col" data-sort-key="event_id" aria-sort="descending">
-                                <button type="button" class="sort-button" data-sort-key="event_id" data-label="รหัสอีเว้น">
-                                    รหัสอีเว้น
+                            <th scope="col" data-sort-key="item_unit_id" aria-sort="descending">
+                                <button type="button" class="sort-button" data-sort-key="item_unit_id" data-label="รหัสหน่วย">
+                                    รหัสหน่วย
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
-                            <th scope="col" data-sort-key="event_name" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="event_name" data-label="ชื่องานหรือสถานที่">
-                                    ชื่องาน / สถานที่
+                            <th scope="col" data-sort-key="item_name" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="item_name" data-label="สินค้า">
+                                    สินค้า
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
-                            <th scope="col" data-sort-key="customer_name" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="customer_name" data-label="ลูกค้า">
-                                    ลูกค้า
-                                    <span class="sort-indicator" aria-hidden="true"></span>
-                                </button>
-                            </th>
-                            <th scope="col" data-sort-key="staff_name" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="staff_name" data-label="ผู้รับผิดชอบ">
-                                    ผู้รับผิดชอบ
-                                    <span class="sort-indicator" aria-hidden="true"></span>
-                                </button>
-                            </th>
-                            <th scope="col" data-sort-key="start_date" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="start_date" data-label="วันและเวลาเริ่ม">
-                                    วันและเวลาเริ่ม
+                            <th scope="col" data-sort-key="serial_number" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="serial_number" data-label="หมายเลขซีเรียล">
+                                    หมายเลขซีเรียล
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
@@ -149,16 +143,40 @@
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
+                            <th scope="col" data-sort-key="ownership" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="ownership" data-label="ความเป็นเจ้าของ">
+                                    ความเป็นเจ้าของ
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="expected_return_at" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="expected_return_at" data-label="กำหนดส่งคืน">
+                                    กำหนดส่งคืน
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="return_at" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="return_at" data-label="วันที่ส่งคืน">
+                                    วันที่ส่งคืน
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="updated_at" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="updated_at" data-label="อัปเดตล่าสุด">
+                                    อัปเดตล่าสุด
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
                             <th scope="col" class="col-actions">การจัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="eventTableBody">
+                    <tbody id="itemUnitTableBody">
                         <!-- Populated by JS -->
                     </tbody>
                 </table>
                 <div class="empty-state" id="emptyState" aria-hidden="true">
                     <span class="i inbox"></span>
-                    <p>ไม่พบอีเว้นตามตัวกรองที่เลือก</p>
+                    <p>ไม่พบหน่วยสินค้าตามตัวกรองที่เลือก</p>
                 </div>
             </div>
             <div class="table-pagination" id="paginationControls" aria-live="polite">
@@ -171,7 +189,7 @@
 
     <script src="../../Controller/common/role_guard.js" defer></script>
     <script src="../../Controller/common/ui_shell.js" defer></script>
-    <script src="../../Controller/Administrator/events.js" defer></script>
+    <script src="../../Controller/Administrator/item_units.js" defer></script>
 </body>
 
 </html>

@@ -4,11 +4,12 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>รายละเอียดลูกค้า</title>
+    <title>จัดการสินค้า</title>
     <link rel="stylesheet" href="../../style.css" />
 </head>
 
 <body>
+    <!-- Slide-out drawer -->
     <aside id="drawer" class="drawer" aria-hidden="true">
         <nav class="drawer-nav">
             <a class="item" href="./main_menu.html">
@@ -43,11 +44,12 @@
     </aside>
     <div id="scrim" class="scrim" hidden></div>
 
+    <!-- App shell -->
     <div class="topbar">
         <button id="btnMenu" class="hamburger" aria-label="เมนู">
             <span></span><span></span><span></span>
         </button>
-        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - รายละเอียดลูกค้า</h1>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - คลังสินค้า</h1>
 
         <div class="account">
             <span class="pill">
@@ -61,8 +63,8 @@
     <main class="page detail-page">
         <section class="page-head">
             <div>
-                <p class="breadcrumb"><a href="./customers.html">← กลับไปหน้ารายชื่อลูกค้า</a></p>
-                <h2 id="customerHeading">กำลังโหลด...</h2>
+                <p class="breadcrumb"><a href="./items.html">← กลับไปหน้ารายการสินค้า</a></p>
+                <h2 id="itemHeading">กำลังโหลด...</h2>
                 <p class="date" id="pageDate">วัน...</p>
             </div>
             <div class="head-actions">
@@ -70,93 +72,88 @@
                     <span class="i back"></span>
                     กลับ
                 </button>
-                <button class="btn btn-secondary" type="submit" form="customerForm" id="btnSave">
+                <button class="btn btn-secondary" type="submit" form="itemForm" id="btnSave">
                     <span class="i check"></span>
-                    บันทึกข้อมูลลูกค้า
+                    บันทึกสินค้า
                 </button>
             </div>
         </section>
 
         <section class="detail-meta" aria-live="polite">
             <div class="meta-primary">
-                <p class="meta-label">รหัสลูกค้า</p>
-                <h3 id="customerIdDisplay">—</h3>
-                <p class="meta-sub" id="customerRef">รหัสอ้างอิง: —</p>
-                <p class="meta-sub" id="customerStatusMeta">สถานะ: —</p>
+                <p class="meta-label">รหัสสินค้า</p>
+                <h3 id="itemIdDisplay">—</h3>
+                <p class="meta-sub" id="itemCategoryDisplay">หมวดหมู่: —</p>
+                <p class="meta-sub" id="itemTypeDisplay">ประเภท: —</p>
             </div>
             <div class="meta-secondary">
-                <span class="status-chip" id="customerStatusBadge" aria-live="polite">
-                    <span class="dot"></span>
-                    <span id="customerStatusText">สถานะ: —</span>
-                </span>
                 <div class="meta-group">
-                    <p class="meta-updated" id="customerUpdatedAt">อัปเดตล่าสุด: —</p>
-                    <p class="meta-updated-by" id="customerUpdatedBy">ปรับปรุงโดย: —</p>
+                    <p class="meta-updated" id="itemUpdatedAt">อัปเดตล่าสุด: —</p>
+                    <p class="meta-updated-by" id="itemUpdatedBy">ปรับปรุงโดย: —</p>
                 </div>
                 <div class="meta-group">
-                    <p class="meta-created" id="customerCreatedAt">สร้างเมื่อ: —</p>
-                    <p class="meta-created-by" id="customerCreatedBy">สร้างโดย: —</p>
+                    <p class="meta-created" id="itemCreatedAt">สร้างเมื่อ: —</p>
+                    <p class="meta-created-by" id="itemCreatedBy">สร้างโดย: —</p>
                 </div>
             </div>
         </section>
 
         <section class="detail-card">
             <header class="detail-card-head">
-                <h3>ข้อมูลลูกค้า</h3>
-                <p class="detail-card-sub">ปรับปรุงข้อมูลการติดต่อของลูกค้า</p>
+                <h3>ข้อมูลสินค้า</h3>
+                <p class="detail-card-sub">ตรวจสอบและแก้ไขรายละเอียดสินค้า</p>
             </header>
             <div id="formMessage" class="form-alert" role="alert" hidden></div>
-            <form id="customerForm" class="detail-form" autocomplete="off">
+            <form id="itemForm" class="detail-form" autocomplete="off">
                 <div class="detail-form-columns">
                     <div class="detail-column">
                         <label class="field-block">
-                            <span class="field-label">รหัสลูกค้า</span>
-                            <input type="text" id="customerCode" value="ใหม่" readonly />
+                            <span class="field-label">รหัสสินค้า</span>
+                            <input type="text" id="itemCode" value="—" readonly />
                         </label>
                         <label class="field-block">
                             <span class="field-label">รหัสอ้างอิง</span>
-                            <input type="text" name="ref_customer_id" id="customerRefCode" maxlength="30" />
+                            <input type="text" name="ref_item_id" id="refItemId" maxlength="30" placeholder="เช่น IT25040001" />
                         </label>
                         <label class="field-block">
-                            <span class="field-label">ชื่อลูกค้า *</span>
-                            <input type="text" name="customer_name" id="customerName" required />
+                            <span class="field-label">ชื่อสินค้า *</span>
+                            <input type="text" name="item_name" id="itemName" required />
                         </label>
                         <label class="field-block">
-                            <span class="field-label">ชื่อองค์กร</span>
-                            <input type="text" name="org_name" id="customerOrg" />
+                            <span class="field-label">ประเภทสินค้า *</span>
+                            <select name="item_type" id="itemType" required>
+                                <option value="อุปกร">อุปกรณ์</option>
+                                <option value="วัสดุ">วัสดุ</option>
+                                <option value="บริการ">บริการ</option>
+                            </select>
                         </label>
                         <label class="field-block">
-                            <span class="field-label">ผู้ติดต่อ</span>
-                            <input type="text" name="contact_person" id="customerContact" />
+                            <span class="field-label">หมวดหมู่</span>
+                            <select name="item_category_id" id="itemCategory">
+                                <option value="">— เลือกหมวดหมู่ —</option>
+                            </select>
                         </label>
                         <label class="field-block">
-                            <span class="field-label">อีเมล</span>
-                            <input type="email" name="email" id="customerEmail" />
+                            <span class="field-label">แบรนด์</span>
+                            <input type="text" name="brand" id="itemBrand" maxlength="100" />
                         </label>
                         <label class="field-block">
-                            <span class="field-label">เบอร์โทร</span>
-                            <input type="text" name="phone" id="customerPhone" />
+                            <span class="field-label">รุ่น</span>
+                            <input type="text" name="model" id="itemModel" maxlength="100" />
                         </label>
                     </div>
                     <div class="detail-column">
                         <label class="field-block">
-                            <span class="field-label">เลขผู้เสียภาษี</span>
-                            <input type="text" name="tax_id" id="customerTax" />
+                            <span class="field-label">หน่วยนับ *</span>
+                            <input type="text" name="uom" id="itemUom" maxlength="50" required />
                         </label>
                         <label class="field-block">
-                            <span class="field-label">สถานะ *</span>
-                            <select name="status" id="customerStatus" required>
-                                <option value="active">ใช้งาน</option>
-                                <option value="inactive">ปิดใช้งาน</option>
-                            </select>
+                            <span class="field-label">อัตรา (บาท)</span>
+                            <input type="number" name="rate" id="itemRate" step="0.01" min="0" />
                         </label>
                         <label class="field-block">
-                            <span class="field-label">รหัสสถานที่ (ถ้ามี)</span>
-                            <input type="number" name="location_id" id="customerLocation" min="1" />
-                        </label>
-                        <label class="field-block field-span">
-                            <span class="field-label">บันทึกเพิ่มเติม</span>
-                            <textarea name="notes" id="customerNotes" rows="6" placeholder="ข้อมูลเพิ่มเติมหรือรายละเอียดการติดต่อ"></textarea>
+                            <span class="field-label">ช่วงเวลา</span>
+                            <input type="text" name="period" id="itemPeriod" maxlength="50" placeholder="เช่น day" />
                         </label>
                     </div>
                 </div>
@@ -166,7 +163,7 @@
 
     <script src="../../Controller/common/role_guard.js" defer></script>
     <script src="../../Controller/common/ui_shell.js" defer></script>
-    <script src="../../Controller/Administrator/customer_detail.js" defer></script>
+    <script src="../../Controller/Administrator/item_manage.js" defer></script>
 </body>
 
 </html>
