@@ -198,7 +198,7 @@
             return;
         }
         try {
-            const response = await fetch(`${modelRoot}/item_categories_options.php`, {
+            const response = await fetch(`${modelRoot}/item_categories_option.php`, {
                 credentials: 'same-origin',
             });
             if (!response.ok) return;

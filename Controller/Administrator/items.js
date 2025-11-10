@@ -132,7 +132,7 @@
             return;
         }
         try {
-            const response = await fetch(`${modelRoot}/item_categories_options.php`, { credentials: 'same-origin' });
+            const response = await fetch(`${modelRoot}/item_categories_option.php`, { credentials: 'same-origin' });
             if (!response.ok) return;
             const payload = await response.json();
             if (payload && Array.isArray(payload.data)) {

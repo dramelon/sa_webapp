@@ -43,6 +43,11 @@ try {
     $orderParts = [];
     $orderParts[] = $allowedSorts[$sortKey] . ' ' . strtoupper($sortDirection);
     if ($sortKey !== 'item_id') {
+        $statusFilter = $_GET['status'] ?? 'all';
+    $allowedStatuses = ['all', 'with_items', 'empty'];
+    if (!in_array($statusFilter, $allowedStatuses, true)) {
+        $statusFilter = 'all';
+    }
         $orderParts[] = 'i.ItemID DESC';
     }
     $orderSql = implode(', ', $orderParts);

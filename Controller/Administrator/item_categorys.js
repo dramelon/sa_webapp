@@ -31,6 +31,7 @@
     let modelRoot = '';
     let lastRequestToken = 0;
     let searchDebounce = null;
+    let summaryStatus = 'all';
 
     const updateThaiDate = () => {
         const now = new Date();
@@ -68,7 +69,7 @@
 
     function hasActiveFilters() {
         const term = searchInput?.value.trim();
-        return Boolean(term);
+        return Boolean(term) || summaryStatus !== 'all';
     }
     
     function renderSummary() {
@@ -77,7 +78,8 @@
         for (const key of summaryOrder) {
             const meta = summaryMeta[key];
             if (!meta) continue;
-            const card = document.createElement('div');
+            const card = document.createElement('button');
+            card.type = 'button';
             card.className = 'summary-card';
             card.dataset.status = key;
             if (meta.slug) {
@@ -92,6 +94,17 @@
             `;
             summaryWrap.append(card);
         }
+        updateActiveSummary();
+    }
+    
+    function updateActiveSummary() {
+        if (!summaryWrap) return;
+        summaryWrap.querySelectorAll('.summary-card').forEach((card) => {
+            const { status } = card.dataset;
+            const isActive = status === summaryStatus;
+            card.classList.toggle('active', isActive);
+            card.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
     }
 
     function showLoadingRow() {
@@ -116,6 +129,9 @@
         params.set('sort_direction', sortDirection);
         const term = searchInput?.value.trim();
         if (term) params.set('search', term);
+        if (summaryStatus !== 'all') {
+            params.set('status', summaryStatus);
+        }
 
         try {
             const response = await fetch(`${modelRoot}/item_categories_list.php?${params.toString()}`, {
@@ -222,7 +238,29 @@
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
             if (searchInput) searchInput.value = '';
+            summaryStatus = 'all';
             currentPage = 1;
+            updateActiveSummary();
+            fetchCategoriesList();
+        });
+    }
+
+    if (summaryWrap) {
+        summaryWrap.addEventListener('click', (event) => {
+            const card = event.target.closest('.summary-card');
+            if (!card) return;
+            const status = card.dataset.status;
+            if (!status) return;
+            if (summaryStatus === status) {
+                if (summaryStatus === 'all') {
+                    return;
+                }
+                summaryStatus = 'all';
+            } else {
+                summaryStatus = status;
+            }
+            currentPage = 1;
+            updateActiveSummary();
             fetchCategoriesList();
         });
     }
