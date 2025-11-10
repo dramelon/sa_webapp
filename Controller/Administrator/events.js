@@ -74,7 +74,7 @@
             if (!meta) continue;
             const card = document.createElement('button');
             card.type = 'button';
-            card.className = `summary-card ${key}`;
+            card.className = 'summary-card';
             card.dataset.status = key;
             card.innerHTML = `
         <header>

@@ -1,16 +1,16 @@
 (function () {
     const statusOrder = ['all', 'useable', 'in use', 'pending booking', 'booked', 'delivering', 'reparing', 'damaged', 'returned', 'depreciated'];
     const statusMeta = {
-        all: { label: 'ทั้งหมด', icon: 'stack' },
-        useable: { label: 'พร้อมใช้งาน', icon: 'check' },
-        'in use': { label: 'กำลังใช้งาน', icon: 'progress' },
-        'pending booking': { label: 'รอการจอง', icon: 'calendar' },
-        booked: { label: 'ถูกจอง', icon: 'clip' },
-        delivering: { label: 'กำลังขนส่ง', icon: 'grid' },
-        reparing: { label: 'กำลังซ่อม', icon: 'settings' },
-        damaged: { label: 'ชำรุด', icon: 'x' },
-        returned: { label: 'ส่งคืนแล้ว', icon: 'stack' },
-        depreciated: { label: 'ตัดจำหน่าย', icon: 'wallet' },
+        all: { label: 'ทั้งหมด', icon: 'stack', slug: 'all' },
+        useable: { label: 'พร้อมใช้งาน', icon: 'check', slug: 'useable' },
+        'in use': { label: 'กำลังใช้งาน', icon: 'progress', slug: 'in-use' },
+        'pending booking': { label: 'รอการจอง', icon: 'calendar', slug: 'pending-booking' },
+        booked: { label: 'ถูกจอง', icon: 'clip', slug: 'booked' },
+        delivering: { label: 'กำลังขนส่ง', icon: 'grid', slug: 'delivering' },
+        reparing: { label: 'กำลังซ่อม', icon: 'settings', slug: 'repairing' },
+        damaged: { label: 'ชำรุด', icon: 'x', slug: 'damaged' },
+        returned: { label: 'ส่งคืนแล้ว', icon: 'stack', slug: 'returned' },
+        depreciated: { label: 'ตัดจำหน่าย', icon: 'wallet', slug: 'depreciated' },
     };
 
     const searchInput = document.getElementById('searchInput');
@@ -82,6 +82,9 @@
             card.type = 'button';
             card.className = 'summary-card';
             card.dataset.status = key;
+            if (meta.slug) {
+                card.dataset.summary = meta.slug;
+            }
             card.innerHTML = `
                 <header>
                     <span class="i ${meta.icon}"></span>

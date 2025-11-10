@@ -1,9 +1,9 @@
 (function () {
     const summaryOrder = ['all', 'with_items', 'empty'];
     const summaryMeta = {
-        all: { label: 'หมวดหมู่ทั้งหมด', icon: 'stack' },
-        with_items: { label: 'มีสินค้า', icon: 'check' },
-        empty: { label: 'ยังไม่มีสินค้า', icon: 'inbox' },
+        all: { label: 'หมวดหมู่ทั้งหมด', icon: 'stack', slug: 'all' },
+        with_items: { label: 'มีสินค้า', icon: 'check', slug: 'with-items' },
+        empty: { label: 'ยังไม่มีสินค้า', icon: 'inbox', slug: 'empty' },
     };
 
     const searchInput = document.getElementById('searchInput');
@@ -73,6 +73,10 @@
             if (!meta) continue;
             const card = document.createElement('div');
             card.className = 'summary-card';
+            card.dataset.status = key;
+            if (meta.slug) {
+                card.dataset.summary = meta.slug;
+            }
             card.innerHTML = `
                 <header>
                     <span class="i ${meta.icon}"></span>

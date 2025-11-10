@@ -676,8 +676,14 @@ body {
 }
 
 .summary-card {
-    background: var(--panel);
-    border: 2px solid var(--line);
+    --summary-bg: var(--panel);
+    --summary-border: var(--line);
+    --summary-active-bg: #fff7dd;
+    --summary-active-border: #ffcf66;
+    --summary-header-color: var(--muted);
+    --summary-ink: var(--ink);
+    background: var(--summary-bg);
+    border: 2px solid var(--summary-border);
     border-radius: 16px;
     padding: 16px 18px;
     box-shadow: 0 8px 20px rgba(255, 190, 70, 0.2);
@@ -686,7 +692,7 @@ body {
     cursor: pointer;
     text-align: left;
     font: inherit;
-    color: inherit;
+    color: var(--summary-ink);
     appearance: none;
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
     width: 100%;
@@ -696,14 +702,14 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    color: var(--muted);
+    color: var(--summary-header-color, var(--muted));
     font-weight: 600;
     font-size: 0.92rem;
 }
 
 .summary-card strong {
     font-size: 1.6rem;
-    color: var(--ink);
+    color: var(--summary-ink, var(--ink));
 }
 
 .summary-card:hover {
@@ -716,59 +722,166 @@ body {
     outline-offset: 3px;
 }
 
-.summary-card[data-status="all"] {
-    border-color: #ffd37a;
-    background: #fff4cc;
-}
-
-.summary-card[data-status="active"] {
-    border-color: #a8e89b;
-    background: #f4fff1;
-}
-
-.summary-card[data-status="inactive"] {
-    border-color: #ffb3ab;
-    background: #fff0ed;
-}
-
 .summary-card.active {
-    background: #fff7dd;
+    background: var(--summary-active-bg, #fff7dd);
+    border-color: var(--summary-active-border, #ffcf66);
     box-shadow: 0 12px 30px rgba(255, 190, 70, 0.26);
 }
 
-.summary-card.draft {
-    border-color: #d5d7de;
-    background: #f5f7ff;
+.summary-card[data-status="all"] {
+    --summary-bg: #fff4cc;
+    --summary-border: #ffd37a;
+    --summary-active-bg: #ffe7a1;
+    --summary-active-border: #ffbb3c;
+    --summary-header-color: #a67608;
 }
 
-.summary-card.planning {
-    border-color: #c5dcff;
-    background: #f0f6ff;
+.summary-card[data-status="active"],
+.summary-card[data-summary="completed"],
+.summary-card[data-summary="useable"],
+.summary-card[data-summary="returned"] {
+    --summary-bg: #f4fff1;
+    --summary-border: #a8e89b;
+    --summary-active-bg: #e0f8da;
+    --summary-active-border: #6dc65b;
+    --summary-header-color: #2f7a23;
 }
 
-.summary-card.waiting {
-    border-color: #ffd37a;
-    background: #fff4dd;
+.summary-card[data-status="inactive"],
+.summary-card[data-summary="damaged"],
+.summary-card[data-summary="depreciated"],
+.summary-card[data-summary="cancelled"] {
+    --summary-bg: #fff0ed;
+    --summary-border: #ffb3ab;
+    --summary-active-bg: #ffd9d2;
+    --summary-active-border: #ff8d7f;
+    --summary-header-color: #b14b3f;
 }
 
-.summary-card.processing {
-    border-color: #ffc05a;
-    background: #ffe1b2;
+.summary-card[data-status="draft"],
+.summary-card[data-summary="equipment"],
+.summary-card[data-summary="pending-booking"] {
+    --summary-bg: #f5f7ff;
+    --summary-border: #d5d7de;
+    --summary-active-bg: #e1e7ff;
+    --summary-active-border: #a5b4ff;
+    --summary-header-color: #4c5bb5;
 }
 
-.summary-card.billing {
-    border-color: #ffb8d9;
-    background: #ffe8f3;
+.summary-card[data-status="planning"],
+.summary-card[data-summary="delivering"] {
+    --summary-bg: #eef6ff;
+    --summary-border: #c5dcff;
+    --summary-active-bg: #d4e8ff;
+    --summary-active-border: #93c5ff;
+    --summary-header-color: #295f9d;
 }
 
-.summary-card.completed {
-    border-color: #a8e89b;
-    background: #f4fff1;
+.summary-card[data-status="waiting"],
+.summary-card[data-summary="all"] {
+    --summary-bg: #fff4dd;
+    --summary-border: #ffd37a;
+    --summary-active-bg: #ffe3b0;
+    --summary-active-border: #ffba3b;
+    --summary-header-color: #9a6510;
 }
 
-.summary-card.cancelled {
-    border-color: #ffb3ab;
-    background: #fff0ed;
+.summary-card[data-status="processing"],
+.summary-card[data-summary="in-use"] {
+    --summary-bg: #ffe1b2;
+    --summary-border: #ffc05a;
+    --summary-active-bg: #ffc989;
+    --summary-active-border: #ff9c2a;
+    --summary-header-color: #b85f04;
+}
+
+.summary-card[data-status="billing"],
+.summary-card[data-summary="booked"],
+.summary-card[data-summary="repairing"] {
+    --summary-bg: #ffe8f3;
+    --summary-border: #ffb8d9;
+    --summary-active-bg: #ffd2e9;
+    --summary-active-border: #ff8dc0;
+    --summary-header-color: #a8437f;
+}
+
+.summary-card[data-status="completed"],
+.summary-card[data-summary="useable"],
+.summary-card[data-summary="returned"] {
+    --summary-bg: #f4fff1;
+    --summary-border: #a8e89b;
+    --summary-active-bg: #e0f8da;
+    --summary-active-border: #6dc65b;
+    --summary-header-color: #2f7a23;
+}
+
+.summary-card[data-status="cancelled"],
+.summary-card[data-summary="damaged"],
+.summary-card[data-summary="depreciated"],
+.summary-card[data-summary="empty"] {
+    --summary-bg: #fff0ed;
+    --summary-border: #ffb3ab;
+    --summary-active-bg: #ffd9d2;
+    --summary-active-border: #ff8d7f;
+    --summary-header-color: #b14b3f;
+}
+
+.summary-card[data-summary="useable"] {
+    --summary-header-color: #2f7a23;
+}
+
+.summary-card[data-summary="returned"] {
+    --summary-bg: #f8f8ff;
+    --summary-border: #cfc9ff;
+    --summary-active-bg: #e5e2ff;
+    --summary-active-border: #a59bff;
+    --summary-header-color: #5145b6;
+}
+
+.summary-card[data-summary="material"] {
+    --summary-bg: #f0fff4;
+    --summary-border: #bfe8c9;
+    --summary-active-bg: #dcf7e4;
+    --summary-active-border: #6dcf8a;
+    --summary-header-color: #2d7a3a;
+}
+
+.summary-card[data-summary="service"] {
+    --summary-bg: #ffe8f3;
+    --summary-border: #ffb8d9;
+    --summary-active-bg: #ffd2e9;
+    --summary-active-border: #ff8dc0;
+    --summary-header-color: #a8437f;
+}
+
+.summary-card[data-summary="with-items"] {
+    --summary-bg: #f3fff5;
+    --summary-border: #bfe8c9;
+    --summary-active-bg: #e1f9e6;
+    --summary-active-border: #6dcf83;
+    --summary-header-color: #2d7a3a;
+}
+
+.summary-card[data-summary="depreciated"] {
+    --summary-bg: #fef2e8;
+    --summary-border: #ffbf8b;
+    --summary-active-bg: #ffd9b8;
+    --summary-active-border: #ff9d4c;
+    --summary-header-color: #a35a1f;
+}
+
+.summary-card[data-summary="damaged"] {
+    --summary-bg: #ffe9e8;
+    --summary-border: #ffada3;
+    --summary-active-bg: #ffd0cc;
+    --summary-active-border: #ff8578;
+    --summary-header-color: #b83d31;
+}
+
+.summary-card[data-summary="returned"] strong,
+.summary-card[data-summary="depreciated"] strong,
+.summary-card[data-summary="damaged"] strong {
+    color: var(--ink);
 }
 
 .list-panel {

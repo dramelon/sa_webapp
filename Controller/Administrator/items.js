@@ -1,10 +1,10 @@
 (function () {
     const summaryOrder = ['all', 'อุปกร', 'วัสดุ', 'บริการ'];
     const summaryMeta = {
-        all: { label: 'ทั้งหมด', icon: 'stack' },
-        อุปกร: { label: 'อุปกรณ์', icon: 'box' },
-        วัสดุ: { label: 'วัสดุ', icon: 'stack' },
-        บริการ: { label: 'บริการ', icon: 'check' },
+        all: { label: 'ทั้งหมด', icon: 'stack', slug: 'all' },
+        อุปกร: { label: 'อุปกรณ์', icon: 'box', slug: 'equipment' },
+        วัสดุ: { label: 'วัสดุ', icon: 'stack', slug: 'material' },
+        บริการ: { label: 'บริการ', icon: 'check', slug: 'service' },
     };
 
     const searchInput = document.getElementById('searchInput');
@@ -76,6 +76,9 @@
             card.type = 'button';
             card.className = 'summary-card';
             card.dataset.type = key;
+            if (meta.slug) {
+                card.dataset.summary = meta.slug;
+            }
             card.innerHTML = `
                 <header>
                     <span class="i ${meta.icon}"></span>
