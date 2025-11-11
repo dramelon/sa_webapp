@@ -329,6 +329,19 @@
         formMessage.className = `form-alert ${variant}`;
     }
 
+    function preventEnterSubmit(form) {
+        if (!form) return;
+        form.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            const target = event.target;
+            if (!target || !target.tagName) return;
+            const tagName = target.tagName;
+            if (tagName === 'TEXTAREA' || tagName === 'BUTTON') return;
+            if (target.type && target.type.toLowerCase() === 'submit') return;
+            event.preventDefault();
+        });
+    }
+    
     function showInlineMessage(element, message, variant = 'info') {
         if (!element) return;
         if (!message) {
@@ -1193,6 +1206,7 @@
         btnDiscardChanges.addEventListener('click', () => {
             pendingNavigationAction = null;
             restoreSnapshot(initialSnapshot);
+            showMessage('ยกเลิกการแก้ไขแล้ว', 'info');
         });
     }
 
@@ -1253,12 +1267,7 @@
     if (eventForm) {
         eventForm.addEventListener('input', handleFormMutated);
         eventForm.addEventListener('change', handleFormMutated);
-        eventForm.addEventListener('keydown', (event) => {
-            const tagName = event.target?.tagName;
-            if (event.key === 'Enter' && tagName && tagName !== 'TEXTAREA' && (tagName === 'INPUT' || tagName === 'SELECT')) {
-                event.preventDefault();
-            }
-        });
+        preventEnterSubmit(eventForm);
     }
 
     if (eventStatusField) {
@@ -1332,10 +1341,12 @@
     }
 
     if (customerModalForm) {
+        preventEnterSubmit(customerModalForm);
         customerModalForm.addEventListener('submit', submitCustomerModal);
     }
 
     if (locationModalForm) {
+        preventEnterSubmit(locationModalForm);
         locationModalForm.addEventListener('submit', submitLocationModal);
     }
 
@@ -1814,10 +1825,8 @@
             showInlineMessage(locationModalMessage, successInline, 'success');
             toggleFormLoading(locationModalForm, false);
             closeModal(locationModal);
-            const successMessage = mode === 'create'
-                ? 'สร้างสถานที่ใหม่เรียบร้อยแล้ว อย่าลืมบันทึกอีเว้น'
-                : 'อัปเดตข้อมูลสถานที่เรียบร้อยแล้ว อย่าลืมบันทึกอีเว้น';
-            showMessage(successMessage, 'info');
+            const successMessage = mode === 'create' ? 'สร้างสถานที่เรียบร้อยแล้ว' : 'บันทึกข้อมูลสถานที่เรียบร้อยแล้ว';
+            showMessage(successMessage, 'success');
         } catch (error) {
             toggleFormLoading(locationModalForm, false);
             const fallback = translateLocationError(error?.code, error?.status);

@@ -12,6 +12,13 @@
     const btnBack = document.getElementById('btnBack');
     const btnSave = document.getElementById('btnSave');
     const breadcrumbLink = document.querySelector('.breadcrumb a');
+    const unsavedBanner = document.getElementById('unsavedBanner');
+    const btnDiscardChanges = document.getElementById('btnDiscardChanges');
+    const btnSaveInline = document.getElementById('btnSaveInline');
+    const unsavedModal = document.getElementById('unsavedModal');
+    const btnModalStay = document.getElementById('btnModalStay');
+    const btnModalDiscard = document.getElementById('btnModalDiscard');
+    const btnModalSave = document.getElementById('btnModalSave');
 
     const fieldRefs = {
         item: document.getElementById('unitItemId'),
@@ -36,6 +43,14 @@
     let isSaving = false;
     let initialSnapshot = null;
     let itemOptionsLoaded = false;
+    let pendingNavigationAction = null;
+    let isPopulating = false;
+
+    if (unsavedModal) {
+        unsavedModal.setAttribute('aria-hidden', unsavedModal.hidden ? 'true' : 'false');
+    }
+
+    updateSaveButtonState();
 
     const updateThaiDate = () => {
         const now = new Date();
@@ -80,10 +95,32 @@
         };
     }
 
-    function setDirty(next) {
-        if (isDirty === next) return;
+    function runWithPopulation(callback) {
+        const prev = isPopulating;
+        isPopulating = true;
+        try {
+            callback();
+        } finally {
+            isPopulating = prev;
+        }
+    }
+
+    function updateSaveButtonState() {
+        const disable = isSaving || !isDirty;
+        if (btnSave) btnSave.disabled = disable;
+        if (btnSaveInline) btnSaveInline.disabled = disable;
+    }
+
+    function setDirtyState(next) {
+        if (isDirty === next) {
+            updateSaveButtonState();
+            return;
+        }
         isDirty = next;
-        if (btnSave) btnSave.disabled = isSaving || !isDirty;
+        if (unsavedBanner) {
+            unsavedBanner.hidden = !isDirty;
+        }
+        updateSaveButtonState();
     }
 
     function updateMeta(data) {
@@ -110,33 +147,56 @@
             expected_return_at: formatDateTimeLocal(data?.expected_return_at),
             return_at: formatDateTimeLocal(data?.return_at),
         };
-        if (fieldRefs.item) fieldRefs.item.value = snapshot.item_id;
-        if (fieldRefs.warehouse) fieldRefs.warehouse.value = snapshot.warehouse_id;
-        if (fieldRefs.supplier) fieldRefs.supplier.value = snapshot.supplier_id;
-        if (fieldRefs.serial) fieldRefs.serial.value = snapshot.serial_number;
-        if (fieldRefs.ownership) fieldRefs.ownership.value = snapshot.ownership;
-        if (fieldRefs.conditionIn) fieldRefs.conditionIn.value = snapshot.condition_in;
-        if (fieldRefs.conditionOut) fieldRefs.conditionOut.value = snapshot.condition_out;
-        if (fieldRefs.status) fieldRefs.status.value = snapshot.status;
-        if (fieldRefs.expectedReturn) fieldRefs.expectedReturn.value = snapshot.expected_return_at;
-        if (fieldRefs.returnAt) fieldRefs.returnAt.value = snapshot.return_at;
+        runWithPopulation(() => {
+            if (fieldRefs.item) fieldRefs.item.value = snapshot.item_id;
+            if (fieldRefs.warehouse) fieldRefs.warehouse.value = snapshot.warehouse_id;
+            if (fieldRefs.supplier) fieldRefs.supplier.value = snapshot.supplier_id;
+            if (fieldRefs.serial) fieldRefs.serial.value = snapshot.serial_number;
+            if (fieldRefs.ownership) fieldRefs.ownership.value = snapshot.ownership;
+            if (fieldRefs.conditionIn) fieldRefs.conditionIn.value = snapshot.condition_in;
+            if (fieldRefs.conditionOut) fieldRefs.conditionOut.value = snapshot.condition_out;
+            if (fieldRefs.status) fieldRefs.status.value = snapshot.status;
+            if (fieldRefs.expectedReturn) fieldRefs.expectedReturn.value = snapshot.expected_return_at;
+            if (fieldRefs.returnAt) fieldRefs.returnAt.value = snapshot.return_at;
+        });
         updateMeta(data);
         initialSnapshot = serializeForm();
-        setDirty(false);
+        setDirtyState(false);
+    }
+
+    function restoreSnapshot(snapshot) {
+        if (!snapshot) {
+            return;
+        }
+        runWithPopulation(() => {
+            if (fieldRefs.item) fieldRefs.item.value = snapshot.item_id || '';
+            if (fieldRefs.warehouse) fieldRefs.warehouse.value = snapshot.warehouse_id || '';
+            if (fieldRefs.supplier) fieldRefs.supplier.value = snapshot.supplier_id || '';
+            if (fieldRefs.serial) fieldRefs.serial.value = snapshot.serial_number || '';
+            if (fieldRefs.ownership) fieldRefs.ownership.value = snapshot.ownership || 'company';
+            if (fieldRefs.conditionIn) fieldRefs.conditionIn.value = snapshot.condition_in || 'good';
+            if (fieldRefs.conditionOut) fieldRefs.conditionOut.value = snapshot.condition_out || 'good';
+            if (fieldRefs.status) fieldRefs.status.value = snapshot.status || 'useable';
+            if (fieldRefs.expectedReturn) fieldRefs.expectedReturn.value = snapshot.expected_return_at || '';
+            if (fieldRefs.returnAt) fieldRefs.returnAt.value = snapshot.return_at || '';
+        });
+        setDirtyState(false);
     }
 
     function prepareCreateMode() {
         isCreateMode = true;
         currentUnitId = null;
         if (heading) heading.textContent = 'สร้างหน่วยสินค้าใหม่';
-        form?.reset();
-        if (fieldRefs.ownership) fieldRefs.ownership.value = 'company';
-        if (fieldRefs.conditionIn) fieldRefs.conditionIn.value = 'good';
-        if (fieldRefs.conditionOut) fieldRefs.conditionOut.value = 'good';
-        if (fieldRefs.status) fieldRefs.status.value = 'useable';
+        runWithPopulation(() => {
+            form?.reset();
+            if (fieldRefs.ownership) fieldRefs.ownership.value = 'company';
+            if (fieldRefs.conditionIn) fieldRefs.conditionIn.value = 'good';
+            if (fieldRefs.conditionOut) fieldRefs.conditionOut.value = 'good';
+            if (fieldRefs.status) fieldRefs.status.value = 'useable';
+        });
         updateMeta({});
         initialSnapshot = serializeForm();
-        setDirty(false);
+        setDirtyState(false);
         showMessage('');
     }
 
@@ -260,8 +320,8 @@
         }
 
         isSaving = true;
-        setDirty(false);
-        if (btnSave) btnSave.disabled = true;
+        setDirtyState(false);
+        updateSaveButtonState();
         showMessage('กำลังบันทึก...', 'info');
 
         try {
@@ -289,12 +349,18 @@
             }
             sessionStorage.setItem('item-units:refresh', '1');
             showMessage('บันทึกหน่วยสินค้าเรียบร้อยแล้ว', 'success');
+            closeUnsavedModal();
+            if (typeof pendingNavigationAction === 'function') {
+                const action = pendingNavigationAction;
+                pendingNavigationAction = null;
+                action();
+            }
         } catch (error) {
             showMessage(translateError(error), 'error');
-            setDirty(true);
+            setDirtyState(true);
         } finally {
             isSaving = false;
-            if (btnSave) btnSave.disabled = !isDirty;
+            updateSaveButtonState();
         }
     }
 
@@ -348,52 +414,128 @@
         }
     }
 
+    function handleFieldMutated() {
+        if (isSaving || isPopulating || !initialSnapshot) {
+            updateSaveButtonState();
+            return;
+        }
+        const current = serializeForm();
+        const dirty = JSON.stringify(current) !== JSON.stringify(initialSnapshot);
+        setDirtyState(dirty);
+    }
+
     function attachFieldListeners() {
         if (!form) return;
-        form.addEventListener('input', () => {
-            if (isSaving) return;
-            const current = serializeForm();
-            const dirty = JSON.stringify(current) !== JSON.stringify(initialSnapshot);
-            setDirty(dirty);
-        });
-        form.addEventListener('change', () => {
-            if (isSaving) return;
-            const current = serializeForm();
-            const dirty = JSON.stringify(current) !== JSON.stringify(initialSnapshot);
-            setDirty(dirty);
-        });
+        form.addEventListener('input', handleFieldMutated);
+        form.addEventListener('change', handleFieldMutated);
         form.addEventListener('submit', handleSubmit);
     }
 
-    if (btnBack) {
-        btnBack.addEventListener('click', (event) => {
-            if (isDirty) {
-                const confirmLeave = window.confirm('มีการเปลี่ยนแปลงที่ยังไม่บันทึก ต้องการออกจากหน้านี้หรือไม่?');
-                if (!confirmLeave) {
-                    event.preventDefault();
-                    return;
-                }
+    function openUnsavedModal() {
+        if (!unsavedModal) {
+            return;
+        }
+        unsavedModal.hidden = false;
+        unsavedModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeUnsavedModal() {
+        if (!unsavedModal) {
+            return;
+        }
+        unsavedModal.hidden = true;
+        unsavedModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function triggerSave() {
+        if (!form || isSaving) {
+            return;
+        }
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit(btnSave);
+        } else if (btnSave) {
+            btnSave.click();
+        }
+    }
+
+    function requestNavigation(action) {
+        if (!isDirty) {
+            action();
+            return;
+        }
+        pendingNavigationAction = action;
+        openUnsavedModal();
+    }
+
+    function handleBeforeUnload(event) {
+        if (!isDirty) {
+            return;
+        }
+        event.preventDefault();
+        event.returnValue = '';
+    }
+
+    if (btnDiscardChanges) {
+        btnDiscardChanges.addEventListener('click', () => {
+            pendingNavigationAction = null;
+            restoreSnapshot(initialSnapshot);
+            showMessage('ยกเลิกการแก้ไขแล้ว', 'info');
+        });
+    }
+
+    if (btnSaveInline) {
+        btnSaveInline.addEventListener('click', triggerSave);
+    }
+
+    if (btnModalStay) {
+        btnModalStay.addEventListener('click', () => {
+            pendingNavigationAction = null;
+            closeUnsavedModal();
+        });
+    }
+
+    if (btnModalDiscard) {
+        btnModalDiscard.addEventListener('click', () => {
+            const action = pendingNavigationAction;
+            pendingNavigationAction = null;
+            setDirtyState(false);
+            closeUnsavedModal();
+            if (typeof action === 'function') {
+                action();
             }
-            window.history.back();
+        });
+    }
+
+    if (btnModalSave) {
+        btnModalSave.addEventListener('click', () => {
+            closeUnsavedModal();
+            triggerSave();
+        });
+    }
+
+    if (btnBack) {
+        btnBack.addEventListener('click', () => {
+            requestNavigation(() => {
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = './item_units.html';
+                }
+            });
         });
     }
 
     if (breadcrumbLink) {
         breadcrumbLink.addEventListener('click', (event) => {
-            if (isDirty) {
-                const confirmLeave = window.confirm('มีการเปลี่ยนแปลงที่ยังไม่บันทึก ต้องการออกจากหน้านี้หรือไม่?');
-                if (!confirmLeave) {
-                    event.preventDefault();
-                }
-            }
+            event.preventDefault();
+            const href = breadcrumbLink.getAttribute('href') || './item_units.html';
+            requestNavigation(() => {
+                window.location.href = href;
+            });
         });
     }
 
-    window.addEventListener('beforeunload', (event) => {
-        if (!isDirty) return;
-        event.preventDefault();
-        event.returnValue = '';
-    });
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     async function boot(context) {
         modelRoot = `${context.root}/Model`;

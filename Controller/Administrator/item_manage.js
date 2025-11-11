@@ -12,6 +12,13 @@
     const btnBack = document.getElementById('btnBack');
     const btnSave = document.getElementById('btnSave');
     const breadcrumbLink = document.querySelector('.breadcrumb a');
+    const unsavedBanner = document.getElementById('unsavedBanner');
+    const btnDiscardChanges = document.getElementById('btnDiscardChanges');
+    const btnSaveInline = document.getElementById('btnSaveInline');
+    const unsavedModal = document.getElementById('unsavedModal');
+    const btnModalStay = document.getElementById('btnModalStay');
+    const btnModalDiscard = document.getElementById('btnModalDiscard');
+    const btnModalSave = document.getElementById('btnModalSave');
 
     const fieldRefs = {
         code: document.getElementById('itemCode'),
@@ -36,6 +43,14 @@
     let isSaving = false;
     let initialSnapshot = null;
     let categoriesLoaded = false;
+    let pendingNavigationAction = null;
+    let isPopulating = false;
+
+    if (unsavedModal) {
+        unsavedModal.setAttribute('aria-hidden', unsavedModal.hidden ? 'true' : 'false');
+    }
+
+    updateSaveButtonState();
 
     const updateThaiDate = () => {
         const now = new Date();
@@ -79,14 +94,36 @@
         };
     }
 
-    function setDirty(next) {
+    function runWithPopulation(callback) {
+        const prev = isPopulating;
+        isPopulating = true;
+        try {
+            callback();
+        } finally {
+            isPopulating = prev;
+        }
+    }
+
+    function updateSaveButtonState() {
+        const disable = isSaving || !isDirty;
+        if (btnSave) {
+            btnSave.disabled = disable;
+        }
+        if (btnSaveInline) {
+            btnSaveInline.disabled = disable;
+        }
+    }
+
+    function setDirtyState(next) {
         if (isDirty === next) {
+            updateSaveButtonState();
             return;
         }
         isDirty = next;
-        if (btnSave) {
-            btnSave.disabled = isSaving || !isDirty;
+        if (unsavedBanner) {
+            unsavedBanner.hidden = !isDirty;
         }
+        updateSaveButtonState();
     }
 
     function updateMeta(data) {
@@ -118,18 +155,38 @@
             rate: data?.rate != null ? String(data.rate) : '',
             period: data?.period || 'day',
         };
-        if (fieldRefs.ref) fieldRefs.ref.value = snapshot.ref_item_id;
-        if (fieldRefs.name) fieldRefs.name.value = snapshot.item_name;
-        if (fieldRefs.type) fieldRefs.type.value = snapshot.item_type;
-        if (fieldRefs.category) fieldRefs.category.value = snapshot.item_category_id;
-        if (fieldRefs.brand) fieldRefs.brand.value = snapshot.brand;
-        if (fieldRefs.model) fieldRefs.model.value = snapshot.model;
-        if (fieldRefs.uom) fieldRefs.uom.value = snapshot.uom;
-        if (fieldRefs.rate) fieldRefs.rate.value = snapshot.rate;
-        if (fieldRefs.period) fieldRefs.period.value = snapshot.period;
+        runWithPopulation(() => {
+            if (fieldRefs.ref) fieldRefs.ref.value = snapshot.ref_item_id;
+            if (fieldRefs.name) fieldRefs.name.value = snapshot.item_name;
+            if (fieldRefs.type) fieldRefs.type.value = snapshot.item_type;
+            if (fieldRefs.category) fieldRefs.category.value = snapshot.item_category_id;
+            if (fieldRefs.brand) fieldRefs.brand.value = snapshot.brand;
+            if (fieldRefs.model) fieldRefs.model.value = snapshot.model;
+            if (fieldRefs.uom) fieldRefs.uom.value = snapshot.uom;
+            if (fieldRefs.rate) fieldRefs.rate.value = snapshot.rate;
+            if (fieldRefs.period) fieldRefs.period.value = snapshot.period;
+        });
         updateMeta(data);
         initialSnapshot = serializeForm();
-        setDirty(false);
+        setDirtyState(false);
+    }
+
+    function restoreSnapshot(snapshot) {
+        if (!snapshot) {
+            return;
+        }
+        runWithPopulation(() => {
+            if (fieldRefs.ref) fieldRefs.ref.value = snapshot.ref_item_id || '';
+            if (fieldRefs.name) fieldRefs.name.value = snapshot.item_name || '';
+            if (fieldRefs.type) fieldRefs.type.value = snapshot.item_type || 'อุปกร';
+            if (fieldRefs.category) fieldRefs.category.value = snapshot.item_category_id || '';
+            if (fieldRefs.brand) fieldRefs.brand.value = snapshot.brand || '';
+            if (fieldRefs.model) fieldRefs.model.value = snapshot.model || '';
+            if (fieldRefs.uom) fieldRefs.uom.value = snapshot.uom || '';
+            if (fieldRefs.rate) fieldRefs.rate.value = snapshot.rate || '';
+            if (fieldRefs.period) fieldRefs.period.value = snapshot.period || '';
+        });
+        setDirtyState(false);
     }
 
     function prepareCreateMode() {
@@ -138,16 +195,18 @@
         if (itemHeading) {
             itemHeading.textContent = 'สร้างสินค้าใหม่';
         }
-        if (fieldRefs.code) {
-            fieldRefs.code.value = 'ใหม่';
-        }
-        form?.reset();
-        if (fieldRefs.type) fieldRefs.type.value = 'อุปกร';
-        if (fieldRefs.uom) fieldRefs.uom.value = 'unit';
-        if (fieldRefs.period) fieldRefs.period.value = 'day';
+        runWithPopulation(() => {
+            form?.reset();
+            if (fieldRefs.code) {
+                fieldRefs.code.value = 'ใหม่';
+            }
+            if (fieldRefs.type) fieldRefs.type.value = 'อุปกร';
+            if (fieldRefs.uom) fieldRefs.uom.value = 'unit';
+            if (fieldRefs.period) fieldRefs.period.value = 'day';
+        });
         updateMeta({});
         initialSnapshot = serializeForm();
-        setDirty(false);
+        setDirtyState(false);
         showMessage('');
     }
 
@@ -252,8 +311,8 @@
         }
 
         isSaving = true;
-        setDirty(false);
-        if (btnSave) btnSave.disabled = true;
+        setDirtyState(false);
+        updateSaveButtonState();
         showMessage('กำลังบันทึก...', 'info');
 
         try {
@@ -281,13 +340,19 @@
             }
             sessionStorage.setItem('items:refresh', '1');
             showMessage('บันทึกข้อมูลสินค้าเรียบร้อยแล้ว', 'success');
+            closeUnsavedModal();
+            if (typeof pendingNavigationAction === 'function') {
+                const action = pendingNavigationAction;
+                pendingNavigationAction = null;
+                action();
+            }
         } catch (error) {
             const message = translateError(error);
             showMessage(message, 'error');
-            setDirty(true);
+            setDirtyState(true);
         } finally {
             isSaving = false;
-            if (btnSave) btnSave.disabled = !isDirty;
+            updateSaveButtonState();
         }
     }
 
@@ -344,52 +409,128 @@
         }
     }
 
+    function handleFieldMutated() {
+        if (isSaving || isPopulating || !initialSnapshot) {
+            updateSaveButtonState();
+            return;
+        }
+        const current = serializeForm();
+        const dirty = JSON.stringify(current) !== JSON.stringify(initialSnapshot);
+        setDirtyState(dirty);
+    }
+
     function attachFieldListeners() {
         if (!form) return;
-        form.addEventListener('input', () => {
-            if (isSaving) return;
-            const current = serializeForm();
-            const dirty = JSON.stringify(current) !== JSON.stringify(initialSnapshot);
-            setDirty(dirty);
-        });
-        form.addEventListener('change', () => {
-            if (isSaving) return;
-            const current = serializeForm();
-            const dirty = JSON.stringify(current) !== JSON.stringify(initialSnapshot);
-            setDirty(dirty);
-        });
+        form.addEventListener('input', handleFieldMutated);
+        form.addEventListener('change', handleFieldMutated);
         form.addEventListener('submit', handleSubmit);
     }
 
-    if (btnBack) {
-        btnBack.addEventListener('click', (event) => {
-            if (isDirty) {
-                const confirmLeave = window.confirm('มีการเปลี่ยนแปลงที่ยังไม่บันทึก ต้องการออกจากหน้านี้หรือไม่?');
-                if (!confirmLeave) {
-                    event.preventDefault();
-                    return;
-                }
+    function openUnsavedModal() {
+        if (!unsavedModal) {
+            return;
+        }
+        unsavedModal.hidden = false;
+        unsavedModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeUnsavedModal() {
+        if (!unsavedModal) {
+            return;
+        }
+        unsavedModal.hidden = true;
+        unsavedModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function triggerSave() {
+        if (!form || isSaving) {
+            return;
+        }
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit(btnSave);
+        } else if (btnSave) {
+            btnSave.click();
+        }
+    }
+
+    function requestNavigation(action) {
+        if (!isDirty) {
+            action();
+            return;
+        }
+        pendingNavigationAction = action;
+        openUnsavedModal();
+    }
+
+    function handleBeforeUnload(event) {
+        if (!isDirty) {
+            return;
+        }
+        event.preventDefault();
+        event.returnValue = '';
+    }
+
+    if (btnDiscardChanges) {
+        btnDiscardChanges.addEventListener('click', () => {
+            pendingNavigationAction = null;
+            restoreSnapshot(initialSnapshot);
+            showMessage('ยกเลิกการแก้ไขแล้ว', 'info');
+        });
+    }
+
+    if (btnSaveInline) {
+        btnSaveInline.addEventListener('click', triggerSave);
+    }
+
+    if (btnModalStay) {
+        btnModalStay.addEventListener('click', () => {
+            pendingNavigationAction = null;
+            closeUnsavedModal();
+        });
+    }
+
+    if (btnModalDiscard) {
+        btnModalDiscard.addEventListener('click', () => {
+            const action = pendingNavigationAction;
+            pendingNavigationAction = null;
+            setDirtyState(false);
+            closeUnsavedModal();
+            if (typeof action === 'function') {
+                action();
             }
-            window.history.back();
+        });
+    }
+
+    if (btnModalSave) {
+        btnModalSave.addEventListener('click', () => {
+            closeUnsavedModal();
+            triggerSave();
+        });
+    }
+
+    if (btnBack) {
+        btnBack.addEventListener('click', () => {
+            requestNavigation(() => {
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = './items.html';
+                }
+            });
         });
     }
 
     if (breadcrumbLink) {
         breadcrumbLink.addEventListener('click', (event) => {
-            if (isDirty) {
-                const confirmLeave = window.confirm('มีการเปลี่ยนแปลงที่ยังไม่บันทึก ต้องการออกจากหน้านี้หรือไม่?');
-                if (!confirmLeave) {
-                    event.preventDefault();
-                }
-            }
+            event.preventDefault();
+            const href = breadcrumbLink.getAttribute('href') || './items.html';
+            requestNavigation(() => {
+                window.location.href = href;
+            });
         });
     }
 
-    window.addEventListener('beforeunload', (event) => {
-        if (!isDirty) return;
-        event.preventDefault();
-        event.returnValue = '';
-    });
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     async function boot(context) {
         modelRoot = `${context.root}/Model`;

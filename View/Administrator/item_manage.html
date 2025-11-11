@@ -164,6 +164,26 @@
         </section>
     </main>
 
+    <div id="unsavedBanner" class="unsaved-banner" role="status" hidden>
+        <span class="unsaved-text">ระวัง! ยังไม่ได้บันทึกการเปลี่ยนแปลง</span>
+        <div class="unsaved-actions">
+            <button type="button" class="unsaved-btn unsaved-btn-muted" id="btnDiscardChanges">ยกเลิกการแก้ไข</button>
+            <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnSaveInline">บันทึกการเปลี่ยนแปลง</button>
+        </div>
+    </div>
+
+    <div id="unsavedModal" class="unsaved-modal" hidden aria-hidden="true">
+        <div class="unsaved-modal-card" role="dialog" aria-modal="true" aria-labelledby="unsavedModalTitle">
+            <h3 id="unsavedModalTitle">ยังไม่ได้บันทึกการเปลี่ยนแปลง</h3>
+            <p class="unsaved-modal-text">คุณต้องการบันทึกการแก้ไขก่อนออกจากหน้านี้หรือไม่?</p>
+            <div class="unsaved-modal-actions">
+                <button type="button" class="unsaved-btn unsaved-btn-muted" id="btnModalStay">อยู่ในหน้านี้</button>
+                <button type="button" class="unsaved-btn unsaved-btn-danger" id="btnModalDiscard">ละทิ้งการแก้ไข</button>
+                <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnModalSave">บันทึกและดำเนินการต่อ</button>
+            </div>
+        </div>
+    </div>
+
     <script src="../../Controller/common/role_guard.js" defer></script>
     <script src="../../Controller/common/ui_shell.js" defer></script>
     <script src="../../Controller/Administrator/item_manage.js" defer></script>
