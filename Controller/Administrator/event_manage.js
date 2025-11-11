@@ -995,6 +995,56 @@
             handleFormMutated();
         }
 
+        normalizeQuery(query) {
+            const value = typeof query === 'string' ? query.trim() : '';
+            if (!value) {
+                return '';
+            }
+
+            const hyphenIndex = value.indexOf('-');
+            if (hyphenIndex >= 0) {
+                const beforeRaw = value.slice(0, hyphenIndex).trim();
+                const afterRaw = value.slice(hyphenIndex + 1).trim();
+
+                if (this.type === 'staff') {
+                    const numericPart = beforeRaw.replace(/\D+/g, '');
+                    if (numericPart) {
+                        return numericPart;
+                    }
+                    if (afterRaw) {
+                        return afterRaw;
+                    }
+                    if (beforeRaw) {
+                        return beforeRaw;
+                    }
+                    return value;
+                }
+
+                const digitPart = beforeRaw.replace(/[^0-9]/g, '');
+                if (digitPart) {
+                    return digitPart;
+                }
+                if (beforeRaw) {
+                    return beforeRaw;
+                }
+                if (afterRaw) {
+                    return afterRaw;
+                }
+                return value;
+            }
+
+            if (this.type === 'staff') {
+                if (/^[A-Za-z]+\d+$/.test(value)) {
+                    const numericPart = value.replace(/\D+/g, '');
+                    if (numericPart) {
+                        return numericPart;
+                    }
+                }
+            }
+
+            return value;
+        }
+
         async fetch(query) {
             if (!modelRoot) {
                 return;
@@ -1002,8 +1052,9 @@
             const token = ++this.activeRequest;
             try {
                 const params = new URLSearchParams({ type: this.type });
-                if (query) {
-                    params.set('q', query);
+                const normalizedQuery = this.normalizeQuery(query);
+                if (normalizedQuery) {
+                    params.set('q', normalizedQuery);
                 }
                 const response = await fetch(`${modelRoot}/lookup_search.php?${params.toString()}`, {
                     credentials: 'same-origin',

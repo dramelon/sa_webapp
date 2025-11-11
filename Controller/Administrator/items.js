@@ -229,7 +229,7 @@
                 <td>${formatItemIdentifier(row.ref_item_id, row.item_id)}</td>
                 <td>${formatItemName(row.item_name, row.brand, row.model)}</td>
                 <td>${formatTypeBadge(row.item_type)}</td>
-                <td>${row.category_name ? escapeHtml(row.category_name) : '—'}</td>
+                <td>${formatCategoryBadge(row.category_name)}</td>
                 <td>${formatUnit(row.uom)}</td>
                 <td class="col-actions">
                     <button class="action-btn" type="button" data-action="open" data-id="${escapeHtml(String(row.item_id ?? ''))}">
@@ -302,6 +302,15 @@
         return `<span class="type-badge"${dataAttr}><span class="dot"></span>${label}</span>`;
     }
 
+    function formatCategoryBadge(name) {
+        const normalized = typeof name === 'string' ? name.trim() : '';
+        if (!normalized) {
+            return '—';
+        }
+        const label = escapeHtml(normalized);
+        return `<span class="category-badge"><span class="dot"></span>${label}</span>`;
+    }
+    
     function getTypeMeta(type) {
         switch (type) {
             case 'อุปกร':

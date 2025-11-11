@@ -201,13 +201,13 @@ CREATE TABLE items (
     ItemID          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     RefItemID       VARCHAR(30) DEFAULT NULL,
     ItemName        VARCHAR(200) NOT NULL,
-    ItemType        ENUM('อุปกร','วัสดุ','บริการ') NULL DEFAULT 'อุปกร';
+    ItemType        ENUM('อุปกร','วัสดุ','บริการ','') NULL DEFAULT 'อุปกร';
     ItemCategoryID  BIGINT UNSIGNED DEFAULT NULL,
     Brand           VARCHAR(100) DEFAULT NULL,
     Model           VARCHAR(100) DEFAULT NULL,
     UOM             VARCHAR(50) NOT NULL DEFAULT 'unit',
     Rate            DECIMAL(10,2) DEFAULT NULL,
-    Period          VARCHAR(50) DEFAULT 'day',
+    Period          ENUM('อุปกร','วัสดุ','บริการ','') NOT NULL DEFAULT 'อุปกร';
     CreatedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CreatedBy       INT UNSIGNED DEFAULT NULL,
     UpdatedAt       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

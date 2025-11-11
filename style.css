@@ -1083,6 +1083,27 @@ body {
     color: #a8437f;
 }
 
+.category-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: #f3f0ff;
+    border: 1px solid #d8ccff;
+    color: #5442a5;
+    line-height: 1;
+}
+
+.category-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
 .status-badge {
     display: inline-flex;
     align-items: center;
