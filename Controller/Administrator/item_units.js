@@ -206,9 +206,17 @@
         }
     }
 
+    function normalizeText(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        const text = typeof value === 'string' ? value : String(value);
+        return text.trim();
+    }
+
     function formatUnitIdentifier(serial, id) {
-        const serialText = (serial || '').trim();
-        const idText = (id || '').trim();
+        const serialText = normalizeText(serial);
+        const idText = normalizeText(id);
         if (!serialText && !idText) {
             return '—';
         }

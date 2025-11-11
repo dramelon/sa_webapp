@@ -42,6 +42,12 @@ try {
     }
     $orderSql = implode(', ', $orderParts);
 
+    $allowedStatuses = ['all', 'with_items', 'empty'];
+    $statusFilter = $_GET['status'] ?? 'all';
+    if (!in_array($statusFilter, $allowedStatuses, true)) {
+        $statusFilter = 'all';
+    }
+    
     $search = trim($_GET['search'] ?? '');
     $where = [];
     $params = [];
@@ -89,6 +95,13 @@ try {
     $usageRow = $usageStmt->fetch(PDO::FETCH_ASSOC);
     $usedCategories = (int) ($usageRow['used_total'] ?? 0);
 
+    $havingSql = '';
+    if ($statusFilter === 'with_items') {
+        $havingSql = 'HAVING COUNT(i.ItemID) > 0';
+    } elseif ($statusFilter === 'empty') {
+        $havingSql = 'HAVING COUNT(i.ItemID) = 0';
+    }
+
     $dataSql = "
         SELECT
             ic.ItemCategoryID AS item_category_id,
@@ -99,6 +112,7 @@ try {
         LEFT JOIN items i ON i.ItemCategoryID = ic.ItemCategoryID
         $whereSql
         GROUP BY ic.ItemCategoryID
+        $havingSql
         ORDER BY $orderSql
         LIMIT :limit OFFSET :offset
     ";

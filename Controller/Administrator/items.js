@@ -241,9 +241,17 @@
         }
     }
 
+    function normalizeText(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        const text = typeof value === 'string' ? value : String(value);
+        return text.trim();
+    }
+
     function formatItemIdentifier(refId, itemId) {
-        const reference = (refId || '').trim();
-        const current = (itemId || '').trim();
+        const reference = normalizeText(refId);
+        const current = normalizeText(itemId);
         if (!reference && !current) {
             return '—';
         }
@@ -259,7 +267,7 @@
     }
 
     function formatItemName(name, brand, model) {
-        const main = (name || '').trim();
+        const main = normalizeText(name);
         const brandLine = formatBrandLine(brand, model);
         if (!main && !brandLine) {
             return '—';
@@ -275,8 +283,8 @@
     }
 
     function formatBrandLine(brand, model) {
-        const b = (brand || '').trim();
-        const m = (model || '').trim();
+        const b = normalizeText(brand);
+        const m = normalizeText(model);
         if (b && m) return `${escapeHtml(b)} / ${escapeHtml(m)}`;
         if (b) return escapeHtml(b);
         if (m) return escapeHtml(m);
