@@ -205,7 +205,7 @@
         <td data-label="ผู้รับผิดชอบ">${staffDisplay}</td>
         <td data-label="วันและเวลาเริ่ม">${formatDateTime(ev.start_date)}</td>
         <td data-label="สถานะ">
-          <span class="status-badge ${statusKey}">${statusInfo.label}</span>
+          <span class="status-badge ${statusKey}"><span class="dot"></span>${statusInfo.label}</span>
         </td>
         <td class="col-actions">
           <button class="action-btn" data-action="open" data-id="${escapeHtml(ev.event_id ?? '')}"><span class="i list"></span>รายละเอียด</button>

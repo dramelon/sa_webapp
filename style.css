@@ -1086,45 +1086,117 @@ body {
 .status-badge {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 6px;
     padding: 6px 14px;
     border-radius: 999px;
     font-size: 0.85rem;
-    font-weight: 700;
+    font-weight: 600;
+    line-height: 1;
+    background: #f1f2f6;
+    border: 1px solid #d6d8df;
+    color: #575a67;
+}
+
+.status-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.status-badge.useable {
+    background: #f0fff4;
+    border-color: #bfe8c9;
+    color: #2d7a3a;
+}
+
+.status-badge.in-use {
+    background: #f5f7ff;
+    border-color: #d5d7de;
+    color: #4c5bb5;
+}
+
+.status-badge.pending-booking {
+    background: #fff4dd;
+    border-color: #ffd37a;
+    color: #9a6510;
+}
+
+.status-badge.booked {
+    background: #f0edff;
+    border-color: #d0c4ff;
+    color: #5d43b0;
+}
+
+.status-badge.delivering {
+    background: #e9f6ff;
+    border-color: #b7e0ff;
+    color: #246b9c;
+}
+
+.status-badge.reparing {
+    background: #fff0f0;
+    border-color: #ffc5c5;
+    color: #a63a3a;
+}
+
+.status-badge.damaged {
+    background: #ffe6e2;
+    border-color: #f5b5ad;
+    color: #c0392b;
+}
+
+.status-badge.returned {
+    background: #e8f9eb;
+    border-color: #bfe8c9;
+    color: #1b7f2a;
+}
+
+.status-badge.depreciated {
+    background: #f1f2f6;
+    border-color: #d6d8df;
+    color: #575a67;
 }
 
 .status-badge.draft {
     background: #f1f2f6;
+    border-color: #d6d8df;
     color: #575a67;
 }
 
 .status-badge.planning {
     background: #e6f1ff;
+    border-color: #c2d7ff;
     color: #1f4f9c;
 }
 
 .status-badge.waiting {
-    background: #fff1cc;
-    color: #a46a00;
+    background: #fff4dd;
+    border-color: #ffd37a;
+    color: #9a6510;
 }
 
 .status-badge.processing {
-    background: #ffe0a8;
+    background: #ffe8cc;
+    border-color: #ffc788;
     color: #8b5500;
 }
 
 .status-badge.billing {
     background: #ffe4f3;
+    border-color: #ffbddf;
     color: #a04478;
 }
 
 .status-badge.completed {
     background: #e8f9eb;
+    border-color: #bfe8c9;
     color: #1b7f2a;
 }
 
 .status-badge.cancelled {
     background: #ffe6e2;
+    border-color: #f5b5ad;
     color: #c0392b;
 }
 

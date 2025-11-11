@@ -136,7 +136,6 @@
                 <td>${row.organization ? escapeHtml(row.organization) : '—'}</td>
                 <td>${escapeHtml(buildContact(row))}</td>
                 <td>${formatStatus(row.status)}</td>
-                <td>${locationName ? escapeHtml(locationName) : '—'}</td>
                 <td class="col-actions">
                     <button class="action-btn" type="button" data-action="open" data-id="${escapeHtml(String(row.customer_id ?? ''))}">
                         <span class="i list"></span>รายละเอียด
@@ -199,7 +198,7 @@
         if (!tableBody) return;
         tableBody.innerHTML = `
             <tr>
-                <td colspan="7" class="loading">กำลังโหลด...</td>
+                <td colspan="6" class="loading">กำลังโหลด...</td>
             </tr>
         `;
         emptyState?.classList.remove('show');
@@ -252,7 +251,7 @@
             if (tableBody) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="loading">ไม่สามารถโหลดข้อมูลลูกค้าได้</td>
+                        <td colspan="6" class="loading">ไม่สามารถโหลดข้อมูลลูกค้าได้</td>
                     </tr>
                 `;
             }
