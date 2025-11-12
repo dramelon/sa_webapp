@@ -33,6 +33,11 @@
         returnAt: document.getElementById('unitReturnAt'),
     };
 
+    const ownershipDependentBlocks = {
+        expectedReturn: document.getElementById('fieldExpectedReturn'),
+        returnAt: document.getElementById('fieldReturnAt'),
+    };
+
     const params = new URLSearchParams(window.location.search);
     const unitIdParam = params.get('item_unit_id');
     const isCreateRequested = params.get('mode') === 'create';
@@ -159,6 +164,7 @@
             if (fieldRefs.expectedReturn) fieldRefs.expectedReturn.value = snapshot.expected_return_at;
             if (fieldRefs.returnAt) fieldRefs.returnAt.value = snapshot.return_at;
         });
+        updateOwnershipDependentFields();
         updateMeta(data);
         initialSnapshot = serializeForm();
         setDirtyState(false);
@@ -180,6 +186,7 @@
             if (fieldRefs.expectedReturn) fieldRefs.expectedReturn.value = snapshot.expected_return_at || '';
             if (fieldRefs.returnAt) fieldRefs.returnAt.value = snapshot.return_at || '';
         });
+        updateOwnershipDependentFields();
         setDirtyState(false);
     }
 
@@ -194,6 +201,7 @@
             if (fieldRefs.conditionOut) fieldRefs.conditionOut.value = 'good';
             if (fieldRefs.status) fieldRefs.status.value = 'useable';
         });
+        updateOwnershipDependentFields();
         updateMeta({});
         initialSnapshot = serializeForm();
         setDirtyState(false);
@@ -414,6 +422,19 @@
         }
     }
 
+    function updateOwnershipDependentFields() {
+        const isRented = fieldRefs.ownership?.value === 'rented';
+        const wrappers = [
+            ownershipDependentBlocks.expectedReturn,
+            ownershipDependentBlocks.returnAt,
+        ];
+        for (const wrapper of wrappers) {
+            if (!wrapper) continue;
+            wrapper.style.display = isRented ? '' : 'none';
+            wrapper.setAttribute('aria-hidden', isRented ? 'false' : 'true');
+        }
+    }
+
     function handleFieldMutated() {
         if (isSaving || isPopulating || !initialSnapshot) {
             updateSaveButtonState();
@@ -429,6 +450,9 @@
         form.addEventListener('input', handleFieldMutated);
         form.addEventListener('change', handleFieldMutated);
         form.addEventListener('submit', handleSubmit);
+        if (fieldRefs.ownership) {
+            fieldRefs.ownership.addEventListener('change', updateOwnershipDependentFields);
+        }
     }
 
     function openUnsavedModal() {
@@ -535,6 +559,7 @@
         });
     }
 
+    updateOwnershipDependentFields();
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     async function boot(context) {

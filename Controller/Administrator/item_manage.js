@@ -33,6 +33,8 @@
         period: document.getElementById('itemPeriod'),
     };
 
+    const periodOptions = new Set(['hour', 'day', 'event']);
+    
     const params = new URLSearchParams(window.location.search);
     const itemIdParam = params.get('item_id');
     const isCreateRequested = params.get('mode') === 'create';
@@ -80,6 +82,13 @@
         messageBox.className = `form-alert ${variant}`;
     }
 
+    function normalizePeriodValue(value) {
+        if (!value) {
+            return 'day';
+        }
+        return periodOptions.has(value) ? value : 'day';
+    }
+    
     function serializeForm() {
         return {
             ref_item_id: fieldRefs.ref?.value.trim() || '',
@@ -90,7 +99,7 @@
             model: fieldRefs.model?.value.trim() || '',
             uom: fieldRefs.uom?.value.trim() || '',
             rate: fieldRefs.rate?.value.trim() || '',
-            period: fieldRefs.period?.value.trim() || '',
+            period: normalizePeriodValue(fieldRefs.period?.value),
         };
     }
 
@@ -153,7 +162,7 @@
             model: data?.model || '',
             uom: data?.uom || 'unit',
             rate: data?.rate != null ? String(data.rate) : '',
-            period: data?.period || 'day',
+            period: normalizePeriodValue(data?.period),
         };
         runWithPopulation(() => {
             if (fieldRefs.ref) fieldRefs.ref.value = snapshot.ref_item_id;
@@ -294,6 +303,7 @@
             showMessage('กรุณากรอกชื่อสินค้า', 'error');
             return;
         }
+        payload.period = normalizePeriodValue(payload.period);
         if (!payload.uom) {
             payload.uom = 'unit';
         }
