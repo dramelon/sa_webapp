@@ -44,6 +44,8 @@
     const locationModalMessage = document.getElementById('locationModalMessage');
     const customerModalSave = document.getElementById('customerModalSave');
     const locationModalSave = document.getElementById('locationModalSave');
+    const eventDocumentsButton = document.getElementById('eventDocumentsButton');
+    const documentsHint = document.getElementById('documentsHint');
     const customerModalFields = {
         name: document.getElementById('customerModalName'),
         org: document.getElementById('customerModalOrg'),
@@ -138,6 +140,16 @@
         isCreateMode = true;
     }
 
+    if (eventDocumentsButton) {
+        eventDocumentsButton.addEventListener('click', (event) => {
+            if (eventDocumentsButton.getAttribute('aria-disabled') === 'true') {
+                event.preventDefault();
+            }
+        });
+    }
+
+    updateDocumentLink(currentEventId);
+    
     const statusMeta = {
         draft: { label: 'ร่าง', className: 'draft' },
         planning: { label: 'วางแผน', className: 'planning' },
@@ -213,6 +225,31 @@
             return;
         }
         eventHeading.textContent = 'รายละเอียดอีเว้น';
+    }
+
+    function updateDocumentLink(eventId) {
+        if (!eventDocumentsButton) {
+            return;
+        }
+        const normalizedId = typeof eventId === 'string' ? eventId.trim() : eventId != null ? String(eventId).trim() : '';
+        const hasEvent = Boolean(normalizedId);
+        if (hasEvent) {
+            eventDocumentsButton.href = `./event_document_manage.html?event_id=${encodeURIComponent(normalizedId)}`;
+            eventDocumentsButton.setAttribute('aria-disabled', 'false');
+            eventDocumentsButton.classList.remove('is-disabled');
+            eventDocumentsButton.tabIndex = 0;
+            if (documentsHint) {
+                documentsHint.hidden = true;
+            }
+        } else {
+            eventDocumentsButton.href = '#';
+            eventDocumentsButton.setAttribute('aria-disabled', 'true');
+            eventDocumentsButton.classList.add('is-disabled');
+            eventDocumentsButton.tabIndex = -1;
+            if (documentsHint) {
+                documentsHint.hidden = false;
+            }
+        }
     }
     
     function normalizeContactValue(value) {
@@ -1839,6 +1876,7 @@
         runWithPopulation(() => {
             const eventIdValue = data.event_id != null ? String(data.event_id) : null;
             currentEventId = eventIdValue;
+            updateDocumentLink(eventIdValue);
             isCreateMode = false;
             eventIdDisplay.textContent = formatEventDisplay(data.ref_event_id, eventIdValue);
             applyEventHeading(data.event_name, data.ref_event_id, eventIdValue);
@@ -1928,6 +1966,7 @@
             return;
         }
         currentEventId = null;
+        updateDocumentLink(null);
         isCreateMode = true;
         runWithPopulation(() => {
             eventForm.reset();
@@ -2018,6 +2057,7 @@
         const newEventId = String(result.event_id);
         const resolvedStatus = (result.status || payload.status || 'draft').toLowerCase();
         currentEventId = newEventId;
+        updateDocumentLink(newEventId);
         isCreateMode = false;
         eventIdDisplay.textContent = formatEventDisplay(result.ref_event_id, newEventId);
         if (eventCodeField) {
