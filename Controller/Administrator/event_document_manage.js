@@ -599,41 +599,15 @@
     }
 
     function openDocument(doc) {
-        if (!doc) {
+        if (!doc || !doc.document_id) {
             return;
         }
-        const statusLabel = statusLabels[doc.status] || doc.status_label || doc.status || '';
-        const lines = Array.isArray(doc.lines) ? doc.lines : [];
-        const lineTexts = lines.length
-            ? lines
-                  .map((line) => {
-                      const itemName = line.item_name || `สินค้า #${line.item_id}`;
-                      const reference = line.item_reference ? ` (${line.item_reference})` : '';
-                      const quantityValue = typeof line.quantity_requested === 'number'
-                          ? line.quantity_requested
-                          : Number.parseFloat(line.quantity_requested);
-                      const quantityText = Number.isFinite(quantityValue)
-                          ? quantityValue.toLocaleString('th-TH')
-                          : String(line.quantity_requested ?? '');
-                      const unit = line.uom ? ` ${line.uom}` : '';
-                      return `• ${itemName}${reference}: ${quantityText}${unit}`;
-                  })
-                  .join('\n')
-            : '• ไม่มีรายการสินค้า';
-        const totalQuantityText = typeof doc.total_quantity === 'number'
-            ? doc.total_quantity.toLocaleString('th-TH')
-            : String(doc.total_quantity || '0');
-        const messageParts = [
-            `คำขอ: ${doc.title || doc.reference || doc.document_id}`,
-            doc.reference ? `รหัสคำขอ: ${doc.reference}` : null,
-            statusLabel ? `สถานะ: ${statusLabel}` : null,
-            `จำนวนรายการ: ${typeof doc.line_count === 'number' ? doc.line_count.toLocaleString('th-TH') : doc.line_count}`,
-            `จำนวนรวม: ${totalQuantityText}`,
-            '',
-            'รายละเอียดสินค้า:',
-            lineTexts,
-        ].filter(Boolean);
-        alert(messageParts.join('\n'));
+        const params = new URLSearchParams();
+        params.set('request_id', doc.document_id);
+        if (eventId) {
+            params.set('event_id', eventId);
+        }
+        window.location.href = `./item_request_detail.html?${params.toString()}`;
     }
 
     function setGlobalMessage(message, variant = 'info') {
@@ -1371,9 +1345,8 @@
         }
     }
 
-    function initializeRequestModal() {
+    function initializeRequestActions() {
         setCreateRequestEnabled(false);
-        updateRequestLinesEmpty();
         if (createRequestButton) {
             createRequestButton.addEventListener('click', () => {
                 if (!eventId) {
@@ -1385,27 +1358,9 @@
                     return;
                 }
                 clearGlobalMessage();
-                resetRequestForm();
-                openRequestModal();
-            });
-        }
-        if (requestModal) {
-            requestModal.addEventListener('click', (event) => {
-                if (event.target && event.target.matches('[data-modal-dismiss]')) {
-                    event.preventDefault();
-                    closeRequestModal();
-                }
-            });
-        }
-        if (addRequestLineButton) {
-            addRequestLineButton.addEventListener('click', () => {
-                addRequestLine();
-            });
-        }
-        if (requestForm) {
-            requestForm.addEventListener('submit', (event) => {
-                event.preventDefault();
-                submitRequestForm();
+                const params = new URLSearchParams();
+                params.set('event_id', eventId);
+                window.location.href = `./item_request_detail.html?${params.toString()}`;
             });
         }
     }
@@ -1570,7 +1525,7 @@
         resolveBackLinks();
         updateEventHeading();
         syncRequestEventDetails();
-        initializeRequestModal();
+        initializeRequestActions();
         bindFilters();
         renderStatusFilter();
         if (eventId) {

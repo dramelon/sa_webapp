@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="th" data-root="../.." data-allowed="Administrator">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>คำขอเบิกอุปกรณ์</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body>
+    <!-- Slide-out drawer -->
+    <aside id="drawer" class="drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a class="item" href="./main_menu.html">
+                <span class="i home"></span><span>เมนูหลัก</span>
+            </a>
+            <a class="item" href="./home.html">
+                <span class="i news"></span><span>ข่าวสารทั่วไป</span>
+            </a>
+            <a class="item active" href="./events.html" aria-current="page">
+                <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
+            </a>
+            <a class="item" href="./items.html">
+                <span class="i stack"></span><span>รายการสินค้า</span>
+            </a>
+            <a class="item" href="./item_units.html">
+                <span class="i box"></span><span>หน่วยสินค้าทั้งหมด</span>
+            </a>
+            <a class="item" href="./item_categorys.html">
+                <span class="i settings"></span><span>หมวดหมู่สินค้า</span>
+            </a>
+            <a class="item" href="./customers.html">
+                <span class="i contacts"></span><span>ลูกค้า</span>
+            </a>
+            <a class="item" href="./locations.html">
+                <span class="i pin"></span><span>สถานที่</span>
+            </a>
+            <div class="drawer-sep"></div>
+            <a class="item" href="./admin_create_account.html">
+                <span class="i user"></span><span>สร้างบัญชีเจ้าหน้าที่</span>
+            </a>
+            <a class="item" href="../../Model/logout.php">
+                <span class="i power"></span><span>ออกจากระบบ</span>
+            </a>
+        </nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <!-- App shell -->
+    <div class="topbar">
+        <button id="btnMenu" class="hamburger" aria-label="เมนู">
+            <span></span><span></span><span></span>
+        </button>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - ฝ่ายจัดการอีเว้น</h1>
+
+        <div class="account">
+            <span class="pill">
+                <img class="avatar" id="avatar" alt="avatar" />
+                <span class="uid" id="fullName">...</span>
+            </span>
+            <a class="powerbtn" href="../../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
+        </div>
+    </div>
+
+    <main class="page detail-page request-page">
+        <section class="page-head">
+            <div>
+                <p class="breadcrumb"><a id="requestBackLink" href="./event_document_manage.html">← กลับไปหน้ารายการเอกสาร</a></p>
+                <h2 id="requestTitle">กำลังโหลดคำขอ...</h2>
+                <p class="date" id="pageDate">วัน...</p>
+            </div>
+            <div class="head-actions">
+                <button class="btn btn-ghost" type="button" id="btnBack">
+                    <span class="i back"></span>
+                    กลับไปหน้าเอกสาร
+                </button>
+                <button class="btn btn-secondary" type="button" id="btnSave">
+                    <span class="i check"></span>
+                    บันทึกคำขอ
+                </button>
+            </div>
+        </section>
+
+        <div class="form-alert" id="requestGlobalMessage" role="alert" hidden></div>
+
+        <section class="detail-meta request-meta" aria-live="polite">
+            <div class="meta-primary">
+                <p class="meta-label">อีเว้น</p>
+                <h3 id="eventDisplay">—</h3>
+                <p class="meta-sub" id="eventCodeDisplay">รหัสอีเว้น: —</p>
+                <p class="meta-sub" id="eventDateDisplay">ช่วงเวลา: —</p>
+            </div>
+            <div class="meta-secondary">
+                <span class="status-chip" id="requestStatusBadge" aria-live="polite">
+                    <span class="dot"></span>
+                    <span id="requestStatusText">สถานะ: —</span>
+                </span>
+                <div class="meta-group">
+                    <p class="meta-updated" id="requestUpdatedAt">อัปเดตล่าสุด: —</p>
+                    <p class="meta-updated-by" id="requestUpdatedBy">ปรับปรุงโดย: —</p>
+                </div>
+                <div class="meta-group">
+                    <p class="meta-created" id="requestCreatedAt">สร้างเมื่อ: —</p>
+                    <p class="meta-created-by" id="requestCreatedBy">สร้างโดย: —</p>
+                </div>
+            </div>
+        </section>
+
+        <form id="requestForm" class="request-detail-form" autocomplete="off">
+            <section class="detail-card request-info-card">
+                <header class="detail-card-head">
+                    <div>
+                        <h3>รายละเอียดคำขอ</h3>
+                        <p>กำหนดข้อมูลเบื้องต้นของคำขอเบิกอุปกรณ์</p>
+                    </div>
+                    <p class="request-reference" id="requestReference">รหัสคำขอ: —</p>
+                </header>
+                <div class="detail-card-body request-info-grid">
+                    <label class="field-block">
+                        <span class="field-label">ชื่อคำขอ *</span>
+                        <input type="text" id="requestNameInput" name="request_name" maxlength="200" required />
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">สถานะคำขอ *</span>
+                        <select id="requestStatusSelect" name="status">
+                            <option value="draft">ร่าง</option>
+                            <option value="submitted">ส่งคำขอ</option>
+                            <option value="approved">อนุมัติแล้ว</option>
+                            <option value="closed">ปิดคำขอ</option>
+                            <option value="cancelled">ยกเลิก</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="form-alert" id="requestFormMessage" role="alert" hidden></div>
+            </section>
+
+            <section class="detail-card request-lines-card">
+                <header class="request-lines-head">
+                    <div>
+                        <h3>รายการสินค้า</h3>
+                        <p class="request-lines-sub">เพิ่มรายการอุปกรณ์ที่ต้องการเบิกสำหรับคำขอนี้</p>
+                    </div>
+                    <button class="ghost" type="button" id="addRequestLine">+ เพิ่มรายการสินค้า</button>
+                </header>
+                <div class="table-wrap">
+                    <table class="event-table request-lines-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">สินค้า</th>
+                                <th scope="col">จำนวน</th>
+                                <th scope="col">อัตรา / รอบการคิดราคา</th>
+                                <th scope="col">หมายเหตุ</th>
+                                <th scope="col" class="col-actions">การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestLinesBody"></tbody>
+                    </table>
+                    <div class="empty-state" id="requestLinesEmpty" hidden>
+                        <span class="i inbox"></span>
+                        <p>ยังไม่มีรายการสินค้าในคำขอ</p>
+                    </div>
+                </div>
+            </section>
+        </form>
+    </main>
+
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Administrator/item_request_detail.js" defer></script>
+</body>
+
+</html>

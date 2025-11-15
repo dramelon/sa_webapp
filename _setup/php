@@ -326,23 +326,20 @@ CREATE TABLE request_lines (
 
 
 
--- item_unit_schedule [requirement: item_unit, events] v1
-CREATE TABLE item_unit_schedule (
-    ScheduleID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    ItemUnitID      BIGINT UNSIGNED NOT NULL,
-    EventID         BIGINT UNSIGNED NOT NULL,
-    SourceType      ENUM('event','allocation','rental','maintenance','other') NOT NULL DEFAULT 'event',
-    SourceRefID     BIGINT UNSIGNED DEFAULT NULL,
-    Status ENUM('useable','in use','pending booking','booked','damaged','reparing','delivering','returned', 'archived') NOT NULL DEFAULT 'pending booking',
+-- BOOKING [requirement: -] v1
+CREATE TABLE booking (
+    BookingID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    RequestAllocationID BIGINT UNSIGNED NOT NULL,
+    ItemUnitID BIGINT UNSIGNED NOT NULL,
+    StartTime DATETIME NOT NULL,
+    EndTime DATETIME NOT NULL,
+    ExpireAt DATETIME NULL,
+    CancelReason VARCHAR(500) NULL,
+    Status ENUM('reserved','checked_out','in_use','returned','cancelled','expired') NOT NULL DEFAULT 'reserved',
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy BIGINT UNSIGNED NOT NULL,
+    UpdatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UpdatedBy BIGINT UNSIGNED NULL,
 
-    PRIMARY KEY (ScheduleID),
-    KEY idx_schedule_item (ItemUnitID),
-    KEY idx_schedule_event (EventID),
-    KEY idx_schedule_type (SourceType),
-    CONSTRAINT fk_schedule_itemunit FOREIGN KEY (ItemUnitID)
-        REFERENCES item_unit(ItemUnitID)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_schedule_event FOREIGN KEY (EventID)
-        REFERENCES events(EventID)
-        ON DELETE CASCADE ON UPDATE CASCADE
+    PRIMARY KEY (BookingID)
 );
