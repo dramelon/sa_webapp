@@ -134,6 +134,8 @@
     const params = new URLSearchParams(window.location.search);
     const eventIdParam = params.get('event_id');
     const isCreateRequested = params.get('mode') === 'create';
+    const originParam = params.get('from');
+    const isFromDocument = originParam === 'document' || originParam === 'documents';
     let currentEventId = eventIdParam ? String(eventIdParam) : null;
     let isCreateMode = !currentEventId;
     if (isCreateRequested && !currentEventId) {
@@ -1282,6 +1284,10 @@
     if (btnBack) {
         btnBack.addEventListener('click', () => {
             requestNavigation(() => {
+                if (isFromDocument) {
+                    window.location.href = './events.html';
+                    return;
+                }
                 if (window.history.length > 1) {
                     window.history.back();
                 } else {

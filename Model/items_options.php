@@ -23,7 +23,12 @@ try {
             i.ItemID AS id,
             i.ItemName AS name,
             COALESCE(i.RefItemID, '') AS ref_id,
-            COALESCE(c.Name, '') AS category_name
+            COALESCE(c.Name, '') AS category_name,
+            COALESCE(i.UOM, '') AS uom,
+            COALESCE(i.Brand, '') AS brand,
+            COALESCE(i.Model, '') AS model,
+            i.Rate AS rate,
+            COALESCE(i.Period, '') AS period
         FROM items i
         LEFT JOIN itemcategory c ON c.ItemCategoryID = i.ItemCategoryID
     ";

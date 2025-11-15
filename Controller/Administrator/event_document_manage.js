@@ -10,6 +10,19 @@
     const eventBackLink = document.getElementById('eventBackLink');
     const backButton = document.getElementById('btnBackToEvent');
     const pageDate = document.getElementById('pageDate');
+    const globalMessage = document.getElementById('docGlobalMessage');
+    const createRequestContainer = document.getElementById('docCreateRequestContainer');
+    const createRequestButton = document.getElementById('btnCreateRequest');
+    const requestModal = document.getElementById('requestModal');
+    const requestForm = document.getElementById('requestForm');
+    const requestNameInput = document.getElementById('requestNameInput');
+    const requestEventName = document.getElementById('requestEventName');
+    const requestEventCode = document.getElementById('requestEventCode');
+    const requestFormMessage = document.getElementById('requestFormMessage');
+    const requestLinesBody = document.getElementById('requestLinesBody');
+    const requestLinesEmpty = document.getElementById('requestLinesEmpty');
+    const addRequestLineButton = document.getElementById('addRequestLine');
+    const requestSubmitButton = document.getElementById('requestSubmitButton');
 
     const params = new URLSearchParams(window.location.search);
     const eventId = params.get('event_id');
@@ -38,6 +51,12 @@
     let searchTerm = '';
     let hasLoadError = false;
     let loadErrorMessage = '';
+    let isDatasetLoaded = false;
+    let requestLineCounter = 0;
+    let isRequestSubmitting = false;
+    const itemSearchCache = new Map();
+
+    let canCreateRequest = false;
 
     function buildStatusLabels(options) {
         const map = {};
@@ -290,7 +309,9 @@
 
     function resolveBackLinks() {
         const fallback = './events.html';
-        const target = eventId ? `./event_manage.html?event_id=${encodeURIComponent(eventId)}` : fallback;
+        const target = eventId
+            ? `./event_manage.html?event_id=${encodeURIComponent(eventId)}&from=document`
+            : fallback;
         if (eventBackLink) {
             eventBackLink.href = target;
         }
@@ -427,6 +448,7 @@
                 activeCategory = categoryId;
                 renderCategories();
                 renderDocuments();
+                syncCreateRequestButtonState();
             });
 
             item.appendChild(button);
@@ -506,6 +528,7 @@
         if (!tableBody || !emptyState) {
             return;
         }
+        syncCreateRequestButtonState();
         if (hasLoadError) {
             showEmptyState(loadErrorMessage || 'ไม่สามารถโหลดข้อมูลเอกสารได้');
             return;
@@ -613,6 +636,780 @@
         alert(messageParts.join('\n'));
     }
 
+    function setGlobalMessage(message, variant = 'info') {
+        if (!globalMessage) {
+            return;
+        }
+        const normalized = typeof message === 'string' ? message.trim() : '';
+        globalMessage.classList.remove('success', 'error');
+        if (!normalized) {
+            globalMessage.hidden = true;
+            globalMessage.textContent = '';
+            return;
+        }
+        globalMessage.hidden = false;
+        globalMessage.textContent = normalized;
+        if (variant === 'success') {
+            globalMessage.classList.add('success');
+        } else if (variant === 'error') {
+            globalMessage.classList.add('error');
+        }
+    }
+
+    function clearGlobalMessage() {
+        setGlobalMessage('');
+    }
+
+    function setCreateRequestEnabled(enabled) {
+        canCreateRequest = Boolean(enabled);
+        syncCreateRequestButtonState();
+    }
+
+    function syncCreateRequestButtonState() {
+        const shouldShow = activeCategory === 'item-request' && !hasLoadError;
+        if (createRequestContainer) {
+            createRequestContainer.hidden = !shouldShow;
+        }
+        if (!createRequestButton) {
+            return;
+        }
+        const isEnabled = shouldShow && canCreateRequest;
+        createRequestButton.disabled = !isEnabled;
+        if (isEnabled) {
+            createRequestButton.removeAttribute('aria-disabled');
+        } else {
+            createRequestButton.setAttribute('aria-disabled', 'true');
+        }
+    }
+
+    function syncRequestEventDetails() {
+        if (requestEventName) {
+            requestEventName.value = eventInfo?.event_name ? String(eventInfo.event_name) : '';
+        }
+        if (requestEventCode) {
+            const parts = [];
+            if (eventInfo?.event_code) {
+                parts.push(String(eventInfo.event_code));
+            }
+            if (eventInfo?.event_id) {
+                parts.push(`EV-${eventInfo.event_id}`);
+            }
+            requestEventCode.value = parts.length ? parts.join(' / ') : '';
+        }
+    }
+
+    function formatItemDisplay(item) {
+        if (!item) {
+            return '';
+        }
+        const parts = [];
+        if (item.ref_id) {
+            parts.push(String(item.ref_id));
+        }
+        if (item.name) {
+            parts.push(String(item.name));
+        } else if (item.id) {
+            parts.push(`สินค้า #${item.id}`);
+        }
+        const base = parts.length ? parts.join(' - ') : `สินค้า #${item.id ?? ''}`;
+        return item.id ? `${base} (#${item.id})` : base;
+    }
+
+    async function searchItems(query) {
+        const term = typeof query === 'string' ? query.trim() : '';
+        if (!term) {
+            return [];
+        }
+        const cacheKey = term.toLowerCase();
+        if (itemSearchCache.has(cacheKey)) {
+            return itemSearchCache.get(cacheKey);
+        }
+        if (!modelRoot) {
+            return [];
+        }
+        try {
+            const response = await fetch(`${modelRoot}/items_options.php?q=${encodeURIComponent(term)}`, {
+                credentials: 'same-origin',
+            });
+            if (!response.ok) {
+                throw new Error('search_failed');
+            }
+            const payload = await response.json();
+            const results = Array.isArray(payload?.data) ? payload.data : [];
+            itemSearchCache.set(cacheKey, results);
+            return results;
+        } catch (error) {
+            console.error(error);
+            itemSearchCache.set(cacheKey, []);
+            return [];
+        }
+    }
+
+    function openInstantItemCreate() {
+        const targetUrl = './item_manage.html?mode=create';
+        const newWindow = window.open(targetUrl, '_blank', 'noopener');
+        if (newWindow) {
+            newWindow.focus();
+            setGlobalMessage('เปิดหน้าสร้างสินค้าใหม่ในแท็บใหม่แล้ว', 'info');
+        } else {
+            setGlobalMessage('กำลังเปลี่ยนไปหน้าสร้างสินค้าใหม่', 'info');
+            window.location.href = targetUrl;
+        }
+    }
+
+    function formatItemOptionMeta(item) {
+        if (!item) {
+            return '';
+        }
+        const parts = [];
+        if (item.ref_id) {
+            parts.push(`รหัส: ${item.ref_id}`);
+        }
+        if (item.category_name) {
+            parts.push(`หมวด: ${item.category_name}`);
+        }
+        if (item.uom) {
+            parts.push(`หน่วย: ${item.uom}`);
+        }
+        const rateText = formatItemRateDisplay(item);
+        if (rateText) {
+            parts.push(rateText);
+        }
+        return parts.join(' • ');
+    }
+
+    function formatRequestLineMeta(item) {
+        if (!item) {
+            return '';
+        }
+        const parts = [];
+        if (item.ref_id) {
+            parts.push(`รหัสสินค้า: ${item.ref_id}`);
+        } else if (item.id) {
+            parts.push(`รหัสสินค้า: #${item.id}`);
+        }
+        if (item.category_name) {
+            parts.push(`หมวด: ${item.category_name}`);
+        }
+        return parts.join(' • ');
+    }
+
+    function formatItemRateDisplay(item) {
+        if (!item) {
+            return '';
+        }
+        const rateValue = item.rate != null ? Number.parseFloat(item.rate) : Number.NaN;
+        const hasRate = Number.isFinite(rateValue);
+        const period = typeof item.period === 'string' ? item.period.trim() : '';
+        if (hasRate) {
+            const formatted = rateValue.toLocaleString('th-TH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
+            return period ? `${formatted} / ${period}` : formatted;
+        }
+        return period || '';
+    }
+
+    function formatItemRateMeta(item) {
+        if (!item) {
+            return '';
+        }
+        const parts = [];
+        if (item.uom) {
+            parts.push(`หน่วย: ${item.uom}`);
+        }
+        if (item.brand) {
+            parts.push(item.brand);
+        }
+        if (item.model) {
+            parts.push(item.model);
+        }
+        return parts.join(' • ');
+    }
+
+    function createRequestItemTypeahead({ initialItem = null, onSelect, onClear } = {}) {
+        const root = document.createElement('div');
+        root.className = 'typeahead typeahead-inline request-item-typeahead';
+        root.dataset.type = 'item';
+
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'typeahead-input';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'ค้นหาด้วยชื่อหรือรหัสสินค้า';
+        input.autocomplete = 'off';
+        input.className = 'request-line-input';
+        inputWrap.appendChild(input);
+
+        const list = document.createElement('div');
+        list.className = 'typeahead-list';
+        list.hidden = true;
+
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.className = 'request-line-item-id';
+
+        root.append(inputWrap, list, hiddenInput);
+
+        let selectedItem = null;
+        let fetchToken = 0;
+
+        function closeList() {
+            list.hidden = true;
+            list.innerHTML = '';
+        }
+
+        function notifySelect(item) {
+            if (typeof onSelect === 'function') {
+                onSelect(item);
+            }
+        }
+
+        function notifyClear() {
+            if (typeof onClear === 'function') {
+                onClear();
+            }
+        }
+
+        function applySelection(item) {
+            selectedItem = item && item.id ? item : null;
+            if (selectedItem) {
+                hiddenInput.value = String(selectedItem.id);
+                input.value = formatItemDisplay(selectedItem);
+                notifySelect(selectedItem);
+            } else {
+                hiddenInput.value = '';
+                notifyClear();
+            }
+        }
+
+        function buildOption(item) {
+            const option = document.createElement('button');
+            option.type = 'button';
+            option.className = 'typeahead-option';
+            const title = document.createElement('span');
+            title.className = 'typeahead-option-title';
+            title.textContent = formatItemDisplay(item);
+            const meta = document.createElement('span');
+            meta.className = 'typeahead-option-meta';
+            meta.textContent = formatItemOptionMeta(item);
+            option.append(title, meta);
+            option.addEventListener('click', () => {
+                applySelection(item);
+                closeList();
+            });
+            return option;
+        }
+
+        function renderList(items) {
+            list.innerHTML = '';
+            const fragment = document.createDocumentFragment();
+            items.forEach((item) => {
+                fragment.append(buildOption(item));
+            });
+            const createOption = document.createElement('button');
+            createOption.type = 'button';
+            createOption.className = 'typeahead-option typeahead-option-create';
+            createOption.textContent = '➕ สร้างสินค้าใหม่';
+            createOption.addEventListener('click', () => {
+                closeList();
+                openInstantItemCreate();
+            });
+            fragment.append(createOption);
+            list.append(fragment);
+            list.hidden = list.children.length === 0;
+        }
+
+        input.addEventListener('input', (event) => {
+            const term = event.target.value.trim();
+            if (term.length < 1) {
+                applySelection(null);
+                closeList();
+                return;
+            }
+            applySelection(null);
+            const currentToken = ++fetchToken;
+            searchItems(term).then((results) => {
+                if (currentToken !== fetchToken) {
+                    return;
+                }
+                renderList(results);
+                if (list.children.length) {
+                    list.hidden = false;
+                }
+            });
+        });
+
+        input.addEventListener('focus', () => {
+            if (list.children.length) {
+                list.hidden = false;
+            }
+        });
+
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                if (!list.hidden) {
+                    const firstOption = list.querySelector('.typeahead-option');
+                    if (firstOption) {
+                        event.preventDefault();
+                        firstOption.click();
+                    }
+                }
+            } else if (event.key === 'Escape') {
+                closeList();
+            }
+        });
+
+        root.addEventListener('focusout', (event) => {
+            if (!root.contains(event.relatedTarget)) {
+                closeList();
+            }
+        });
+
+        function getSelectedItem() {
+            return selectedItem;
+        }
+
+        if (initialItem) {
+            applySelection(initialItem);
+        } else {
+            notifyClear();
+        }
+
+        return {
+            root,
+            input,
+            hiddenInput,
+            closeList,
+            getSelectedItem,
+        };
+    }
+
+    function setRequestFormMessage(message, variant = 'error') {
+        if (!requestFormMessage) {
+            return;
+        }
+        const normalized = typeof message === 'string' ? message.trim() : '';
+        requestFormMessage.classList.remove('success', 'error');
+        if (!normalized) {
+            requestFormMessage.hidden = true;
+            requestFormMessage.textContent = '';
+            return;
+        }
+        requestFormMessage.hidden = false;
+        requestFormMessage.textContent = normalized;
+        if (variant === 'success') {
+            requestFormMessage.classList.add('success');
+        } else if (variant === 'error') {
+            requestFormMessage.classList.add('error');
+        }
+    }
+
+    function setRequestFormBusy(busy) {
+        if (requestSubmitButton) {
+            const isBusy = Boolean(busy);
+            requestSubmitButton.disabled = isBusy;
+            if (isBusy) {
+                requestSubmitButton.setAttribute('aria-disabled', 'true');
+            } else {
+                requestSubmitButton.removeAttribute('aria-disabled');
+            }
+        }
+        if (addRequestLineButton) {
+            addRequestLineButton.disabled = Boolean(busy);
+        }
+    }
+
+    function updateRequestLinesEmpty() {
+        if (!requestLinesEmpty) {
+            return;
+        }
+        const hasRows = requestLinesBody && requestLinesBody.children.length > 0;
+        requestLinesEmpty.hidden = hasRows;
+    }
+
+    function addRequestLine(initial = null) {
+        if (!requestLinesBody) {
+            return null;
+        }
+        requestLineCounter += 1;
+        const row = document.createElement('tr');
+        row.className = 'request-line-row';
+        row.dataset.lineId = String(requestLineCounter);
+
+        const rateValue = document.createElement('span');
+        rateValue.className = 'request-line-rate';
+        rateValue.textContent = '—';
+
+        const rateExtra = document.createElement('span');
+        rateExtra.className = 'request-line-rate-meta';
+        rateExtra.hidden = true;
+
+        const itemMeta = document.createElement('p');
+        itemMeta.className = 'request-line-meta';
+        itemMeta.hidden = true;
+
+        const initialItem =
+            initial && initial.item_id
+                ? {
+                      id: initial.item_id,
+                      name: initial.item_name || '',
+                      ref_id: initial.item_reference || '',
+                      rate: initial.rate ?? initial.item_rate ?? null,
+                      period: initial.period ?? initial.item_period ?? '',
+                      uom: initial.uom ?? initial.item_uom ?? '',
+                      category_name: initial.category_name || initial.item_category || '',
+                      brand: initial.brand || initial.item_brand || '',
+                      model: initial.model || initial.item_model || '',
+                  }
+                : null;
+
+        function updateItemMeta(item) {
+            if (item && item.id) {
+                const metaText = formatRequestLineMeta(item);
+                if (metaText) {
+                    itemMeta.textContent = metaText;
+                    itemMeta.hidden = false;
+                } else {
+                    itemMeta.textContent = '';
+                    itemMeta.hidden = true;
+                }
+                const rateText = formatItemRateDisplay(item);
+                rateValue.textContent = rateText || '—';
+                const rateMetaText = formatItemRateMeta(item);
+                if (rateMetaText) {
+                    rateExtra.textContent = rateMetaText;
+                    rateExtra.hidden = false;
+                } else {
+                    rateExtra.textContent = '';
+                    rateExtra.hidden = true;
+                }
+            } else {
+                itemMeta.textContent = '';
+                itemMeta.hidden = true;
+                rateValue.textContent = '—';
+                rateExtra.textContent = '';
+                rateExtra.hidden = true;
+            }
+        }
+
+        const itemCell = document.createElement('td');
+        itemCell.className = 'request-line-cell request-line-item';
+        const itemField = document.createElement('div');
+        itemField.className = 'request-line-field';
+
+        const typeahead = createRequestItemTypeahead({
+            initialItem,
+            onSelect: (item) => {
+                updateItemMeta(item);
+            },
+            onClear: () => {
+                updateItemMeta(null);
+            },
+        });
+
+        itemField.append(typeahead.root, itemMeta);
+        itemCell.append(itemField);
+
+        const quantityCell = document.createElement('td');
+        quantityCell.className = 'request-line-cell request-line-qty';
+        const quantityInput = document.createElement('input');
+        quantityInput.type = 'number';
+        quantityInput.min = '1';
+        quantityInput.step = '1';
+        quantityInput.placeholder = 'จำนวน';
+        quantityInput.className = 'request-line-quantity';
+        if (Number.isFinite(initial?.quantity) && initial.quantity > 0) {
+            quantityInput.value = String(initial.quantity);
+        }
+        if (!quantityInput.value) {
+            quantityInput.value = '1';
+        }
+        quantityCell.appendChild(quantityInput);
+
+        const rateCell = document.createElement('td');
+        rateCell.className = 'request-line-cell request-line-rate-cell';
+        rateCell.append(rateValue, rateExtra);
+
+        const noteCell = document.createElement('td');
+        noteCell.className = 'request-line-cell request-line-note-cell';
+        const noteInput = document.createElement('input');
+        noteInput.type = 'text';
+        noteInput.maxLength = 500;
+        noteInput.placeholder = 'หมายเหตุ (ถ้ามี)';
+        noteInput.className = 'request-line-note';
+        if (initial?.note) {
+            noteInput.value = String(initial.note);
+        }
+        noteCell.appendChild(noteInput);
+
+        const actionCell = document.createElement('td');
+        actionCell.className = 'col-actions request-line-actions';
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'ghost request-line-remove';
+        removeButton.textContent = 'ลบ';
+        removeButton.addEventListener('click', () => {
+            if (requestLinesBody && row.parentElement === requestLinesBody) {
+                requestLinesBody.removeChild(row);
+                updateRequestLinesEmpty();
+            }
+        });
+        actionCell.appendChild(removeButton);
+
+        row.append(itemCell, quantityCell, rateCell, noteCell, actionCell);
+        requestLinesBody.appendChild(row);
+        updateRequestLinesEmpty();
+
+        const handleAutoAdd = (event) => {
+            if (event.key !== 'Enter' || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
+                return;
+            }
+            if (!isLastRequestLineRow(row) || !isRowReadyForAutoAdd(row)) {
+                return;
+            }
+            event.preventDefault();
+            const nextRow = addRequestLine();
+            if (nextRow) {
+                const nextInput = nextRow.querySelector('.request-line-input');
+                if (nextInput) {
+                    nextInput.focus();
+                }
+            }
+        };
+
+        quantityInput.addEventListener('keydown', handleAutoAdd);
+        noteInput.addEventListener('keydown', handleAutoAdd);
+
+        updateItemMeta(initialItem);
+
+        return row;
+    }
+
+    function isLastRequestLineRow(row) {
+        if (!row || !requestLinesBody) {
+            return false;
+        }
+        return row.parentElement === requestLinesBody && !row.nextElementSibling;
+    }
+
+    function isRowReadyForAutoAdd(row) {
+        if (!row) {
+            return false;
+        }
+        const itemIdInput = row.querySelector('.request-line-item-id');
+        const quantityInput = row.querySelector('.request-line-quantity');
+        const itemIdValue = itemIdInput ? Number.parseInt(itemIdInput.value, 10) : Number.NaN;
+        const quantityValue = quantityInput ? Number.parseInt(quantityInput.value, 10) : Number.NaN;
+        return Number.isFinite(itemIdValue) && itemIdValue > 0 && Number.isFinite(quantityValue) && quantityValue > 0;
+    }
+
+    function resetRequestForm() {
+        if (requestForm) {
+            requestForm.reset();
+        }
+        if (requestLinesBody) {
+            requestLinesBody.innerHTML = '';
+        }
+        requestLineCounter = 0;
+        setRequestFormMessage('');
+        setRequestFormBusy(false);
+        syncRequestEventDetails();
+        if (requestLinesBody) {
+            addRequestLine();
+        }
+    }
+
+    function openRequestModal() {
+        if (!requestModal) {
+            return;
+        }
+        requestModal.hidden = false;
+        requestModal.setAttribute('aria-hidden', 'false');
+        const focusTarget = requestNameInput || requestModal.querySelector('input, button, select, textarea');
+        if (focusTarget) {
+            setTimeout(() => {
+                focusTarget.focus();
+            }, 20);
+        }
+    }
+
+    function closeRequestModal() {
+        if (!requestModal) {
+            return;
+        }
+        requestModal.hidden = true;
+        requestModal.setAttribute('aria-hidden', 'true');
+        isRequestSubmitting = false;
+        setRequestFormBusy(false);
+        setRequestFormMessage('');
+        resetRequestForm();
+    }
+
+    function collectRequestPayload() {
+        if (!eventId) {
+            setRequestFormMessage('ไม่พบอีเว้นที่ต้องการสร้างคำขอ', 'error');
+            return null;
+        }
+        const eventNumericId = Number.parseInt(eventId, 10);
+        if (!Number.isFinite(eventNumericId) || eventNumericId <= 0) {
+            setRequestFormMessage('ไม่พบอีเว้นที่ต้องการสร้างคำขอ', 'error');
+            return null;
+        }
+        const name = requestNameInput ? requestNameInput.value.trim() : '';
+        if (!name) {
+            setRequestFormMessage('กรุณาระบุชื่อคำขอ', 'error');
+            if (requestNameInput) {
+                requestNameInput.focus();
+            }
+            return null;
+        }
+        if (!requestLinesBody) {
+            setRequestFormMessage('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ', 'error');
+            return null;
+        }
+        const rows = Array.from(requestLinesBody.querySelectorAll('tr'));
+        if (!rows.length) {
+            setRequestFormMessage('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ', 'error');
+            return null;
+        }
+        const lines = [];
+        for (let index = 0; index < rows.length; index += 1) {
+            const row = rows[index];
+            const itemIdInput = row.querySelector('.request-line-item-id');
+            const quantityInput = row.querySelector('.request-line-quantity');
+            const noteInput = row.querySelector('.request-line-note');
+            const noteValue = noteInput ? noteInput.value.trim() : '';
+            const itemIdValue = itemIdInput ? Number.parseInt(itemIdInput.value, 10) : Number.NaN;
+            const quantityValue = quantityInput ? Number.parseInt(quantityInput.value, 10) : Number.NaN;
+            const hasAnyValue = Boolean(itemIdInput?.value?.trim()) || Boolean(quantityInput?.value?.trim()) || noteValue !== '';
+            if (!hasAnyValue) {
+                continue;
+            }
+            if (!Number.isFinite(itemIdValue) || itemIdValue <= 0) {
+                setRequestFormMessage(`กรุณาเลือกสินค้าในรายการที่ ${index + 1}`, 'error');
+                const focusTarget = row.querySelector('.request-line-input');
+                if (focusTarget) {
+                    focusTarget.focus();
+                }
+                return null;
+            }
+            if (!Number.isFinite(quantityValue) || quantityValue <= 0) {
+                setRequestFormMessage(`กรุณากรอกจำนวนที่ถูกต้องในรายการที่ ${index + 1}`, 'error');
+                if (quantityInput) {
+                    quantityInput.focus();
+                }
+                return null;
+            }
+            lines.push({
+                item_id: itemIdValue,
+                quantity: quantityValue,
+                note: noteValue || null,
+            });
+        }
+        if (!lines.length) {
+            setRequestFormMessage('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ', 'error');
+            return null;
+        }
+        return {
+            event_id: eventNumericId,
+            request_name: name,
+            lines,
+        };
+    }
+
+    async function requestCreate(payload) {
+        if (!modelRoot) {
+            throw new Error('ไม่พบปลายทางสำหรับบันทึกคำขอ');
+        }
+        const response = await fetch(`${modelRoot}/request_create.php`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+            let message = 'ไม่สามารถบันทึกคำขอได้';
+            try {
+                const data = await response.json();
+                if (data?.message) {
+                    message = data.message;
+                }
+            } catch (error) {
+                // ignore
+            }
+            throw new Error(message);
+        }
+        return response.json();
+    }
+
+    async function submitRequestForm() {
+        if (isRequestSubmitting) {
+            return;
+        }
+        const payload = collectRequestPayload();
+        if (!payload) {
+            return;
+        }
+        isRequestSubmitting = true;
+        setRequestFormBusy(true);
+        setRequestFormMessage('');
+        try {
+            await requestCreate(payload);
+            closeRequestModal();
+            setGlobalMessage('สร้างคำขอเบิกอุปกรณ์เรียบร้อยแล้ว', 'success');
+            await loadDocuments();
+        } catch (error) {
+            setRequestFormMessage(error?.message || 'ไม่สามารถบันทึกคำขอได้', 'error');
+        } finally {
+            isRequestSubmitting = false;
+            setRequestFormBusy(false);
+        }
+    }
+
+    function initializeRequestModal() {
+        setCreateRequestEnabled(false);
+        updateRequestLinesEmpty();
+        if (createRequestButton) {
+            createRequestButton.addEventListener('click', () => {
+                if (!eventId) {
+                    setGlobalMessage('ไม่พบอีเว้นที่ต้องการสร้างคำขอ', 'error');
+                    return;
+                }
+                if (!isDatasetLoaded) {
+                    setGlobalMessage('กำลังโหลดข้อมูลอีเว้น โปรดลองอีกครั้ง', 'error');
+                    return;
+                }
+                clearGlobalMessage();
+                resetRequestForm();
+                openRequestModal();
+            });
+        }
+        if (requestModal) {
+            requestModal.addEventListener('click', (event) => {
+                if (event.target && event.target.matches('[data-modal-dismiss]')) {
+                    event.preventDefault();
+                    closeRequestModal();
+                }
+            });
+        }
+        if (addRequestLineButton) {
+            addRequestLineButton.addEventListener('click', () => {
+                addRequestLine();
+            });
+        }
+        if (requestForm) {
+            requestForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                submitRequestForm();
+            });
+        }
+    }
+
     function bindFilters() {
         if (searchInput) {
             searchInput.addEventListener('input', (event) => {
@@ -639,6 +1436,7 @@
                 }
                 renderCategories();
                 renderDocuments();
+                syncCreateRequestButtonState();
             });
         }
     }
@@ -662,12 +1460,15 @@
         categories = [];
         renderSummaryCards();
         renderCategories();
+        isDatasetLoaded = false;
+        setCreateRequestEnabled(false);
     }
 
     function clearLoadError() {
         hasLoadError = false;
         loadErrorMessage = '';
         resetEmptyStateMessage();
+        syncCreateRequestButtonState();
     }
 
     function normalizeSummary(summary, docs) {
@@ -703,6 +1504,8 @@
     function applyDataset(payload) {
         eventInfo = payload?.event || null;
         updateEventHeading();
+        syncRequestEventDetails();
+        isDatasetLoaded = true;
 
         const payloadStatuses = Array.isArray(payload?.statuses) ? payload.statuses : [];
         setStatusOptions(payloadStatuses.length ? payloadStatuses : statusOptions);
@@ -722,6 +1525,7 @@
         renderSummaryCards();
         renderCategories();
         renderDocuments();
+        setCreateRequestEnabled(true);
     }
 
     async function loadDocuments() {
@@ -733,6 +1537,7 @@
             return;
         }
         showLoading();
+        setCreateRequestEnabled(false);
         try {
             const response = await fetch(`${modelRoot}/event_documents.php?event_id=${encodeURIComponent(eventId)}`, {
                 credentials: 'same-origin',
@@ -764,6 +1569,8 @@
         setInterval(updateThaiDate, 60_000);
         resolveBackLinks();
         updateEventHeading();
+        syncRequestEventDetails();
+        initializeRequestModal();
         bindFilters();
         renderStatusFilter();
         if (eventId) {

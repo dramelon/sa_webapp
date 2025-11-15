@@ -207,7 +207,7 @@ CREATE TABLE items (
     Model           VARCHAR(100) DEFAULT NULL,
     UOM             VARCHAR(50) NOT NULL DEFAULT 'unit',
     Rate            DECIMAL(10,2) DEFAULT NULL,
-    Period          ENUM('อุปกร','วัสดุ','บริการ','') NOT NULL DEFAULT 'อุปกร';
+    Period          ENUM('ต่อชั่วโมง','ต่อวัน','ต่ออีเว้น') NOT NULL DEFAULT 'ต่อวัน';
     CreatedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CreatedBy       INT UNSIGNED DEFAULT NULL,
     UpdatedAt       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
