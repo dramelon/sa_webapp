@@ -332,14 +332,57 @@
     function computeSummaryMetrics() {
         const metrics = [];
         const total = typeof summaryData.total === 'number' ? summaryData.total : documents.length;
-        metrics.push({ id: 'total', label: 'เอกสารทั้งหมด', value: total });
+        metrics.push({ id: 'all', label: 'เอกสารทั้งหมด', value: total });
         statusOptions.forEach((status) => {
             const value = summaryData.by_status && Object.prototype.hasOwnProperty.call(summaryData.by_status, status.id)
                 ? summaryData.by_status[status.id]
                 : documents.filter((doc) => doc.status === status.id).length;
-            metrics.push({ id: `status-${status.id}`, label: status.label, value });
+            metrics.push({ id: status.id, label: status.label, value });
         });
         return metrics;
+    }
+
+    function normalizeStatusKey(key) {
+        let value = typeof key === 'string' ? key.toLowerCase() : '';
+        if (value.startsWith('status-')) {
+            value = value.slice(7);
+        }
+        if (!value || value === 'total') {
+            return 'all';
+        }
+        if (value === 'all') {
+            return 'all';
+        }
+        return statusOptions.some((status) => status.id === value) ? value : 'all';
+    }
+
+    function updateSummaryActiveState() {
+        if (!summaryContainer) {
+            return;
+        }
+        const current = normalizeStatusKey(activeStatus);
+        summaryContainer.querySelectorAll('.doc-summary-card').forEach((card) => {
+            const cardStatus = normalizeStatusKey(card.dataset.status);
+            const isActive = cardStatus === current;
+            card.classList.toggle('active', isActive);
+            card.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+    }
+
+    function setActiveStatus(nextStatus, options = {}) {
+        const normalized = normalizeStatusKey(nextStatus);
+        const previous = activeStatus;
+        activeStatus = normalized;
+        if (statusFilter && statusFilter.value !== normalized) {
+            statusFilter.value = normalized;
+        }
+        updateSummaryActiveState();
+        if (options.skipRender) {
+            return;
+        }
+        if (normalized !== previous || options.forceRender) {
+            renderDocuments();
+        }
     }
 
     function renderSummaryCards() {
@@ -356,16 +399,23 @@
         }
         const metrics = computeSummaryMetrics();
         metrics.forEach((metric) => {
-            const card = document.createElement('article');
+            const statusKey = normalizeStatusKey(metric.id);
+            const card = document.createElement('button');
+            card.type = 'button';
             card.className = 'summary-card doc-summary-card';
-            card.setAttribute('data-metric', metric.id);
+            card.dataset.status = statusKey;
+            card.dataset.metric = metric.id;
             const header = document.createElement('header');
             header.textContent = metric.label;
             const value = document.createElement('strong');
             value.textContent = metric.value.toLocaleString('th-TH');
             card.append(header, value);
+            card.addEventListener('click', () => {
+                setActiveStatus(statusKey, { forceRender: true });
+            });
             summaryContainer.appendChild(card);
         });
+        updateSummaryActiveState();
     }
 
     function renderStatusFilter() {
@@ -534,7 +584,9 @@
             return;
         }
         tableBody.innerHTML = '';
-        const filtered = documents.filter((doc) => matchesCategory(doc) && matchesStatus(doc) && matchesSearch(doc));
+        const filtered = documents
+            .filter((doc) => matchesCategory(doc) && matchesStatus(doc) && matchesSearch(doc))
+            .sort((a, b) => parseTimestamp(b.updated_at || b.created_at) - parseTimestamp(a.updated_at || a.created_at));
         if (!filtered.length) {
             showDefaultEmptyState();
             return;
@@ -586,8 +638,10 @@
             actionCell.className = 'col-actions';
             const actionButton = document.createElement('button');
             actionButton.type = 'button';
-            actionButton.className = 'ghost doc-action';
-            actionButton.textContent = 'เปิดดู';
+            actionButton.className = 'action-btn doc-action';
+            const actionIcon = document.createElement('span');
+            actionIcon.className = 'i list';
+            actionButton.append(actionIcon, document.createTextNode('เปิดดู'));
             actionButton.addEventListener('click', () => {
                 openDocument(doc);
             });
@@ -1374,20 +1428,16 @@
         }
         if (statusFilter) {
             statusFilter.addEventListener('change', (event) => {
-                activeStatus = event.target.value || 'all';
-                renderDocuments();
+                setActiveStatus(event.target.value || 'all', { forceRender: true });
             });
         }
         if (resetFiltersBtn) {
             resetFiltersBtn.addEventListener('click', () => {
                 searchTerm = '';
-                activeStatus = 'all';
+                setActiveStatus('all', { skipRender: true });
                 activeCategory = categories.some((category) => category.id === 'all') ? 'all' : categories[0]?.id || 'all';
                 if (searchInput) {
                     searchInput.value = '';
-                }
-                if (statusFilter) {
-                    statusFilter.value = 'all';
                 }
                 renderCategories();
                 renderDocuments();

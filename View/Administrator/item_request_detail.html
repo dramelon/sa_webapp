@@ -132,7 +132,6 @@
                         </select>
                     </label>
                 </div>
-                <div class="form-alert" id="requestFormMessage" role="alert" hidden></div>
             </section>
 
             <section class="detail-card request-lines-card">
@@ -141,8 +140,8 @@
                         <h3>รายการสินค้า</h3>
                         <p class="request-lines-sub">เพิ่มรายการอุปกรณ์ที่ต้องการเบิกสำหรับคำขอนี้</p>
                     </div>
-                    <button class="ghost" type="button" id="addRequestLine">+ เพิ่มรายการสินค้า</button>
                 </header>
+                <div class="form-alert" id="requestFormMessage" role="alert" hidden></div>
                 <div class="table-wrap">
                     <table class="event-table request-lines-table">
                         <thead>
@@ -161,9 +160,23 @@
                         <p>ยังไม่มีรายการสินค้าในคำขอ</p>
                     </div>
                 </div>
+                <div class="request-lines-actions">
+                    <button class="btn btn-secondary" type="button" id="addRequestLine">
+                        <span class="i plus"></span>
+                        เพิ่มรายการสินค้า
+                    </button>
+                </div>
             </section>
         </form>
     </main>
+
+    <div id="unsavedBanner" class="unsaved-banner request-unsaved" role="status" hidden>
+        <span class="unsaved-text">ยังมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</span>
+        <div class="unsaved-actions">
+            <button type="button" class="unsaved-btn unsaved-btn-muted" id="btnDiscardChanges">ยกเลิกการเปลี่ยนแปลง</button>
+            <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnSaveInline">บันทึกตอนนี้</button>
+        </div>
+    </div>
 
     <script src="../../Controller/common/role_guard.js" defer></script>
     <script src="../../Controller/common/ui_shell.js" defer></script>

@@ -26,6 +26,9 @@
     const requestLinesBody = document.getElementById('requestLinesBody');
     const requestLinesEmpty = document.getElementById('requestLinesEmpty');
     const addRequestLineButton = document.getElementById('addRequestLine');
+    const unsavedBanner = document.getElementById('unsavedBanner');
+    const inlineSaveButton = document.getElementById('btnSaveInline');
+    const discardChangesButton = document.getElementById('btnDiscardChanges');
 
     let modelRoot = '';
     let eventId = initialEventId ? String(initialEventId) : '';
@@ -37,8 +40,144 @@
     let requestLineCounter = 0;
     const itemSearchCache = new Map();
     let backTarget = './event_document_manage.html';
+    let isDirty = false;
+    let isPopulating = false;
+    let lastSnapshot = { request_name: '', status: 'draft', lines: [] };
 
     const allowedStatuses = ['draft', 'submitted', 'approved', 'closed', 'cancelled'];
+
+    function normalizeStatus(value) {
+        const text = typeof value === 'string' ? value.trim().toLowerCase() : '';
+        return allowedStatuses.includes(text) ? text : 'draft';
+    }
+
+    function cloneLine(line) {
+        if (!line || typeof line !== 'object') {
+            return null;
+        }
+        return {
+            item_id: line.item_id ?? line.id ?? null,
+            item_name: line.item_name ?? line.name ?? '',
+            item_reference: line.item_reference ?? line.ref_id ?? '',
+            item_rate: line.item_rate ?? line.rate ?? null,
+            item_period: line.item_period ?? line.period ?? '',
+            item_uom: line.item_uom ?? line.uom ?? '',
+            category_name: line.category_name ?? '',
+            brand: line.brand ?? '',
+            model: line.model ?? '',
+            quantity: Number.isFinite(Number(line.quantity)) ? Number(line.quantity) : 0,
+            note: line.note ?? '',
+        };
+    }
+
+    function createSnapshotFromPayload(payload = {}) {
+        const status = normalizeStatus(payload.status);
+        const lines = Array.isArray(payload.lines)
+            ? payload.lines
+                  .map((line) => cloneLine(line))
+                  .filter((line) => line && Number.isFinite(line.item_id))
+            : [];
+        return {
+            request_name: typeof payload.request_name === 'string' ? payload.request_name : '',
+            status,
+            lines,
+        };
+    }
+
+    function runWithPopulation(fn) {
+        const prev = isPopulating;
+        isPopulating = true;
+        try {
+            fn();
+        } finally {
+            isPopulating = prev;
+        }
+    }
+
+    function updateSaveButtonState() {
+        const shouldDisable = isSaving || !isDirty;
+        if (saveButton) {
+            saveButton.disabled = shouldDisable;
+            if (shouldDisable) {
+                saveButton.setAttribute('aria-disabled', 'true');
+            } else {
+                saveButton.removeAttribute('aria-disabled');
+            }
+        }
+        if (inlineSaveButton) {
+            inlineSaveButton.disabled = shouldDisable;
+            if (shouldDisable) {
+                inlineSaveButton.setAttribute('aria-disabled', 'true');
+            } else {
+                inlineSaveButton.removeAttribute('aria-disabled');
+            }
+        }
+    }
+
+    function setDirtyState(next) {
+        const nextState = Boolean(next);
+        if (isDirty === nextState) {
+            updateSaveButtonState();
+            return;
+        }
+        isDirty = nextState;
+        if (unsavedBanner) {
+            if (isDirty) {
+                unsavedBanner.hidden = false;
+                requestAnimationFrame(() => {
+                    unsavedBanner.classList.add('is-active');
+                });
+            } else {
+                if (!unsavedBanner.classList.contains('is-active')) {
+                    unsavedBanner.hidden = true;
+                } else {
+                    unsavedBanner.classList.remove('is-active');
+                    const handleTransitionEnd = (event) => {
+                        if (event.propertyName === 'transform') {
+                            unsavedBanner.hidden = true;
+                            unsavedBanner.removeEventListener('transitionend', handleTransitionEnd);
+                        }
+                    };
+                    unsavedBanner.addEventListener('transitionend', handleTransitionEnd);
+                }
+            }
+        }
+        updateSaveButtonState();
+    }
+
+    function markDirty() {
+        if (!isDatasetLoaded || isPopulating) {
+            return;
+        }
+        setDirtyState(true);
+    }
+
+    function handleBeforeUnload(event) {
+        if (!isDirty) {
+            return;
+        }
+        event.preventDefault();
+        event.returnValue = '';
+    }
+
+    function restoreSnapshot(snapshot) {
+        if (!snapshot) {
+            return;
+        }
+        runWithPopulation(() => {
+            if (requestNameInput) {
+                requestNameInput.value = snapshot.request_name || '';
+            }
+            const status = normalizeStatus(snapshot.status);
+            if (requestStatusSelect) {
+                requestStatusSelect.value = status;
+            }
+            updateStatusBadge(status);
+            resetRequestLines(snapshot.lines.map((line) => ({ ...line })));
+        });
+        updateTitle();
+        setDirtyState(false);
+    }
 
     function formatEventCode(value) {
         if (value === null || value === undefined) {
@@ -164,17 +303,10 @@
 
     function setSavingBusy(busy) {
         isSaving = Boolean(busy);
-        if (saveButton) {
-            saveButton.disabled = isSaving;
-            if (isSaving) {
-                saveButton.setAttribute('aria-disabled', 'true');
-            } else {
-                saveButton.removeAttribute('aria-disabled');
-            }
-        }
         if (addRequestLineButton) {
             addRequestLineButton.disabled = Boolean(busy);
         }
+        updateSaveButtonState();
     }
 
     function resetFormMessages() {
@@ -359,7 +491,12 @@
         const list = document.createElement('div');
         list.className = 'typeahead-list';
         list.hidden = true;
-        root.append(input, hiddenInput, list);
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'typeahead-input request-line-typeahead';
+        const icon = document.createElement('span');
+        icon.className = 'request-line-typeahead-icon';
+        inputWrap.append(icon, input);
+        root.append(inputWrap, hiddenInput, list);
 
         let fetchToken = 0;
         let selectedItem = null;
@@ -595,9 +732,15 @@
             initialItem,
             onSelect: (item) => {
                 updateItemMeta(item);
+                if (!isPopulating) {
+                    markDirty();
+                }
             },
             onClear: () => {
                 updateItemMeta(null);
+                if (!isPopulating) {
+                    markDirty();
+                }
             },
         });
 
@@ -606,19 +749,23 @@
 
         const quantityCell = document.createElement('td');
         quantityCell.className = 'request-line-cell request-line-qty';
+        const quantityField = document.createElement('div');
+        quantityField.className = 'request-line-qty-field';
         const quantityInput = document.createElement('input');
         quantityInput.type = 'number';
-        quantityInput.min = '1';
+        quantityInput.min = '0';
+        quantityInput.max = '1000000';
         quantityInput.step = '1';
         quantityInput.placeholder = 'จำนวน';
         quantityInput.className = 'request-line-quantity';
-        if (Number.isFinite(initial?.quantity) && initial.quantity > 0) {
+        if (Number.isFinite(initial?.quantity) && initial.quantity >= 0) {
             quantityInput.value = String(initial.quantity);
         }
         if (!quantityInput.value) {
             quantityInput.value = '1';
         }
-        quantityCell.appendChild(quantityInput);
+        quantityField.appendChild(quantityInput);
+        quantityCell.appendChild(quantityField);
 
         const rateCell = document.createElement('td');
         rateCell.className = 'request-line-cell request-line-rate-cell';
@@ -646,6 +793,9 @@
             if (requestLinesBody && row.parentElement === requestLinesBody) {
                 requestLinesBody.removeChild(row);
                 updateRequestLinesEmpty();
+                if (!isPopulating) {
+                    markDirty();
+                }
             }
         });
         actionCell.appendChild(removeButton);
@@ -653,6 +803,37 @@
         row.append(itemCell, quantityCell, rateCell, noteCell, actionCell);
         requestLinesBody.appendChild(row);
         updateRequestLinesEmpty();
+
+        function updateQuantityState() {
+            const raw = quantityInput.value.trim();
+            const numeric = raw === '' ? Number.NaN : Number.parseInt(raw, 10);
+            const hasError = Number.isFinite(numeric) && (numeric < 0 || numeric > 1_000_000);
+            const isLarge = Number.isFinite(numeric) && numeric > 1000;
+            quantityField.classList.toggle('has-error', hasError);
+            quantityField.classList.toggle('is-large', isLarge);
+            if (hasError) {
+                quantityInput.setAttribute('aria-invalid', 'true');
+            } else {
+                quantityInput.removeAttribute('aria-invalid');
+            }
+        }
+
+        typeahead.input.addEventListener('input', () => {
+            if (!isPopulating) {
+                markDirty();
+            }
+        });
+
+        const handleQuantityChange = () => {
+            updateQuantityState();
+            if (!isPopulating) {
+                markDirty();
+            }
+        };
+
+        quantityInput.addEventListener('input', handleQuantityChange);
+        quantityInput.addEventListener('change', handleQuantityChange);
+        quantityInput.addEventListener('blur', updateQuantityState);
 
         const handleAutoAdd = (event) => {
             if (event.key !== 'Enter' || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
@@ -673,25 +854,41 @@
 
         quantityInput.addEventListener('keydown', handleAutoAdd);
         noteInput.addEventListener('keydown', handleAutoAdd);
+        noteInput.addEventListener('input', () => {
+            if (!isPopulating) {
+                markDirty();
+            }
+        });
 
         updateItemMeta(initialItem);
+        updateQuantityState();
+
+        if (!isPopulating) {
+            markDirty();
+        }
 
         return row;
     }
 
     function resetRequestLines(lines = []) {
-        if (requestLinesBody) {
-            requestLinesBody.innerHTML = '';
+        const prev = isPopulating;
+        isPopulating = true;
+        try {
+            if (requestLinesBody) {
+                requestLinesBody.innerHTML = '';
+            }
+            requestLineCounter = 0;
+            if (Array.isArray(lines) && lines.length) {
+                lines.forEach((line) => {
+                    addRequestLine(line);
+                });
+            } else {
+                addRequestLine();
+            }
+            updateRequestLinesEmpty();
+        } finally {
+            isPopulating = prev;
         }
-        requestLineCounter = 0;
-        if (Array.isArray(lines) && lines.length) {
-            lines.forEach((line) => {
-                addRequestLine(line);
-            });
-        } else {
-            addRequestLine();
-        }
-        updateRequestLinesEmpty();
     }
 
     function collectPayload() {
@@ -708,9 +905,7 @@
             }
             return null;
         }
-        const statusValue = requestStatusSelect ? requestStatusSelect.value : 'draft';
-        const normalizedStatus = typeof statusValue === 'string' ? statusValue.toLowerCase() : 'draft';
-        const status = allowedStatuses.includes(normalizedStatus) ? normalizedStatus : 'draft';
+        const status = normalizeStatus(requestStatusSelect ? requestStatusSelect.value : 'draft');
         if (!requestLinesBody) {
             setFormMessage('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ', 'error');
             return null;
@@ -741,10 +936,19 @@
                 }
                 return null;
             }
-            if (!Number.isFinite(quantityValue) || quantityValue <= 0) {
-                setFormMessage(`กรุณากรอกจำนวนที่ถูกต้องในรายการที่ ${index + 1}`, 'error');
+            if (!Number.isFinite(quantityValue) || quantityValue < 0) {
+                setFormMessage(`กรุณากรอกจำนวนที่ถูกต้อง (0 - 1,000,000) ในรายการที่ ${index + 1}`, 'error');
                 if (quantityInput) {
                     quantityInput.focus();
+                    quantityInput.dispatchEvent(new Event('input'));
+                }
+                return null;
+            }
+            if (quantityValue > 1_000_000) {
+                setFormMessage(`จำนวนในรายการที่ ${index + 1} ต้องไม่เกิน 1,000,000`, 'error');
+                if (quantityInput) {
+                    quantityInput.focus();
+                    quantityInput.dispatchEvent(new Event('input'));
                 }
                 return null;
             }
@@ -876,14 +1080,18 @@
 
     function applyRequestInfo(payload) {
         requestInfo = payload || null;
-        if (requestNameInput && payload?.request_name) {
-            requestNameInput.value = payload.request_name;
-        }
-        if (requestStatusSelect) {
-            const statusValue = payload?.status || 'draft';
-            requestStatusSelect.value = allowedStatuses.includes(statusValue) ? statusValue : 'draft';
-        }
-        updateStatusBadge(payload?.status || 'draft');
+        const snapshot = createSnapshotFromPayload(payload || {});
+        lastSnapshot = snapshot;
+        runWithPopulation(() => {
+            if (requestNameInput) {
+                requestNameInput.value = snapshot.request_name || '';
+            }
+            if (requestStatusSelect) {
+                requestStatusSelect.value = snapshot.status;
+            }
+            updateStatusBadge(snapshot.status);
+            resetRequestLines(snapshot.lines.map((line) => ({ ...line })));
+        });
         if (requestReference) {
             requestReference.textContent = payload?.reference ? `รหัสคำขอ: ${payload.reference}` : 'รหัสคำขอ: —';
         }
@@ -900,7 +1108,7 @@
             createdByDisplay.textContent = `สร้างโดย: ${payload?.created_by_label || '—'}`;
         }
         updateTitle();
-        resetRequestLines(Array.isArray(payload?.lines) ? payload.lines : []);
+        setDirtyState(false);
     }
 
     async function loadEventInfo() {
@@ -972,12 +1180,25 @@
         }
         if (eventId) {
             applyEventInfo(null);
-            loadEventInfo().then(() => {
-                resetRequestLines();
-                isDatasetLoaded = true;
-                updateStatusBadge('draft');
-                updateTitle();
-            });
+            loadEventInfo()
+                .catch(() => {})
+                .finally(() => {
+                    const snapshot = { request_name: '', status: 'draft', lines: [] };
+                    lastSnapshot = snapshot;
+                    runWithPopulation(() => {
+                        if (requestNameInput) {
+                            requestNameInput.value = '';
+                        }
+                        if (requestStatusSelect) {
+                            requestStatusSelect.value = 'draft';
+                        }
+                        updateStatusBadge('draft');
+                        resetRequestLines([]);
+                    });
+                    isDatasetLoaded = true;
+                    updateTitle();
+                    setDirtyState(false);
+                });
             return;
         }
         setGlobalMessage('ไม่พบข้อมูลอ้างอิงของคำขอ', 'error');
@@ -997,17 +1218,31 @@
         if (requestNameInput) {
             requestNameInput.addEventListener('input', () => {
                 updateTitle();
+                markDirty();
             });
         }
         if (requestStatusSelect) {
             requestStatusSelect.addEventListener('change', (event) => {
-                const value = typeof event.target.value === 'string' ? event.target.value.toLowerCase() : 'draft';
+                const value = normalizeStatus(event.target.value);
+                requestStatusSelect.value = value;
                 updateStatusBadge(value);
+                markDirty();
             });
         }
         if (addRequestLineButton) {
             addRequestLineButton.addEventListener('click', () => {
                 addRequestLine();
+            });
+        }
+        if (inlineSaveButton) {
+            inlineSaveButton.addEventListener('click', () => {
+                handleSave();
+            });
+        }
+        if (discardChangesButton) {
+            discardChangesButton.addEventListener('click', () => {
+                restoreSnapshot(lastSnapshot);
+                resetFormMessages();
             });
         }
         if (requestForm) {
@@ -1024,6 +1259,7 @@
                 }
             });
         }
+        window.addEventListener('beforeunload', handleBeforeUnload);
     }
 
     function boot({ root }) {
@@ -1032,6 +1268,7 @@
         setInterval(updateThaiDate, 60_000);
         syncBackLink();
         bindEvents();
+        updateSaveButtonState();
         resolveInitialState();
     }
 
