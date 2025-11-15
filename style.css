@@ -1233,6 +1233,18 @@ body {
     color: #a04478;
 }
 
+.status-badge.active {
+    background: #e8f9eb;
+    border-color: #bfe8c9;
+    color: #1b7f2a;
+}
+
+.status-badge.inactive {
+    background: #ffe6e2;
+    border-color: #f5b5ad;
+    color: #c0392b;
+}
+
 .status-badge.completed {
     background: #e8f9eb;
     border-color: #bfe8c9;
@@ -1439,6 +1451,7 @@ body {
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.9rem;
+    border: 1px solid #f5d87e;
 }
 
 .detail-meta .status-chip {
@@ -1455,41 +1468,49 @@ body {
 .status-chip[data-status="planning"] {
     background: #d8e7ff;
     color: #235ec1;
+    border-color: #a9c5ff;
 }
 
 .status-chip[data-status="waiting"] {
     background: #ffe5b5;
     color: #a46000;
+    border-color: #f3b560;
 }
 
 .status-chip[data-status="processing"] {
     background: #ffd89a;
     color: #a34900;
+    border-color: #f3a556;
 }
 
 .status-chip[data-status="billing"] {
     background: #ffd6ec;
     color: #a0135a;
+    border-color: #f58ec3;
 }
 
 .status-chip[data-status="completed"] {
     background: #d9f4d1;
     color: #297d1f;
+    border-color: #8bd181;
 }
 
 .status-chip[data-status="active"] {
     background: #d9f4d1;
     color: #297d1f;
+    border-color: #8bd181;
 }
 
 .status-chip[data-status="inactive"] {
     background: #ececf0;
     color: #555770;
+    border-color: #cacad4;
 }
 
 .status-chip[data-status="cancelled"] {
     background: #ffd7d2;
     color: #b02020;
+    border-color: #f1928b;
 }
 
 .detail-card {
@@ -2437,28 +2458,33 @@ body.modal-open {
 .doc-status[data-status='draft'] {
     background: #f5f7ff;
     color: #4c5bb5;
+    border: 1px solid #d1d8ff;
 }
 
 .doc-status[data-status='submitted'],
 .doc-status[data-status='waiting'] {
     background: #fff4dd;
     color: #9a6510;
+    border: 1px solid #f2c16c;
 }
 
 .doc-status[data-status='approved'] {
     background: #d9f4d1;
     color: #2f7a23;
+    border: 1px solid #8bd181;
 }
 
 .doc-status[data-status='closed'] {
     background: #ececf0;
     color: #555770;
+    border: 1px solid #cacad4;
 }
 
 .doc-status[data-status='cancelled'],
 .doc-status[data-status='rejected'] {
     background: #ffd7d2;
     color: #b02020;
+    border: 1px solid #f1928b;
 }
 
 @media (max-width: 720px) {

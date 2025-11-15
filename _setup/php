@@ -343,3 +343,27 @@ CREATE TABLE booking (
 
     PRIMARY KEY (BookingID)
 );
+
+
+
+
+-- SUPPLIERS [requirement: -] v1
+CREATE TABLE suppliers (
+    SupplierID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    RefSupplierID   VARCHAR(30) DEFAULT NULL,
+    LocationID      BIGINT UNSIGNED DEFAULT NULL,
+    SupplierName    VARCHAR(200) NOT NULL,
+    OrgName         VARCHAR(200) DEFAULT NULL,
+    ContactPerson   VARCHAR(200) DEFAULT NULL,
+    Email           VARCHAR(254) DEFAULT NULL,
+    Phone           VARCHAR(32)  DEFAULT NULL,
+    TaxID           VARCHAR(20)  DEFAULT NULL,
+    Note            VARCHAR(500) DEFAULT NULL,
+    CreatedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy       BIGINT UNSIGNED NOT NULL,
+    UpdatedAt       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UpdatedBy       BIGINT UNSIGNED DEFAULT NULL,
+    Status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
+    PRIMARY KEY (SupplierID),
+    UNIQUE KEY uq_supplier_ref (RefSupplierID)
+);

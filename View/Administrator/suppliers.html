@@ -4,14 +4,15 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>จัดการสถานที่</title>
+    <title>รายชื่อซัพพลายเออร์</title>
     <link rel="stylesheet" href="../../style.css" />
 </head>
 
 <body>
+    <!-- Slide-out drawer -->
     <aside id="drawer" class="drawer" aria-hidden="true">
         <nav class="drawer-nav">
-            <a class="item" href="./main_menu.html">
+            <a class="item" href="./main_menu.html" aria-current="page">
                 <span class="i home"></span><span>เมนูหลัก</span>
             </a>
             <a class="item" href="./home.html">
@@ -20,7 +21,7 @@
             <a class="item" href="./events.html">
                 <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
             </a>
-            <a class="item" href="./suppliers.html">
+            <a class="item active" href="./suppliers.html" aria-current="page">
                 <span class="i contacts"></span><span>ซัพพลายเออร์</span>
             </a>
             <a class="item" href="./items.html">
@@ -35,7 +36,7 @@
             <a class="item" href="./customers.html">
                 <span class="i contacts"></span><span>ลูกค้า</span>
             </a>
-            <a class="item active" href="./locations.html" aria-current="page">
+            <a class="item" href="./locations.html">
                 <span class="i pin"></span><span>สถานที่</span>
             </a>
             <div class="drawer-sep"></div>
@@ -49,11 +50,12 @@
     </aside>
     <div id="scrim" class="scrim" hidden></div>
 
+    <!-- App shell -->
     <div class="topbar">
         <button id="btnMenu" class="hamburger" aria-label="เมนู">
             <span></span><span></span><span></span>
         </button>
-        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - จัดการสถานที่</h1>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - รายการซัพพลายเออร์</h1>
 
         <div class="account">
             <span class="pill">
@@ -67,31 +69,32 @@
     <main class="page">
         <section class="page-head">
             <div>
-                <h2>รายการสถานที่</h2>
+                <h2>รายชื่อซัพพลายเออร์</h2>
                 <p class="date" id="pageDate">วัน...</p>
             </div>
             <div class="head-actions">
-                <button class="btn btn-secondary" id="btnNewLocation" data-target="./location_detail.html?mode=create">
+                <button class="btn btn-secondary" id="btnNewSupplier" data-target="./supplier_detail.html?mode=create">
                     <span class="i plus"></span>
-                    เพิ่มสถานที่ใหม่
+                    เพิ่มซัพพลายเออร์ใหม่
                 </button>
             </div>
         </section>
 
-        <section class="summary-cards" id="locationSummary" aria-label="จำนวนสถานที่ทั้งหมด">
+        <section class="summary-cards" id="summaryCards" aria-label="ภาพรวมสถานะซัพพลายเออร์">
             <!-- Populated by JS -->
         </section>
 
-        <section class="list-panel" id="locationList" aria-live="polite">
+        <section class="list-panel" id="supplierList">
             <header class="list-toolbar">
                 <div class="toolbar-group">
                     <label class="field search">
                         <span class="i search"></span>
-                        <input type="search" id="locationSearch" placeholder="ค้นหาชื่อสถานที่ อำเภอ จังหวัด หรือประเทศ..." />
+                        <input type="search" id="searchInput"
+                            placeholder="ค้นหารหัสอ้างอิง รหัสซัพพลายเออร์ ชื่อ หรือผู้ติดต่อ..." />
                     </label>
                     <label class="field select">
                         <span class="i filter"></span>
-                        <select id="locationStatusFilter" aria-label="กรองตามสถานะ">
+                        <select id="statusFilter" aria-label="กรองตามสถานะ">
                             <option value="all">สถานะทั้งหมด</option>
                             <option value="active">เปิดใช้งาน</option>
                             <option value="inactive">ปิดใช้งาน</option>
@@ -99,41 +102,45 @@
                     </label>
                 </div>
                 <div class="toolbar-group">
-                    <button class="ghost" id="btnLocationClear">ล้างการค้นหา</button>
+                    <button class="ghost" id="btnClearFilters">ล้างตัวกรอง</button>
+                    <button class="btn btn-ghost" id="btnExport">
+                        <span class="i download"></span>
+                        ส่งออก
+                    </button>
                 </div>
             </header>
 
             <div class="table-wrap" role="region" aria-live="polite">
-                <table class="event-table location-table">
+                <table class="event-table">
                     <thead>
                         <tr>
-                            <th scope="col" data-sort-key="location_id" aria-sort="ascending">
-                                <button type="button" class="sort-button" data-sort-key="location_id" data-label="รหัสสถานที่">
-                                    รหัสสถานที่
+                            <th scope="col" data-sort-key="supplier_id" aria-sort="descending">
+                                <button type="button" class="sort-button" data-sort-key="supplier_id" data-label="รหัสซัพพลายเออร์">
+                                    รหัสซัพพลายเออร์
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="supplier_name" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="supplier_name" data-label="ชื่อหรือองค์กร">
+                                    ชื่อ / องค์กร
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="contact_person" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="contact_person" data-label="ผู้ติดต่อ">
+                                    ผู้ติดต่อ
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="contact_meta" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="contact_meta" data-label="ช่องทางการติดต่อ">
+                                    ช่องทางการติดต่อ
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
                             <th scope="col" data-sort-key="location_name" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="location_name" data-label="ชื่อสถานที่">
-                                    ชื่อสถานที่
-                                    <span class="sort-indicator" aria-hidden="true"></span>
-                                </button>
-                            </th>
-                            <th scope="col" data-sort-key="district" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="district" data-label="อำเภอ / เขต">
-                                    อำเภอ / เขต
-                                    <span class="sort-indicator" aria-hidden="true"></span>
-                                </button>
-                            </th>
-                            <th scope="col" data-sort-key="province" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="province" data-label="จังหวัด">
-                                    จังหวัด
-                                    <span class="sort-indicator" aria-hidden="true"></span>
-                                </button>
-                            </th>
-                            <th scope="col" data-sort-key="country" aria-sort="none">
-                                <button type="button" class="sort-button" data-sort-key="country" data-label="ประเทศ">
-                                    ประเทศ
+                                <button type="button" class="sort-button" data-sort-key="location_name" data-label="สถานที่">
+                                    สถานที่
                                     <span class="sort-indicator" aria-hidden="true"></span>
                                 </button>
                             </th>
@@ -146,27 +153,26 @@
                             <th scope="col" class="col-actions">การจัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="locationTableBody">
+                    <tbody id="supplierTableBody">
                         <!-- Populated by JS -->
                     </tbody>
                 </table>
-                <div class="empty-state" id="locationEmpty" aria-hidden="true">
+                <div class="empty-state" id="emptyState" aria-hidden="true">
                     <span class="i inbox"></span>
-                    <p>ไม่พบสถานที่ตามเงื่อนไขที่เลือก</p>
+                    <p>ไม่พบซัพพลายเออร์ที่ตรงกับตัวกรอง</p>
                 </div>
             </div>
-
-            <div class="table-pagination" id="locationPagination" aria-live="polite">
-                <button class="btn btn-ghost" id="locationPrev" type="button">ก่อนหน้า</button>
-                <span class="page-indicator" id="locationPage">หน้า 1</span>
-                <button class="btn btn-secondary" id="locationNext" type="button">หน้าถัดไป</button>
+            <div class="table-pagination" id="paginationControls" aria-live="polite">
+                <button class="btn btn-ghost" id="prevPage" type="button">ก่อนหน้า</button>
+                <span class="page-indicator" id="pageIndicator">หน้า 1</span>
+                <button class="btn btn-secondary" id="nextPage" type="button">หน้าถัดไป</button>
             </div>
         </section>
     </main>
 
     <script src="../../Controller/common/role_guard.js" defer></script>
     <script src="../../Controller/common/ui_shell.js" defer></script>
-    <script src="../../Controller/Administrator/locations.js" defer></script>
+    <script src="../../Controller/Administrator/suppliers.js" defer></script>
 </body>
 
 </html>
