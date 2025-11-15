@@ -90,7 +90,80 @@
                     <h3>หมวดหมู่เอกสาร</h3>
                     <p>เลือกหมวดหมู่เพื่อดูเอกสารที่เกี่ยวข้องกับอีเว้น</p>
                 </header>
-                <ul class="doc-category-list" id="docCategoryList" aria-label="หมวดหมู่เอกสาร"></ul>
+                <ul class="doc-category-list" id="docCategoryList" aria-label="หมวดหมู่เอกสาร">
+                    <li class="doc-category-item">
+                        <button type="button" class="doc-category active" data-category="all" aria-pressed="true">
+                            <span class="doc-category-header">
+                                <span class="doc-category-label">เอกสารทั้งหมด</span>
+                                <span class="doc-category-count">0</span>
+                            </span>
+                            <span class="doc-category-description">ดูเอกสารทุกประเภทของอีเว้นนี้</span>
+                        </button>
+                    </li>
+                    <li class="doc-category-item">
+                        <button type="button" class="doc-category" data-category="rfq" aria-pressed="false">
+                            <span class="doc-category-header">
+                                <span class="doc-category-label">คำขอใบเสนอราคา (RFQ)</span>
+                                <span class="doc-category-count">0</span>
+                            </span>
+                            <span class="doc-category-description">ติดตามคำขอใบเสนอราคาที่ส่งให้ผู้ขาย</span>
+                        </button>
+                    </li>
+                    <li class="doc-category-item">
+                        <button type="button" class="doc-category" data-category="quotation" aria-pressed="false">
+                            <span class="doc-category-header">
+                                <span class="doc-category-label">ใบเสนอราคา</span>
+                                <span class="doc-category-count">0</span>
+                            </span>
+                            <span class="doc-category-description">รวบรวมใบเสนอราคาที่ได้รับจากผู้ขาย</span>
+                        </button>
+                    </li>
+                    <li class="doc-category-item">
+                        <button type="button" class="doc-category" data-category="po" aria-pressed="false">
+                            <span class="doc-category-header">
+                                <span class="doc-category-label">ใบสั่งซื้อ (PO)</span>
+                                <span class="doc-category-count">0</span>
+                            </span>
+                            <span class="doc-category-description">ตรวจสอบใบสั่งซื้ออุปกรณ์และวัสดุ</span>
+                        </button>
+                    </li>
+                    <li class="doc-category-item">
+                        <button type="button" class="doc-category" data-category="delivery-out" aria-pressed="false">
+                            <span class="doc-category-header">
+                                <span class="doc-category-label">ส่งอุปกรณ์ออก</span>
+                                <span class="doc-category-count">0</span>
+                            </span>
+                            <span class="doc-category-description">ติดตามการนำอุปกรณ์ออกจากคลัง</span>
+                        </button>
+                    </li>
+                    <li class="doc-category-item">
+                        <button type="button" class="doc-category" data-category="delivery-in" aria-pressed="false">
+                            <span class="doc-category-header">
+                                <span class="doc-category-label">รับอุปกรณ์เข้า</span>
+                                <span class="doc-category-count">0</span>
+                            </span>
+                            <span class="doc-category-description">บันทึกการรับอุปกรณ์กลับเข้าคลัง</span>
+                        </button>
+                    </li>
+                    <li class="doc-category-item">
+                        <button type="button" class="doc-category" data-category="other" aria-pressed="false">
+                            <span class="doc-category-header">
+                                <span class="doc-category-label">เอกสารอื่น ๆ</span>
+                                <span class="doc-category-count">0</span>
+                            </span>
+                            <span class="doc-category-description">รวมเอกสารประกอบที่เกี่ยวข้องกับอีเว้น</span>
+                        </button>
+                    </li>
+                    <li class="doc-category-item">
+                        <button type="button" class="doc-category" data-category="receipt" aria-pressed="false">
+                            <span class="doc-category-header">
+                                <span class="doc-category-label">ใบเสร็จรับเงิน</span>
+                                <span class="doc-category-count">0</span>
+                            </span>
+                            <span class="doc-category-description">หลักฐานการรับชำระเงินจากกิจกรรม</span>
+                        </button>
+                    </li>
+                </ul>
             </aside>
 
             <section class="list-panel doc-list-panel" aria-label="รายการเอกสาร">

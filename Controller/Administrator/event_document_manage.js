@@ -38,10 +38,48 @@
         { id: 'cancelled', label: 'ยกเลิก' },
     ];
 
+    const DEFAULT_DOCUMENT_CATEGORIES = [
+        {
+            id: 'rfq',
+            label: 'คำขอใบเสนอราคา (RFQ)',
+            description: 'ติดตามคำขอใบเสนอราคาที่ส่งให้ผู้ขาย',
+        },
+        {
+            id: 'quotation',
+            label: 'ใบเสนอราคา',
+            description: 'รวบรวมใบเสนอราคาที่ได้รับจากผู้ขาย',
+        },
+        {
+            id: 'po',
+            label: 'ใบสั่งซื้อ (PO)',
+            description: 'ตรวจสอบใบสั่งซื้ออุปกรณ์และวัสดุ',
+        },
+        {
+            id: 'delivery-out',
+            label: 'ส่งอุปกรณ์ออก',
+            description: 'ติดตามการนำอุปกรณ์ออกจากคลัง',
+        },
+        {
+            id: 'delivery-in',
+            label: 'รับอุปกรณ์เข้า',
+            description: 'บันทึกการรับอุปกรณ์กลับเข้าคลัง',
+        },
+        {
+            id: 'other',
+            label: 'เอกสารอื่น ๆ',
+            description: 'รวมเอกสารประกอบที่เกี่ยวข้องกับอีเว้น',
+        },
+        {
+            id: 'receipt',
+            label: 'ใบเสร็จรับเงิน',
+            description: 'หลักฐานการรับชำระเงินจากกิจกรรม',
+        },
+    ];
+
     let modelRoot = '';
     let eventInfo = null;
     let documents = [];
-    let categories = [];
+    let categories = buildCategories(DEFAULT_DOCUMENT_CATEGORIES, []);
     let summaryData = { total: 0, by_status: {} };
     let statusOptions = [...DEFAULT_STATUS_OPTIONS];
     let statusLabels = buildStatusLabels(statusOptions);
@@ -1462,7 +1500,7 @@
         showEmptyState(message);
         summaryData = { total: 0, by_status: {} };
         documents = [];
-        categories = [];
+        categories = buildCategories(DEFAULT_DOCUMENT_CATEGORIES, documents);
         renderSummaryCards();
         renderCategories();
         isDatasetLoaded = false;
@@ -1522,7 +1560,8 @@
         documents = normalizedDocs.documents;
 
         summaryData = normalizeSummary(payload?.summary, documents);
-        categories = buildCategories(payload?.categories, documents);
+        const payloadCategories = Array.isArray(payload?.categories) ? payload.categories : [];
+        categories = buildCategories([...payloadCategories, ...DEFAULT_DOCUMENT_CATEGORIES], documents);
         if (!categories.some((category) => category.id === activeCategory)) {
             activeCategory = categories[0]?.id || 'all';
         }
@@ -1578,6 +1617,7 @@
         initializeRequestActions();
         bindFilters();
         renderStatusFilter();
+        renderCategories();
         if (eventId) {
             loadDocuments();
         } else {
