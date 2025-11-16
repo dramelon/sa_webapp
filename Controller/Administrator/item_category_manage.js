@@ -4,11 +4,19 @@
     const heading = document.getElementById('categoryHeading');
     const categoryIdDisplay = document.getElementById('categoryIdDisplay');
     const categoryItemCount = document.getElementById('categoryItemCount');
+    const categoryUnitCount = document.getElementById('categoryUnitCount');
     const categoryUpdatedAt = document.getElementById('categoryUpdatedAt');
     const categoryUpdatedBy = document.getElementById('categoryUpdatedBy');
     const btnBack = document.getElementById('btnBack');
     const btnSave = document.getElementById('btnSave');
     const breadcrumbLink = document.querySelector('.breadcrumb a');
+    const unsavedBanner = document.getElementById('unsavedBanner');
+    const btnDiscardChanges = document.getElementById('btnDiscardChanges');
+    const btnSaveInline = document.getElementById('btnSaveInline');
+    const unsavedModal = document.getElementById('unsavedModal');
+    const btnModalStay = document.getElementById('btnModalStay');
+    const btnModalDiscard = document.getElementById('btnModalDiscard');
+    const btnModalSave = document.getElementById('btnModalSave');
 
     const fieldRefs = {
         name: document.getElementById('categoryName'),
@@ -25,6 +33,12 @@
     let isDirty = false;
     let isSaving = false;
     let initialSnapshot = null;
+    let pendingNavigationAction = null;
+
+    if (unsavedModal) {
+        unsavedModal.setAttribute('aria-hidden', unsavedModal.hidden ? 'true' : 'false');
+    }
+    updateSaveButtonState();
 
     const updateThaiDate = () => {
         const now = new Date();
@@ -54,6 +68,30 @@
         messageBox.className = `form-alert ${variant}`;
     }
 
+    function preventEnterSubmit(targetForm) {
+        if (!targetForm) return;
+        targetForm.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            const target = event.target;
+            if (!target || !target.tagName) return;
+            const tagName = target.tagName.toUpperCase();
+            if (tagName === 'TEXTAREA' || tagName === 'BUTTON') return;
+            const type = target.type ? String(target.type).toLowerCase() : '';
+            if (type === 'submit') return;
+            event.preventDefault();
+        });
+    }
+
+    function updateSaveButtonState() {
+        const disable = isSaving || !isDirty;
+        if (btnSave) {
+            btnSave.disabled = disable;
+        }
+        if (btnSaveInline) {
+            btnSaveInline.disabled = disable;
+        }
+    }
+
     function normalizeSnapshot(data) {
         return {
             name: (data.name || '').trim(),
@@ -67,21 +105,93 @@
         return normalizeSnapshot({ name: nameValue, note: noteValue });
     }
 
-    function setDirty(next) {
-        if (isDirty === next) return;
-        isDirty = next;
-        if (btnSave) {
-            btnSave.disabled = isSaving || !isDirty;
+    function restoreSnapshot(snapshot) {
+        if (!snapshot) {
+            return;
         }
+        if (fieldRefs.name) {
+            fieldRefs.name.value = snapshot.name || '';
+        }
+        if (fieldRefs.note) {
+            fieldRefs.note.value = snapshot.note || '';
+        }
+        setDirty(false);
+    }
+
+    function setDirty(next) {
+        if (isDirty === next) {
+            updateSaveButtonState();
+            return;
+        }
+        isDirty = next;
+        if (unsavedBanner) {
+            unsavedBanner.hidden = !isDirty;
+        }
+        updateSaveButtonState();
+    }
+
+    function openUnsavedModal() {
+        if (!unsavedModal) {
+            return;
+        }
+        unsavedModal.hidden = false;
+        unsavedModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeUnsavedModal() {
+        if (!unsavedModal) {
+            return;
+        }
+        unsavedModal.hidden = true;
+        unsavedModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function triggerSave() {
+        if (!form || isSaving) {
+            return;
+        }
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit(btnSave);
+        } else if (btnSave) {
+            btnSave.click();
+        }
+    }
+
+    function requestNavigation(action) {
+        if (!isDirty) {
+            action();
+            return;
+        }
+        pendingNavigationAction = action;
+        openUnsavedModal();
+    }
+
+    function handleBeforeUnload(event) {
+        if (!isDirty) {
+            return;
+        }
+        event.preventDefault();
+        event.returnValue = '';
     }
 
     function updateMeta(data) {
         const id = data?.item_category_id != null ? String(data.item_category_id) : '—';
         if (categoryIdDisplay) categoryIdDisplay.textContent = id;
 
-        const count = Number.isFinite(Number(data?.item_count)) ? Number(data.item_count) : null;
+        const countValue = Number(data?.item_count);
+        const count = Number.isFinite(countValue) ? countValue : null;
         if (categoryItemCount) {
-            categoryItemCount.textContent = count != null ? `จำนวนสินค้าที่ใช้งาน: ${count} รายการ` : 'จำนวนสินค้าที่ใช้งาน: —';
+            categoryItemCount.textContent = count != null
+                ? `จำนวนสินค้าที่ใช้งาน: ${count.toLocaleString('th-TH')} รายการ`
+                : 'จำนวนสินค้าที่ใช้งาน: —';
+        }
+
+        const unitValue = Number(data?.item_unit_count);
+        const unitCount = Number.isFinite(unitValue) ? unitValue : null;
+        if (categoryUnitCount) {
+            categoryUnitCount.textContent = unitCount != null
+                ? `จำนวนหน่วยสินค้าที่ใช้งาน: ${unitCount.toLocaleString('th-TH')} หน่วย`
+                : 'จำนวนหน่วยสินค้าที่ใช้งาน: —';
         }
 
         if (categoryUpdatedAt) categoryUpdatedAt.textContent = `อัปเดตล่าสุด: ${formatDateTime(data?.updated_at)}`;
@@ -106,7 +216,7 @@
         if (heading) heading.textContent = 'สร้างหมวดหมู่สินค้าใหม่';
         if (categoryIdDisplay) categoryIdDisplay.textContent = 'ใหม่';
         if (form) form.reset();
-        updateMeta({ item_count: 0 });
+        updateMeta({ item_count: 0, item_unit_count: 0 });
         initialSnapshot = serializeForm();
         setDirty(false);
         showMessage('');
@@ -157,7 +267,7 @@
 
         isSaving = true;
         setDirty(false);
-        if (btnSave) btnSave.disabled = true;
+        updateSaveButtonState();
         showMessage('กำลังบันทึก...', 'info');
 
         try {
@@ -185,12 +295,18 @@
             }
             sessionStorage.setItem('item-categories:refresh', '1');
             showMessage('บันทึกหมวดหมู่สินค้าเรียบร้อยแล้ว', 'success');
+            closeUnsavedModal();
+            if (typeof pendingNavigationAction === 'function') {
+                const action = pendingNavigationAction;
+                pendingNavigationAction = null;
+                action();
+            }
         } catch (error) {
             showMessage(translateError(error), 'error');
             setDirty(true);
         } finally {
             isSaving = false;
-            if (btnSave) btnSave.disabled = !isDirty;
+            updateSaveButtonState();
         }
     }
 
@@ -251,40 +367,75 @@
             const dirty = JSON.stringify(current) !== JSON.stringify(initialSnapshot);
             setDirty(dirty);
         };
+        preventEnterSubmit(form);
         form.addEventListener('input', updateDirtyState);
         form.addEventListener('change', updateDirtyState);
         form.addEventListener('submit', handleSubmit);
     }
 
     if (btnBack) {
-        btnBack.addEventListener('click', (event) => {
-            if (isDirty) {
-                const confirmLeave = window.confirm('มีการเปลี่ยนแปลงที่ยังไม่บันทึก ต้องการออกจากหน้านี้หรือไม่?');
-                if (!confirmLeave) {
-                    event.preventDefault();
-                    return;
+        btnBack.addEventListener('click', () => {
+            requestNavigation(() => {
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = './item_categorys.html';
                 }
-            }
-            window.history.back();
+            });
         });
     }
 
     if (breadcrumbLink) {
         breadcrumbLink.addEventListener('click', (event) => {
-            if (isDirty) {
-                const confirmLeave = window.confirm('มีการเปลี่ยนแปลงที่ยังไม่บันทึก ต้องการออกจากหน้านี้หรือไม่?');
-                if (!confirmLeave) {
-                    event.preventDefault();
-                }
+            event.preventDefault();
+            const href = breadcrumbLink.getAttribute('href') || './item_categorys.html';
+            requestNavigation(() => {
+                window.location.href = href;
+            });
+        });
+    }
+
+    if (btnDiscardChanges) {
+        btnDiscardChanges.addEventListener('click', () => {
+            pendingNavigationAction = null;
+            restoreSnapshot(initialSnapshot);
+            showMessage('ยกเลิกการแก้ไขแล้ว', 'info');
+        });
+    }
+
+    if (btnSaveInline) {
+        btnSaveInline.addEventListener('click', () => {
+            triggerSave();
+        });
+    }
+
+    if (btnModalStay) {
+        btnModalStay.addEventListener('click', () => {
+            pendingNavigationAction = null;
+            closeUnsavedModal();
+        });
+    }
+
+    if (btnModalDiscard) {
+        btnModalDiscard.addEventListener('click', () => {
+            const action = pendingNavigationAction;
+            pendingNavigationAction = null;
+            setDirty(false);
+            closeUnsavedModal();
+            if (typeof action === 'function') {
+                action();
             }
         });
     }
 
-    window.addEventListener('beforeunload', (event) => {
-        if (!isDirty) return;
-        event.preventDefault();
-        event.returnValue = '';
-    });
+    if (btnModalSave) {
+        btnModalSave.addEventListener('click', () => {
+            closeUnsavedModal();
+            triggerSave();
+        });
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     async function boot(context) {
         modelRoot = `${context.root}/Model`;

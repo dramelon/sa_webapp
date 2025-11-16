@@ -22,7 +22,8 @@ try {
         'item_category_id' => 'ic.ItemCategoryID',
         'name' => 'ic.Name',
         'notes' => 'ic.Note',
-        'item_count' => 'item_count'
+        'item_count' => 'item_count',
+        'item_unit_count' => 'item_unit_count',
     ];
 
     $sortKey = $_GET['sort_key'] ?? 'item_category_id';
@@ -84,7 +85,7 @@ try {
             LEFT JOIN items i ON i.ItemCategoryID = ic.ItemCategoryID
             $whereSql
             GROUP BY ic.ItemCategoryID
-            HAVING COUNT(i.ItemID) > 0
+            HAVING COUNT(DISTINCT i.ItemID) > 0
         ) t
     ";
     $usageStmt = $db->prepare($usageSql);
@@ -97,9 +98,9 @@ try {
 
     $havingSql = '';
     if ($statusFilter === 'with_items') {
-        $havingSql = 'HAVING COUNT(i.ItemID) > 0';
+        $havingSql = 'HAVING COUNT(DISTINCT i.ItemID) > 0';
     } elseif ($statusFilter === 'empty') {
-        $havingSql = 'HAVING COUNT(i.ItemID) = 0';
+        $havingSql = 'HAVING COUNT(DISTINCT i.ItemID) = 0';
     }
 
     $dataSql = "
@@ -107,9 +108,11 @@ try {
             ic.ItemCategoryID AS item_category_id,
             ic.Name AS name,
             ic.Note AS note,
-            COUNT(i.ItemID) AS item_count
+            COUNT(DISTINCT i.ItemID) AS item_count,
+            COUNT(DISTINCT iu.ItemUnitID) AS item_unit_count
         FROM itemcategory ic
         LEFT JOIN items i ON i.ItemCategoryID = ic.ItemCategoryID
+        LEFT JOIN item_unit iu ON iu.ItemID = i.ItemID
         $whereSql
         GROUP BY ic.ItemCategoryID
         $havingSql

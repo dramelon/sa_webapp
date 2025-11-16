@@ -24,10 +24,10 @@
             <a class="item" href="./suppliers.html">
                 <span class="i contacts"></span><span>ซัพพลายเออร์</span>
             </a>
-            <a class="item" href="./items.html" aria-current="page">
+            <a class="item" href="./items.html">
                 <span class="i stack"></span><span>รายการสินค้า</span>
             </a>
-            <a class="item active" href="./item_units.html">
+            <a class="item active" href="./item_units.html" aria-current="page">
                 <span class="i box"></span><span>หน่วยสินค้าทั้งหมด</span>
             </a>
             <a class="item" href="./item_categorys.html">
@@ -90,9 +90,13 @@
                 <p class="meta-label">รหัสหน่วยสินค้า</p>
                 <h3 id="itemUnitIdDisplay">—</h3>
                 <p class="meta-sub" id="itemUnitItemName">สินค้า: —</p>
-                <p class="meta-sub" id="itemUnitStatus">สถานะ: —</p>
+                <p class="meta-sub" id="itemUnitOwnership">ความเป็นเจ้าของ: —</p>
             </div>
             <div class="meta-secondary">
+                <span class="status-chip" id="itemUnitStatusChip" aria-live="polite">
+                    <span class="dot"></span>
+                    <span id="itemUnitStatusText">สถานะ: —</span>
+                </span>
                 <div class="meta-group">
                     <p class="meta-updated" id="itemUnitUpdatedAt">อัปเดตล่าสุด: —</p>
                     <p class="meta-updated-by" id="itemUnitUpdatedBy">ปรับปรุงโดย: —</p>

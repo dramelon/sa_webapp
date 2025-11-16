@@ -135,9 +135,16 @@
                         </label>
                         <label class="field-block">
                             <span class="field-label">หมวดหมู่</span>
-                            <select name="item_category_id" id="itemCategory">
-                                <option value="">— เลือกหมวดหมู่ —</option>
-                            </select>
+                            <div class="typeahead" data-type="category">
+                                <div class="typeahead-input">
+                                    <input type="text" id="categoryInput" placeholder="ค้นหาด้วยชื่อหมวดหมู่" autocomplete="off" />
+                                    <button class="typeahead-action" type="button" id="categoryEditBtn" aria-label="แก้ไขหมวดหมู่" disabled>
+                                        <span class="i pencil"></span>
+                                    </button>
+                                </div>
+                                <input type="hidden" name="item_category_id" id="itemCategoryId" />
+                                <div class="typeahead-list" id="categoryList" hidden></div>
+                            </div>
                         </label>
                         <label class="field-block">
                             <span class="field-label">แบรนด์</span>
@@ -188,6 +195,30 @@
                 <button type="button" class="unsaved-btn unsaved-btn-danger" id="btnModalDiscard">ละทิ้งการแก้ไข</button>
                 <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnModalSave">บันทึกและดำเนินการต่อ</button>
             </div>
+        </div>
+    </div>
+
+    <div class="modal" id="categoryModal" hidden aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
+            <header class="modal-head">
+                <h3 id="categoryModalTitle">แก้ไขหมวดหมู่สินค้า</h3>
+                <button class="modal-close" type="button" aria-label="ปิด" data-modal-dismiss></button>
+            </header>
+            <div id="categoryModalMessage" class="form-alert" role="alert" hidden></div>
+            <form id="categoryModalForm" class="modal-form" autocomplete="off">
+                <label class="field-block">
+                    <span class="field-label">ชื่อหมวดหมู่ *</span>
+                    <input type="text" id="categoryModalName" required data-autofocus />
+                </label>
+                <label class="field-block">
+                    <span class="field-label">หมายเหตุ</span>
+                    <textarea id="categoryModalNote" rows="4"></textarea>
+                </label>
+                <div class="modal-actions">
+                    <button class="btn btn-ghost" type="button" data-modal-dismiss>ยกเลิก</button>
+                    <button class="btn btn-secondary" type="submit" id="categoryModalSave">บันทึกหมวดหมู่</button>
+                </div>
+            </form>
         </div>
     </div>
 

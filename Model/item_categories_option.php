@@ -24,7 +24,7 @@ try {
     ";
     $params = [];
     if ($query !== '') {
-        $sql .= " WHERE Name LIKE :term OR ItemCategoryID LIKE :term";
+        $sql .= " WHERE Name LIKE :term";
         $params[':term'] = '%' . $query . '%';
     }
     $sql .= ' ORDER BY Name ASC LIMIT 100';

@@ -111,7 +111,7 @@
         if (!tableBody) return;
         tableBody.innerHTML = `
             <tr>
-                <td colspan="5" class="loading">กำลังโหลด...</td>
+                <td colspan="6" class="loading">กำลังโหลด...</td>
             </tr>
         `;
         emptyState?.classList.remove('show');
@@ -184,6 +184,7 @@
                 <td>${row.name ? escapeHtml(row.name) : '—'}</td>
                 <td>${row.note ? escapeHtml(row.note) : '—'}</td>
                 <td>${escapeHtml(row.item_count ?? 0)}</td>
+                <td>${escapeHtml(row.item_unit_count ?? 0)}</td>
                 <td class="col-actions">
                     <button class="action-btn" type="button" data-action="open" data-id="${escapeHtml(String(row.item_category_id ?? ''))}">
                         <span class="i pencil"></span>จัดการ

@@ -4,7 +4,9 @@
     const heading = document.getElementById('itemUnitHeading');
     const itemUnitIdDisplay = document.getElementById('itemUnitIdDisplay');
     const itemUnitItemName = document.getElementById('itemUnitItemName');
-    const itemUnitStatus = document.getElementById('itemUnitStatus');
+    const itemUnitOwnership = document.getElementById('itemUnitOwnership');
+    const itemUnitStatusChip = document.getElementById('itemUnitStatusChip');
+    const itemUnitStatusText = document.getElementById('itemUnitStatusText');
     const itemUnitUpdatedAt = document.getElementById('itemUnitUpdatedAt');
     const itemUnitUpdatedBy = document.getElementById('itemUnitUpdatedBy');
     const itemUnitCreatedAt = document.getElementById('itemUnitCreatedAt');
@@ -85,6 +87,20 @@
         messageBox.className = `form-alert ${variant}`;
     }
 
+    function preventEnterSubmit(targetForm) {
+        if (!targetForm) return;
+        targetForm.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            const target = event.target;
+            if (!target || !target.tagName) return;
+            const tagName = target.tagName.toUpperCase();
+            if (tagName === 'TEXTAREA' || tagName === 'BUTTON') return;
+            const type = target.type ? String(target.type).toLowerCase() : '';
+            if (type === 'submit') return;
+            event.preventDefault();
+        });
+    }
+
     function serializeForm() {
         return {
             item_id: fieldRefs.item?.value || '',
@@ -132,11 +148,28 @@
         const id = data?.item_unit_id != null ? String(data.item_unit_id) : '—';
         if (itemUnitIdDisplay) itemUnitIdDisplay.textContent = id;
         if (itemUnitItemName) itemUnitItemName.textContent = `สินค้า: ${data?.item_name || '—'}`;
-        if (itemUnitStatus) itemUnitStatus.textContent = `สถานะ: ${formatStatusLabel(data?.status)}`;
+        if (itemUnitOwnership) {
+            itemUnitOwnership.textContent = `ความเป็นเจ้าของ: ${formatOwnershipLabel(data?.ownership)}`;
+        }
+        applyStatusChip(data?.status);
         if (itemUnitUpdatedAt) itemUnitUpdatedAt.textContent = `อัปเดตล่าสุด: ${formatDateTime(data?.updated_at)}`;
         if (itemUnitUpdatedBy) itemUnitUpdatedBy.textContent = `ปรับปรุงโดย: ${data?.updated_by_name || '—'}`;
         if (itemUnitCreatedAt) itemUnitCreatedAt.textContent = `สร้างเมื่อ: ${formatDateTime(data?.created_at)}`;
         if (itemUnitCreatedBy) itemUnitCreatedBy.textContent = `สร้างโดย: ${data?.created_by_name || '—'}`;
+    }
+
+    function syncMetaFromForm() {
+        if (itemUnitItemName && fieldRefs.item) {
+            const option = fieldRefs.item.options?.[fieldRefs.item.selectedIndex] || null;
+            const label = option ? option.textContent.trim() : '';
+            itemUnitItemName.textContent = `สินค้า: ${label || '—'}`;
+        }
+        if (itemUnitOwnership && fieldRefs.ownership) {
+            itemUnitOwnership.textContent = `ความเป็นเจ้าของ: ${formatOwnershipLabel(fieldRefs.ownership.value)}`;
+        }
+        if (fieldRefs.status) {
+            applyStatusChip(fieldRefs.status.value);
+        }
     }
 
     function populateForm(data) {
@@ -166,6 +199,7 @@
         });
         updateOwnershipDependentFields();
         updateMeta(data);
+        syncMetaFromForm();
         initialSnapshot = serializeForm();
         setDirtyState(false);
     }
@@ -187,6 +221,7 @@
             if (fieldRefs.returnAt) fieldRefs.returnAt.value = snapshot.return_at || '';
         });
         updateOwnershipDependentFields();
+        syncMetaFromForm();
         setDirtyState(false);
     }
 
@@ -203,6 +238,7 @@
         });
         updateOwnershipDependentFields();
         updateMeta({});
+        syncMetaFromForm();
         initialSnapshot = serializeForm();
         setDirtyState(false);
         showMessage('');
@@ -231,6 +267,31 @@
                 return 'ตัดจำหน่าย';
             default:
                 return status;
+        }
+    }
+
+    function formatOwnershipLabel(value) {
+        if (!value) return '—';
+        switch (value) {
+            case 'company':
+                return 'ของบริษัท';
+            case 'rented':
+                return 'เช่า';
+            default:
+                return value;
+        }
+    }
+
+    function applyStatusChip(status) {
+        if (!itemUnitStatusChip || !itemUnitStatusText) {
+            return;
+        }
+        const normalized = typeof status === 'string' ? status.toLowerCase() : '';
+        itemUnitStatusText.textContent = `สถานะ: ${formatStatusLabel(normalized)}`;
+        if (normalized) {
+            itemUnitStatusChip.dataset.status = normalized.replace(/\s+/g, '-');
+        } else {
+            itemUnitStatusChip.removeAttribute('data-status');
         }
     }
 
@@ -311,6 +372,7 @@
         if (currentValue && Array.from(select.options).some((opt) => opt.value === currentValue)) {
             select.value = currentValue;
         }
+        syncMetaFromForm();
     }
 
     async function handleSubmit(event) {
@@ -436,6 +498,7 @@
     }
 
     function handleFieldMutated() {
+        syncMetaFromForm();
         if (isSaving || isPopulating || !initialSnapshot) {
             updateSaveButtonState();
             return;
@@ -447,6 +510,7 @@
 
     function attachFieldListeners() {
         if (!form) return;
+        preventEnterSubmit(form);
         form.addEventListener('input', handleFieldMutated);
         form.addEventListener('change', handleFieldMutated);
         form.addEventListener('submit', handleSubmit);

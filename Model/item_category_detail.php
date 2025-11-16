@@ -22,9 +22,11 @@ try {
             ic.ItemCategoryID AS item_category_id,
             ic.Name AS name,
             ic.Note AS note,
-            COUNT(i.ItemID) AS item_count
+            COUNT(DISTINCT i.ItemID) AS item_count,
+            COUNT(DISTINCT iu.ItemUnitID) AS item_unit_count
         FROM itemcategory ic
         LEFT JOIN items i ON i.ItemCategoryID = ic.ItemCategoryID
+        LEFT JOIN item_unit iu ON iu.ItemID = i.ItemID
         WHERE ic.ItemCategoryID = :id
         GROUP BY ic.ItemCategoryID
         LIMIT 1

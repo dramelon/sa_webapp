@@ -6,6 +6,13 @@
     const backButton = document.getElementById('locationBack');
     const saveButton = document.getElementById('locationSave');
     const breadcrumbLink = document.querySelector('.breadcrumb a');
+    const unsavedBanner = document.getElementById('unsavedBanner');
+    const btnDiscardChanges = document.getElementById('btnDiscardChanges');
+    const btnSaveInline = document.getElementById('btnSaveInline');
+    const unsavedModal = document.getElementById('unsavedModal');
+    const btnModalStay = document.getElementById('btnModalStay');
+    const btnModalDiscard = document.getElementById('btnModalDiscard');
+    const btnModalSave = document.getElementById('btnModalSave');
 
     const meta = {
         id: document.getElementById('locationIdDisplay'),
@@ -48,6 +55,12 @@
     let isDirty = false;
     let isSaving = false;
     let initialSnapshot = null;
+    let pendingNavigationAction = null;
+
+    if (unsavedModal) {
+        unsavedModal.setAttribute('aria-hidden', unsavedModal.hidden ? 'true' : 'false');
+    }
+    updateSaveButtonState();
 
     const updateThaiDate = () => {
         const now = new Date();
@@ -90,6 +103,30 @@
         messageBox.className = `form-alert ${variant}`;
     }
 
+    function preventEnterSubmit(targetForm) {
+        if (!targetForm) return;
+        targetForm.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            const target = event.target;
+            if (!target || !target.tagName) return;
+            const tagName = target.tagName.toUpperCase();
+            if (tagName === 'TEXTAREA' || tagName === 'BUTTON') return;
+            const type = target.type ? String(target.type).toLowerCase() : '';
+            if (type === 'submit') return;
+            event.preventDefault();
+        });
+    }
+
+    function updateSaveButtonState() {
+        const disable = isSaving || !isDirty;
+        if (saveButton) {
+            saveButton.disabled = disable;
+        }
+        if (btnSaveInline) {
+            btnSaveInline.disabled = disable;
+        }
+    }
+
     function serializeForm() {
         const snapshot = {};
         Object.entries(fields).forEach(([key, input]) => {
@@ -103,14 +140,76 @@
         return snapshot;
     }
 
+    function restoreSnapshot(snapshot) {
+        if (!snapshot) {
+            return;
+        }
+        Object.entries(fields).forEach(([key, input]) => {
+            if (!input) return;
+            const nextValue = snapshot[key];
+            if (key === 'status') {
+                input.value = nextValue || 'active';
+            } else {
+                input.value = (nextValue ?? '').trim();
+            }
+        });
+        setDirty(false);
+    }
+
     function setDirty(next) {
         if (isDirty === next) {
+            updateSaveButtonState();
             return;
         }
         isDirty = next;
-        if (saveButton) {
-            saveButton.disabled = isSaving || !isDirty;
+        if (unsavedBanner) {
+            unsavedBanner.hidden = !isDirty;
         }
+        updateSaveButtonState();
+    }
+
+    function openUnsavedModal() {
+        if (!unsavedModal) {
+            return;
+        }
+        unsavedModal.hidden = false;
+        unsavedModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeUnsavedModal() {
+        if (!unsavedModal) {
+            return;
+        }
+        unsavedModal.hidden = true;
+        unsavedModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function triggerSave() {
+        if (!form || isSaving) {
+            return;
+        }
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit(saveButton);
+        } else if (saveButton) {
+            saveButton.click();
+        }
+    }
+
+    function requestNavigation(action) {
+        if (!isDirty) {
+            action();
+            return;
+        }
+        pendingNavigationAction = action;
+        openUnsavedModal();
+    }
+
+    function handleBeforeUnload(event) {
+        if (!isDirty) {
+            return;
+        }
+        event.preventDefault();
+        event.returnValue = '';
     }
 
     function formatDateTime(value) {
@@ -298,9 +397,7 @@
         const payload = getPayload();
         isSaving = true;
         setDirty(false);
-        if (saveButton) {
-            saveButton.disabled = true;
-        }
+        updateSaveButtonState();
         showMessage('กำลังบันทึก...', 'info');
         try {
             const data = isCreateMode ? await createLocation(payload) : await updateLocation(payload);
@@ -326,6 +423,12 @@
                 window.history.replaceState({}, '', newUrl);
                 isCreateMode = false;
             }
+            closeUnsavedModal();
+            if (typeof pendingNavigationAction === 'function') {
+                const action = pendingNavigationAction;
+                pendingNavigationAction = null;
+                action();
+            }
         } catch (error) {
             setDirty(true);
             if (error.message === 'ref_location_exists') {
@@ -335,24 +438,12 @@
             }
         } finally {
             isSaving = false;
-            if (saveButton) {
-                saveButton.disabled = !isDirty;
-            }
-        }
-    }
-
-    function requestNavigation(action) {
-        if (!isDirty) {
-            action();
-            return;
-        }
-        const confirmLeave = window.confirm('มีการเปลี่ยนแปลงที่ยังไม่บันทึก ต้องการออกจากหน้านี้หรือไม่?');
-        if (confirmLeave) {
-            action();
+            updateSaveButtonState();
         }
     }
 
     if (form) {
+        preventEnterSubmit(form);
         form.addEventListener('submit', handleSubmit);
         form.addEventListener('input', () => {
             if (!initialSnapshot) return;
@@ -380,11 +471,47 @@
         });
     }
 
-    window.addEventListener('beforeunload', (event) => {
-        if (!isDirty) return;
-        event.preventDefault();
-        event.returnValue = '';
-    });
+    if (btnDiscardChanges) {
+        btnDiscardChanges.addEventListener('click', () => {
+            pendingNavigationAction = null;
+            restoreSnapshot(initialSnapshot);
+            showMessage('ยกเลิกการแก้ไขแล้ว', 'info');
+        });
+    }
+
+    if (btnSaveInline) {
+        btnSaveInline.addEventListener('click', () => {
+            triggerSave();
+        });
+    }
+
+    if (btnModalStay) {
+        btnModalStay.addEventListener('click', () => {
+            pendingNavigationAction = null;
+            closeUnsavedModal();
+        });
+    }
+
+    if (btnModalDiscard) {
+        btnModalDiscard.addEventListener('click', () => {
+            const action = pendingNavigationAction;
+            pendingNavigationAction = null;
+            setDirty(false);
+            closeUnsavedModal();
+            if (typeof action === 'function') {
+                action();
+            }
+        });
+    }
+
+    if (btnModalSave) {
+        btnModalSave.addEventListener('click', () => {
+            closeUnsavedModal();
+            triggerSave();
+        });
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     const boot = ({ root }) => {
         modelRoot = `${root}/Model`;

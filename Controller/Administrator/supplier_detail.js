@@ -106,6 +106,20 @@
         messageBox.className = `form-alert ${variant}`;
     }
 
+    function preventEnterSubmit(targetForm) {
+        if (!targetForm) return;
+        targetForm.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            const target = event.target;
+            if (!target || !target.tagName) return;
+            const tagName = target.tagName.toUpperCase();
+            if (tagName === 'TEXTAREA' || tagName === 'BUTTON') return;
+            const type = target.type ? String(target.type).toLowerCase() : '';
+            if (type === 'submit') return;
+            event.preventDefault();
+        });
+    }
+
     function updateSaveButtonState() {
         const disable = isSaving || !isDirty;
         if (btnSave) btnSave.disabled = disable;
@@ -944,6 +958,7 @@
 
     function attachEventListeners() {
         if (form) {
+            preventEnterSubmit(form);
             form.addEventListener('submit', handleSubmit);
             form.addEventListener('input', handleFieldMutated);
             form.addEventListener('change', handleFieldMutated);
@@ -1019,10 +1034,10 @@
             });
         }
 
-        if (locationModalForm) {
-            locationModalForm.addEventListener('submit', submitLocationModal);
-        }
-
+    if (locationModalForm) {
+        preventEnterSubmit(locationModalForm);
+        locationModalForm.addEventListener('submit', submitLocationModal);
+    }
         document.querySelectorAll('[data-modal-dismiss]').forEach((element) => {
             element.addEventListener('click', () => {
                 const modal = element.closest('.modal');
