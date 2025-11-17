@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="th" data-root="../.." data-allowed="Administrator">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>คลังสินค้า</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body>
+    <!-- Slide-out drawer -->
+    <aside id="drawer" class="drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a class="item" href="./main_menu.html">
+                <span class="i home"></span><span>เมนูหลัก</span>
+            </a>
+            <a class="item" href="./home.html">
+                <span class="i news"></span><span>ข่าวสารทั่วไป</span>
+            </a>
+            <a class="item" href="./events.html">
+                <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
+            </a>
+            <a class="item" href="./suppliers.html">
+                <span class="i contacts"></span><span>ซัพพลายเออร์</span>
+            </a>
+            <a class="item" href="./items.html">
+                <span class="i stack"></span><span>รายการสินค้า</span>
+            </a>
+            <a class="item" href="./item_units.html">
+                <span class="i box"></span><span>หน่วยสินค้าทั้งหมด</span>
+            </a>
+            <a class="item" href="./item_categorys.html">
+                <span class="i settings"></span><span>หมวดหมู่สินค้า</span>
+            </a>
+            <a class="item" href="./customers.html">
+                <span class="i contacts"></span><span>ลูกค้า</span>
+            </a>
+            <a class="item" href="./locations.html">
+                <span class="i pin"></span><span>สถานที่</span>
+            </a>
+            <a class="item active" href="./warehouses.html" aria-current="page">
+                <span class="i stack"></span><span>คลังสินค้า</span>
+            </a>
+            <div class="drawer-sep"></div>
+            <a class="item" href="./admin_create_account.html">
+                <span class="i user"></span><span>สร้างบัญชีเจ้าหน้าที่</span>
+            </a>
+            <a class="item" href="../../Model/logout.php">
+                <span class="i power"></span><span>ออกจากระบบ</span>
+            </a>
+        </nav>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <!-- App shell -->
+    <div class="topbar">
+        <button id="btnMenu" class="hamburger" aria-label="เมนู">
+            <span></span><span></span><span></span>
+        </button>
+        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - คลังสินค้า</h1>
+
+        <div class="account">
+            <span class="pill">
+                <img class="avatar" id="avatar" alt="avatar" />
+                <span class="uid" id="fullName">...</span>
+            </span>
+            <a class="powerbtn" href="../../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
+        </div>
+    </div>
+
+    <main class="page">
+        <section class="page-head">
+            <div>
+                <h2>คลังสินค้า</h2>
+                <p class="date" id="pageDate">วัน...</p>
+            </div>
+            <div class="head-actions">
+                <button class="btn btn-secondary" id="btnNewWarehouse" data-target="./warehouse_detail.html?mode=create">
+                    <span class="i plus"></span>
+                    เพิ่มคลังสินค้า
+                </button>
+            </div>
+        </section>
+
+        <section class="summary-cards" id="summaryCards" aria-label="ภาพรวมสถานะคลัง">
+            <!-- Populated by JS -->
+        </section>
+
+        <section class="list-panel" id="warehouse-list">
+            <header class="list-toolbar">
+                <div class="toolbar-group">
+                    <label class="field search warehouse-search">
+                        <span class="i search"></span>
+                        <input type="search" id="searchInput"
+                            placeholder="ค้นหารหัสคลัง ชื่อคลัง ชื่อย่อ หรือสถานที่..." />
+                    </label>
+                    <label class="field select">
+                        <span class="i filter"></span>
+                        <select id="statusFilter" aria-label="กรองตามสถานะ">
+                            <option value="all">สถานะทั้งหมด</option>
+                            <option value="active">ใช้งาน</option>
+                            <option value="inactive">ปิดใช้งาน</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="toolbar-group">
+                    <button class="ghost" id="btnClearFilters">ล้างตัวกรอง</button>
+                </div>
+            </header>
+
+            <div class="table-wrap" role="region" aria-live="polite">
+                <table class="event-table warehouse-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" data-sort-key="warehouse_id" aria-sort="descending">
+                                <button type="button" class="sort-button" data-sort-key="warehouse_id"
+                                    data-label="รหัสคลัง">
+                                    รหัสคลัง
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="warehouse_name" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="warehouse_name"
+                                    data-label="ชื่อคลัง">
+                                    ชื่อคลัง
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="warehouse_sn" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="warehouse_sn"
+                                    data-label="ชื่อย่อ">
+                                    ชื่อย่อ
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="location_name" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="location_name"
+                                    data-label="สถานที่">
+                                    สถานที่
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="status" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="status" data-label="สถานะ">
+                                    สถานะ
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="updated_at" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="updated_at"
+                                    data-label="อัปเดตล่าสุด">
+                                    อัปเดตล่าสุด
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" class="col-actions">การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="warehouseTableBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+                <div class="empty-state" id="emptyState" aria-hidden="true">
+                    <span class="i inbox"></span>
+                    <p>ไม่พบคลังสินค้าที่ตรงกับการค้นหา</p>
+                </div>
+            </div>
+            <div class="table-pagination" id="paginationControls" aria-live="polite">
+                <button class="btn btn-ghost" id="prevPage" type="button">ก่อนหน้า</button>
+                <span class="page-indicator" id="pageIndicator">หน้า 1</span>
+                <button class="btn btn-secondary" id="nextPage" type="button">หน้าถัดไป</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Administrator/warehouses.js" defer></script>
+</body>
+
+</html>

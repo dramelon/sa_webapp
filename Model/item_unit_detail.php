@@ -24,6 +24,9 @@ try {
             i.ItemName AS item_name,
             i.ItemType AS item_type,
             iu.WarehouseID AS warehouse_id,
+            w.WarehouseName AS warehouse_name,
+            w.WarehouseSN AS warehouse_sn,
+            w.Status AS warehouse_status,
             iu.SupplierID AS supplier_id,
             iu.SerialNumber AS serial_number,
             iu.OwnerShip AS ownership,
@@ -40,6 +43,7 @@ try {
             ub.FullName AS updated_by_name
         FROM item_unit iu
         LEFT JOIN items i ON i.ItemID = iu.ItemID
+        LEFT JOIN warehouse w ON w.WarehouseID = iu.WarehouseID
         LEFT JOIN staffs cb ON cb.StaffID = iu.CreatedBy
         LEFT JOIN staffs ub ON ub.StaffID = iu.UpdatedBy
         WHERE iu.ItemUnitID = :id

@@ -119,9 +119,16 @@
                     <div class="detail-column">
                         <label class="field-block">
                             <span class="field-label">สินค้า *</span>
-                            <select name="item_id" id="unitItemId" required>
-                                <option value="">— เลือกสินค้า —</option>
-                            </select>
+                            <div class="typeahead" data-type="item">
+                                <div class="typeahead-input">
+                                    <input type="text" id="itemInput" placeholder="ค้นหาด้วยชื่อหรือรหัสสินค้า" autocomplete="off" />
+                                    <button class="typeahead-action" type="button" id="itemEditBtn" aria-label="แก้ไขข้อมูลสินค้า" disabled>
+                                        <span class="i pencil"></span>
+                                    </button>
+                                </div>
+                                <input type="hidden" name="item_id" id="unitItemId" required />
+                                <div class="typeahead-list" id="itemList" hidden></div>
+                            </div>
                         </label>
                         <label class="field-block">
                             <span class="field-label">หมายเลขซีเรียล</span>
@@ -129,7 +136,16 @@
                         </label>
                         <label class="field-block">
                             <span class="field-label">อยู่ที่คลังสินค้า</span>
-                            <input type="number" name="warehouse_id" id="unitWarehouseId" min="0" max="9" placeholder="รหัสคลัง" />
+                            <div class="typeahead" data-type="warehouse">
+                                <div class="typeahead-input">
+                                    <input type="text" id="warehouseInput" placeholder="ค้นหาด้วยชื่อคลังหรือชื่อย่อ" autocomplete="off" />
+                                    <button class="typeahead-action" type="button" id="warehouseEditBtn" aria-label="แก้ไขข้อมูลคลัง" disabled>
+                                        <span class="i pencil"></span>
+                                    </button>
+                                </div>
+                                <input type="hidden" name="warehouse_id" id="unitWarehouseId" />
+                                <div class="typeahead-list" id="warehouseList" hidden></div>
+                            </div>
                         </label>
                         <label class="field-block">
                             <span class="field-label">ผู้จัดจำหน่าย</span>
@@ -205,7 +221,124 @@
             </div>
         </div>
     </div>
-    
+
+    <div class="modal" id="itemModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="itemModalTitle">
+            <header class="modal-head">
+                <h3 id="itemModalTitle">จัดการข้อมูลสินค้า</h3>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i x"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <p class="modal-description">สร้างหรือแก้ไขรายการสินค้าได้โดยไม่ต้องออกจากหน้าปัจจุบัน</p>
+                <div id="itemModalMessage" class="form-alert" role="alert" hidden></div>
+                <form id="itemModalForm" class="modal-form" autocomplete="off">
+                    <input type="hidden" id="itemModalItemId" />
+                    <div class="modal-form-columns">
+                        <label class="field-block">
+                            <span class="field-label">ชื่อสินค้า *</span>
+                            <input type="text" id="itemModalName" required data-autofocus />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">รหัสอ้างอิง</span>
+                            <input type="text" id="itemModalRef" maxlength="30" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ประเภทสินค้า</span>
+                            <select id="itemModalType">
+                                <option value="อุปกร">อุปกรณ์</option>
+                                <option value="วัสดุ">วัสดุ</option>
+                                <option value="บริการ">บริการ</option>
+                            </select>
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">รหัสหมวดหมู่</span>
+                            <input type="number" id="itemModalCategory" min="1" placeholder="กรอกรหัสหมวดหมู่" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">แบรนด์</span>
+                            <input type="text" id="itemModalBrand" maxlength="100" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">รุ่น</span>
+                            <input type="text" id="itemModalModel" maxlength="100" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">หน่วยนับ *</span>
+                            <input type="text" id="itemModalUom" maxlength="50" required />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">อัตราค่าบริการ (บาท)</span>
+                            <input type="number" id="itemModalRate" step="0.01" min="0" max="99999999.99" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">การคิดค่าบริการ</span>
+                            <select id="itemModalPeriod">
+                                <option value="hour">ต่อชั่วโมง</option>
+                                <option value="day">ต่อวัน</option>
+                                <option value="event">ต่ออีเว้น</option>
+                            </select>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <footer class="modal-foot">
+                <button type="button" class="btn btn-ghost" data-modal-dismiss>ยกเลิก</button>
+                <button type="submit" class="btn btn-primary" id="itemModalSave" form="itemModalForm">บันทึกสินค้า</button>
+            </footer>
+        </div>
+    </div>
+
+    <div class="modal" id="warehouseModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="warehouseModalTitle">
+            <header class="modal-head">
+                <h3 id="warehouseModalTitle">จัดการข้อมูลคลัง</h3>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i x"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <p class="modal-description">แก้ไขหรือสร้างคลังใหม่เพื่อผูกกับหน่วยสินค้า</p>
+                <div id="warehouseModalMessage" class="form-alert" role="alert" hidden></div>
+                <form id="warehouseModalForm" class="modal-form" autocomplete="off">
+                    <input type="hidden" id="warehouseModalId" />
+                    <div class="modal-form-columns">
+                        <label class="field-block">
+                            <span class="field-label">ชื่อคลัง *</span>
+                            <input type="text" id="warehouseModalName" required data-autofocus />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ชื่อย่อ</span>
+                            <input type="text" id="warehouseModalShort" maxlength="200" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">สถานะ</span>
+                            <select id="warehouseModalStatus">
+                                <option value="active">ใช้งาน</option>
+                                <option value="inactive">ปิดใช้งาน</option>
+                            </select>
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">รหัสสถานที่</span>
+                            <input type="number" id="warehouseModalLocation" min="1" placeholder="กรอก Location ID" />
+                        </label>
+                        <label class="field-block field-span">
+                            <span class="field-label">บันทึกเพิ่มเติม</span>
+                            <textarea id="warehouseModalNote" rows="3"></textarea>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <footer class="modal-foot">
+                <button type="button" class="btn btn-ghost" data-modal-dismiss>ยกเลิก</button>
+                <button type="submit" class="btn btn-primary" id="warehouseModalSave" form="warehouseModalForm">บันทึกคลัง</button>
+            </footer>
+        </div>
+    </div>
+
     <script src="../../Controller/common/role_guard.js" defer></script>
     <script src="../../Controller/common/ui_shell.js" defer></script>
     <script src="../../Controller/Administrator/item_unit_manage.js" defer></script>

@@ -367,3 +367,21 @@ CREATE TABLE suppliers (
     PRIMARY KEY (SupplierID),
     UNIQUE KEY uq_supplier_ref (RefSupplierID)
 );
+
+
+
+
+-- WAREHOUSE [requirement: -] v1
+CREATE TABLE warehouse (
+    WarehouseID    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    LocationID     BIGINT UNSIGNED NOT NULL,
+    WarehouseName  VARCHAR(200) NOT NULL,
+    WarehouseSN    VARCHAR(200) DEFAULT NULL UNIQUE,
+    Note           VARCHAR(500) DEFAULT NULL,
+    CreatedAt      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CreatedBy      BIGINT UNSIGNED NOT NULL,
+    UpdatedAt      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UpdatedBy      BIGINT UNSIGNED NOT NULL,
+    Status         ENUM('active','inactive') NOT NULL DEFAULT 'active',
+    PRIMARY KEY (WarehouseID)
+);
