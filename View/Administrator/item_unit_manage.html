@@ -236,7 +236,7 @@
                 <div id="itemModalMessage" class="form-alert" role="alert" hidden></div>
                 <form id="itemModalForm" class="modal-form" autocomplete="off">
                     <input type="hidden" id="itemModalItemId" />
-                    <div class="modal-form-columns">
+                    <div class="modal-grid">
                         <label class="field-block">
                             <span class="field-label">ชื่อสินค้า *</span>
                             <input type="text" id="itemModalName" required data-autofocus />
@@ -282,12 +282,12 @@
                             </select>
                         </label>
                     </div>
+                    <footer class="modal-actions">
+                        <button type="button" class="btn btn-ghost" data-modal-dismiss>ยกเลิก</button>
+                        <button type="submit" class="btn btn-secondary" id="itemModalSave">บันทึกสินค้า</button>
+                    </footer>
                 </form>
             </div>
-            <footer class="modal-foot">
-                <button type="button" class="btn btn-ghost" data-modal-dismiss>ยกเลิก</button>
-                <button type="submit" class="btn btn-primary" id="itemModalSave" form="itemModalForm">บันทึกสินค้า</button>
-            </footer>
         </div>
     </div>
 
@@ -305,37 +305,35 @@
                 <div id="warehouseModalMessage" class="form-alert" role="alert" hidden></div>
                 <form id="warehouseModalForm" class="modal-form" autocomplete="off">
                     <input type="hidden" id="warehouseModalId" />
-                    <div class="modal-form-columns">
-                        <label class="field-block">
-                            <span class="field-label">ชื่อคลัง *</span>
-                            <input type="text" id="warehouseModalName" required data-autofocus />
-                        </label>
-                        <label class="field-block">
-                            <span class="field-label">ชื่อย่อ</span>
-                            <input type="text" id="warehouseModalShort" maxlength="200" />
-                        </label>
-                        <label class="field-block">
-                            <span class="field-label">สถานะ</span>
-                            <select id="warehouseModalStatus">
-                                <option value="active">ใช้งาน</option>
-                                <option value="inactive">ปิดใช้งาน</option>
-                            </select>
-                        </label>
-                        <label class="field-block">
-                            <span class="field-label">รหัสสถานที่</span>
-                            <input type="number" id="warehouseModalLocation" min="1" placeholder="กรอก Location ID" />
-                        </label>
-                        <label class="field-block field-span">
-                            <span class="field-label">บันทึกเพิ่มเติม</span>
-                            <textarea id="warehouseModalNote" rows="3"></textarea>
-                        </label>
-                    </div>
+                    <label class="field-block">
+                        <span class="field-label">ชื่อคลัง *</span>
+                        <input type="text" id="warehouseModalName" required data-autofocus />
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">ชื่อย่อ</span>
+                        <input type="text" id="warehouseModalShort" maxlength="200" />
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">สถานะ</span>
+                        <select id="warehouseModalStatus">
+                            <option value="active">ใช้งาน</option>
+                            <option value="inactive">ปิดใช้งาน</option>
+                        </select>
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">รหัสสถานที่</span>
+                        <input type="number" id="warehouseModalLocation" min="1" placeholder="กรอก Location ID" />
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">บันทึกเพิ่มเติม</span>
+                        <textarea id="warehouseModalNote" rows="3"></textarea>
+                    </label>
+                    <footer class="modal-actions">
+                        <button type="button" class="btn btn-ghost" data-modal-dismiss>ยกเลิก</button>
+                        <button type="submit" class="btn btn-secondary" id="warehouseModalSave">บันทึกคลัง</button>
+                    </footer>
                 </form>
             </div>
-            <footer class="modal-foot">
-                <button type="button" class="btn btn-ghost" data-modal-dismiss>ยกเลิก</button>
-                <button type="submit" class="btn btn-primary" id="warehouseModalSave" form="warehouseModalForm">บันทึกคลัง</button>
-            </footer>
         </div>
     </div>
 

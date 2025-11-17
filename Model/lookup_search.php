@@ -6,7 +6,7 @@ $type = $_GET['type'] ?? '';
 $type = is_string($type) ? strtolower(trim($type)) : '';
 $query = isset($_GET['q']) ? trim((string) $_GET['q']) : '';
 
-$allowedTypes = ['customer', 'location', 'staff'];
+$allowedTypes = ['customer', 'location', 'staff', 'item', 'warehouse'];
 if (!in_array($type, $allowedTypes, true)) {
     http_response_code(400);
     echo json_encode(['error' => 'invalid_type']);
@@ -62,6 +62,45 @@ try {
             $stmt = $db->prepare($sql);
             $stmt->bindValue(':term', $likeTerm, PDO::PARAM_STR);
             break;
+        case 'item':
+            $sql = "
+                SELECT
+                    i.ItemID AS id,
+                    COALESCE(i.ItemName, '') AS name,
+                    COALESCE(i.RefItemID, '') AS ref_id,
+                    COALESCE(c.Name, '') AS category_name
+                FROM items i
+                LEFT JOIN itemcategory c ON c.ItemCategoryID = i.ItemCategoryID
+                WHERE (
+                    COALESCE(i.ItemName, '') LIKE :term
+                    OR COALESCE(i.RefItemID, '') LIKE :term
+                    OR CAST(i.ItemID AS CHAR) LIKE :term
+                )
+                ORDER BY i.ItemID DESC
+                LIMIT :limit
+            ";
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue(':term', $likeTerm, PDO::PARAM_STR);
+            break;
+        case 'warehouse':
+            $sql = "
+                SELECT
+                    w.WarehouseID AS id,
+                    COALESCE(w.WarehouseName, '') AS name,
+                    COALESCE(w.WarehouseSN, '') AS short_name,
+                    COALESCE(w.Status, '') AS status
+                FROM warehouse w
+                WHERE (
+                    COALESCE(w.WarehouseName, '') LIKE :term
+                    OR COALESCE(w.WarehouseSN, '') LIKE :term
+                    OR CAST(w.WarehouseID AS CHAR) LIKE :term
+                )
+                ORDER BY w.WarehouseID DESC
+                LIMIT :limit
+            ";
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue(':term', $likeTerm, PDO::PARAM_STR);
+            break;
         default:
             throw new RuntimeException('Unsupported type');
     }
@@ -89,6 +128,22 @@ try {
                 return [
                     'id' => (int) $row['id'],
                     'label' => formatStaffLabel($row['id'], $row['name'], $row['Role'] ?? '')
+                ];
+            case 'item':
+                return [
+                    'id' => (int) $row['id'],
+                    'label' => formatItemLabel($row['id'], $row['name'], $row['ref_id'] ?? '', $row['category_name'] ?? ''),
+                    'name' => $row['name'] ?? '',
+                    'ref_id' => $row['ref_id'] ?? '',
+                    'category_name' => $row['category_name'] ?? ''
+                ];
+            case 'warehouse':
+                return [
+                    'id' => (int) $row['id'],
+                    'label' => formatWarehouseLabel($row['id'], $row['name'], $row['short_name'] ?? '', $row['status'] ?? ''),
+                    'name' => $row['name'] ?? '',
+                    'short_name' => $row['short_name'] ?? '',
+                    'status' => $row['status'] ?? ''
                 ];
             default:
                 return ['id' => $row['id'], 'label' => $row['name']];
@@ -118,4 +173,30 @@ function formatStaffLabel($id, $name, $role)
     $displayName = $name !== null && $name !== '' ? $name : 'ไม่ทราบชื่อผู้รับผิดชอบ';
     $roleInitial = $role !== null && $role !== '' ? mb_strtoupper(mb_substr($role, 0, 1, 'UTF-8'), 'UTF-8') : 'S';
     return sprintf('%s%d - %s', $roleInitial, $id, $displayName);
+}
+
+function formatItemLabel($id, $name, $refId, $category)
+{
+    if ($id === null) {
+        return '';
+    }
+    $labelName = $name !== null && $name !== '' ? $name : 'ไม่ทราบชื่อสินค้า';
+    $refPart = $refId !== null && $refId !== '' ? sprintf(' (%s)', $refId) : '';
+    $categoryPart = $category !== null && $category !== '' ? sprintf(' [%s]', $category) : '';
+    return sprintf('%d - %s%s%s', $id, $labelName, $refPart, $categoryPart);
+}
+
+function formatWarehouseLabel($id, $name, $shortName, $status)
+{
+    if ($id === null) {
+        return '';
+    }
+    $labelName = $name !== null && $name !== '' ? $name : 'ไม่ทราบชื่อคลัง';
+    $shortPart = $shortName !== null && $shortName !== '' ? sprintf(' (%s)', $shortName) : '';
+    $statusMap = [
+        'active' => ' • ใช้งาน',
+        'inactive' => ' • ปิดใช้งาน'
+    ];
+    $statusPart = $statusMap[strtolower((string) $status)] ?? '';
+    return sprintf('%d - %s%s%s', $id, $labelName, $shortPart, $statusPart);
 }
