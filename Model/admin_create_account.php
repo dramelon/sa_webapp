@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/database_connector.php';
+
 // Admin creates new staff account
 session_start();
 
@@ -15,31 +17,25 @@ if ($currentRole !== 'administrator') {
 }
 
 try {
-    $db = new PDO('mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4', 'dramelon', 'dramelon', [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
-} catch (PDOException $e) {
-    die("DB connection failed: " . $e->getMessage());
-}
+    $db = DatabaseConnector::getConnection();
 
-$username = trim($_POST['username'] ?? '');
-$password = $_POST['password'] ?? '';
-$fullname = trim($_POST['fullname'] ?? '');
-$email = trim($_POST['email'] ?? '');
-$phone = trim($_POST['phone'] ?? '');
-$role = strtolower(trim($_POST['role'] ?? 'project'));
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $fullname = trim($_POST['fullname'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $role = strtolower(trim($_POST['role'] ?? 'project'));
 
-$allowedRoles = ['administrator', 'project', 'procurement', 'accounting'];
-if (!in_array($role, $allowedRoles, true)) {
-    $role = 'project';
-}
+    $allowedRoles = ['administrator', 'project', 'procurement', 'accounting'];
+    if (!in_array($role, $allowedRoles, true)) {
+        $role = 'project';
+    }
 
-if ($username === '' || $password === '' || $email === '') {
-    header('Location: ../View/Administrator/admin_create_account.html?error=missing');
-    exit;
-}
+    if ($username === '' || $password === '' || $email === '') {
+        header('Location: ../View/Administrator/admin_create_account.html?error=missing');
+        exit;
+    }
 
-try {
     $hash = password_hash($password, PASSWORD_DEFAULT);
 
     $stmt = $db->prepare('INSERT INTO staffs (Username, Password, FullName, Email, Phone, Role)

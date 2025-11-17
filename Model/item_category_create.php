@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/database_connector.php';
+
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
@@ -31,12 +33,7 @@ if ($name === '') {
 $note = trimNullable($input['note'] ?? null);
 
 try {
-    $db = new PDO(
-        'mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4',
-        'dramelon',
-        'dramelon',
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $db = DatabaseConnector::getConnection();
 
     $sql = 'INSERT INTO itemcategory (Name, Note) VALUES (:name, :note)';
     $stmt = $db->prepare($sql);

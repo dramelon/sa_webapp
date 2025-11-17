@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/database_connector.php';
+
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
@@ -7,12 +9,7 @@ const EVENTS_PER_PAGE = 20;
 $currentStaffId = isset($_SESSION['staff_id']) ? (int) $_SESSION['staff_id'] : 0;
 
 try {
-    $db = new PDO(
-        'mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4',
-        'dramelon',
-        'dramelon',
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $db = DatabaseConnector::getConnection();
 
     $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
     if ($page < 1) {

@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/database_connector.php';
+
 // Returns { full_name, avatar, role } for current session
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -10,7 +12,7 @@ if (empty($_SESSION['staff_id'])) {
 }
 
 try {
-    $db = new PDO('mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4', 'dramelon', 'dramelon', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $db = DatabaseConnector::getConnection();
     $q = $db->prepare('SELECT FullName, COALESCE(AvatarPath, "") AS AvatarPath, Role FROM staffs WHERE StaffID = :id LIMIT 1');
     $q->execute([':id' => $_SESSION['staff_id']]);
     $u = $q->fetch(PDO::FETCH_ASSOC);

@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/database_connector.php';
+
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
@@ -58,12 +60,7 @@ if (isset($input['rate']) && $input['rate'] !== '') {
 $staffId = (int) $_SESSION['staff_id'];
 
 try {
-    $db = new PDO(
-        'mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4',
-        'dramelon',
-        'dramelon',
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $db = DatabaseConnector::getConnection();
 
     if ($categoryId !== null) {
         $checkCategory = $db->prepare('SELECT ItemCategoryID FROM itemcategory WHERE ItemCategoryID = :id LIMIT 1');

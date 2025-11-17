@@ -1,9 +1,18 @@
 (function () {
-    const drawer = document.getElementById('drawer');
-    const scrim = document.getElementById('scrim');
-    const menuButton = document.getElementById('btnMenu');
+    let shellBound = false;
 
-    if (drawer && scrim && menuButton) {
+    const bindShellInteractions = () => {
+        if (shellBound) {
+            return;
+        }
+
+        const drawer = document.getElementById('drawer');
+        const scrim = document.getElementById('scrim');
+        const menuButton = document.getElementById('btnMenu');
+
+        if (!(drawer && scrim && menuButton)) {
+            return;
+        }
         const openDrawer = () => {
             drawer.classList.add('open');
             scrim.hidden = false;
@@ -29,7 +38,20 @@
                 closeDrawer();
             }
         });
+        shellBound = true;
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindShellInteractions, {
+            once: true,
+        });
+    } else {
+        bindShellInteractions();
     }
+
+    document.addEventListener('app:shell-ready', bindShellInteractions, {
+        once: true,
+    });
 
     const renderUser = ({ user }) => {
         const fullNameEl = document.getElementById('fullName');

@@ -8,64 +8,7 @@
     <link rel="stylesheet" href="../../style.css" />
 </head>
 
-<body>
-    <!-- Slide-out drawer -->
-    <aside id="drawer" class="drawer" aria-hidden="true">
-        <nav class="drawer-nav">
-            <a class="item" href="./main_menu.html">
-                <span class="i home"></span><span>เมนูหลัก</span>
-            </a>
-            <a class="item" href="./home.html">
-                <span class="i news"></span><span>ข่าวสารทั่วไป</span>
-            </a>
-            <a class="item" href="./events.html">
-                <span class="i list"></span><span>อีเว้นรอดำเนินการ</span>
-            </a>
-            <a class="item" href="./suppliers.html">
-                <span class="i contacts"></span><span>ซัพพลายเออร์</span>
-            </a>
-            <a class="item" href="./items.html">
-                <span class="i stack"></span><span>รายการสินค้า</span>
-            </a>
-            <a class="item active" href="./item_units.html" aria-current="page">
-                <span class="i box"></span><span>หน่วยสินค้าทั้งหมด</span>
-            </a>
-            <a class="item" href="./item_categorys.html">
-                <span class="i settings"></span><span>หมวดหมู่สินค้า</span>
-            </a>
-            <a class="item" href="./customers.html">
-                <span class="i contacts"></span><span>ลูกค้า</span>
-            </a>
-            <a class="item" href="./locations.html">
-                <span class="i pin"></span><span>สถานที่</span>
-            </a>
-            <div class="drawer-sep"></div>
-            <a class="item" href="./admin_create_account.html">
-                <span class="i user"></span><span>สร้างบัญชีเจ้าหน้าที่</span>
-            </a>
-            <a class="item" href="../../Model/logout.php">
-                <span class="i power"></span><span>ออกจากระบบ</span>
-            </a>
-        </nav>
-    </aside>
-    <div id="scrim" class="scrim" hidden></div>
-
-    <!-- App shell -->
-    <div class="topbar">
-        <button id="btnMenu" class="hamburger" aria-label="เมนู">
-            <span></span><span></span><span></span>
-        </button>
-        <h1 class="app-title">ระบบจัดการวัสดุอุปกรณ์ - คลังสินค้า</h1>
-
-        <div class="account">
-            <span class="pill">
-                <img class="avatar" id="avatar" alt="avatar" />
-                <span class="uid" id="fullName">...</span>
-            </span>
-            <a class="powerbtn" href="../../Model/logout.php" aria-label="ออกจากระบบ" title="Logout"></a>
-        </div>
-    </div>
-
+<body data-app-shell="admin" data-page="item_units" data-shell-title="ระบบจัดการวัสดุอุปกรณ์ - คลังสินค้า">
     <main class="page">
         <section class="page-head">
             <div>
@@ -181,6 +124,7 @@
         </section>
     </main>
 
+    <script src="../../Controller/common/admin_shell.js" defer></script>
     <script src="../../Controller/common/role_guard.js" defer></script>
     <script src="../../Controller/common/ui_shell.js" defer></script>
     <script src="../../Controller/Administrator/item_units.js" defer></script>

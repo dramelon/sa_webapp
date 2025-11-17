@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/database_connector.php';
+
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
@@ -17,12 +19,7 @@ try {
         throw new InvalidArgumentException('invalid_event');
     }
 
-    $db = new PDO(
-        'mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4',
-        'dramelon',
-        'dramelon',
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $db = DatabaseConnector::getConnection();
 
     $eventStmt = $db->prepare(
         'SELECT EventID, RefEventID, EventName, StartDate, EndDate, Status FROM events WHERE EventID = :id LIMIT 1'

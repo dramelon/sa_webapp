@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/database_connector.php';
+
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
@@ -11,12 +13,7 @@ if (empty($_SESSION['staff_id'])) {
 $query = trim($_GET['q'] ?? '');
 
 try {
-    $db = new PDO(
-        'mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4',
-        'dramelon',
-        'dramelon',
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $db = DatabaseConnector::getConnection();
 
     $sql = "
         SELECT ItemCategoryID AS id, Name AS name
