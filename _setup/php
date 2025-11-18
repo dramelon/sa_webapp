@@ -1,137 +1,151 @@
 -- $db = new PDO('mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4', 'dramelon', 'dramelon', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
-CREATE DATABASE sa_app
+CREATE DATABASE sa_webapp
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_general_ci;
 
-USE sa_app;
+USE sa_webapp;
 
 
 
 
--- STAFFS (aka: user) v2
+-- STAFFS (aka: user) v3
 CREATE TABLE staffs (
-    StaffID INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    LastLogin DATETIME DEFAULT NULL,
-    Username VARCHAR(100) NOT NULL UNIQUE,
-    Password VARCHAR(255) NOT NULL,
-    FullName VARCHAR(200) DEFAULT NULL,
-    Email VARCHAR(255) DEFAULT NULL UNIQUE,
-    Phone VARCHAR(50) DEFAULT NULL,
-    AvatarPath VARCHAR(255) DEFAULT NULL;
-    Role VARCHAR(50) DEFAULT 'staff',
-    Status ENUM('active','inactive','suspended') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
+    StaffID     INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    Username    VARCHAR(100) NOT NULL UNIQUE,
+    Email       VARCHAR(255) DEFAULT NULL UNIQUE,
+    Password    VARCHAR(100) NOT NULL,
+    FullName    VARCHAR(255) DEFAULT NULL,
+    Phone       VARCHAR(30)  DEFAULT NULL,
+    AvatarPath  VARCHAR(255) DEFAULT NULL,
+    Role        VARCHAR(30)  NOT NULL DEFAULT 'staff',
 
--- in case if missing only "AvatarPath" (this added in v2)
-ALTER TABLE staffs
-    ADD COLUMN AvatarPath VARCHAR(255) NULL AFTER Phone;
-
-
-
-
--- ANNOUNCEMENT [requirement: staffs] (aka: news/announce) v1
-CREATE TABLE Announcement (
-    AnnounceID   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    Topic        VARCHAR(255) NOT NULL,
-    Description  TEXT NOT NULL,
-    AnnounceDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    Announcer    INT UNSIGNED NULL,
-    Archived     TINYINT(1) NOT NULL DEFAULT 0,
-    
-    INDEX idx_archived_date (Archived, AnnounceDate),
-    CONSTRAINT fk_announce_staff
-    FOREIGN KEY (Announcer) REFERENCES staffs(StaffID)
-    ON DELETE SET NULL ON UPDATE CASCADE
+    LastLogin   DATETIME     DEFAULT NULL,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Note        TEXT         DEFAULT NULL,
+    Status      ENUM('active','inactive','suspended') NOT NULL DEFAULT 'active'
 );
 
 
 
 
--- LOCATIONS v2 [requirement: staffs]
+-- ANNOUNCEMENT (aka: news/announcements) v2
+CREATE TABLE announcements (
+    AnnounceID   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    Topic        VARCHAR(255) NOT NULL,
+    Description  TEXT         NOT NULL,
+    AnnounceDate DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Announcer    INT UNSIGNED NULL,
+    Status       ENUM('active','archived') NOT NULL DEFAULT 'active'
+);
+
+
+
+
+-- AUDITLOGS v1
+CREATE TABLE audit (
+    AuditID    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    EntityType ENUM(
+        'staff', 'location', 'customer', 'supplier', 'warehouse',
+        'item', 'item_unit', 'item_category',
+        'event',
+        'request', 'rfq', 'quotation', 'po', 'deliveryin', 'deliveryout', 'receipt',' otherdocs',
+        'announcement'
+        ) NOT NULL,
+    EntityID   BIGINT UNSIGNED NOT NULL,
+    Action     ENUM('CREATE', 'UPDATE', 'ARCHIVE', 'UNARCHIVED', 'DELETE') NOT NULL,
+    Reason     TEXT DEFAULT NULL,
+    ActionAt   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ActionBy   INT UNSIGNED DEFAULT NULL
+);
+
+
+
+
+-- LOCATIONS v3
 CREATE TABLE locations (
-    LocationID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    RefLocationID   VARCHAR(30)      DEFAULT NULL,
-    LocationName    VARCHAR(200)     NOT NULL,
-    Email           VARCHAR(254)     DEFAULT NULL,
-    Phone           VARCHAR(32)      DEFAULT NULL,
-    Village         VARCHAR(100)     DEFAULT NULL,
+    LocationID      BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    RefLocationID   VARCHAR(30)      DEFAULT NULL UNIQUE,
+    LocationName    VARCHAR(255)     NOT NULL,
+    Email           VARCHAR(255)     DEFAULT NULL,
+    Phone           VARCHAR(30)      DEFAULT NULL,
+    Village         VARCHAR(30)      DEFAULT NULL,
     HouseNumber     VARCHAR(30)      DEFAULT NULL,
-    BuildingName    VARCHAR(150)     DEFAULT NULL,
+    BuildingName    VARCHAR(255)     DEFAULT NULL,
     Room            VARCHAR(30)      DEFAULT NULL,
     Floor           VARCHAR(30)      DEFAULT NULL,
-    Street          VARCHAR(150)     DEFAULT NULL,
-    Subdistrict     VARCHAR(100)     DEFAULT NULL,
-    District        VARCHAR(100)     DEFAULT NULL,
-    Province        VARCHAR(100)     DEFAULT NULL,
-    Country         VARCHAR(100)     DEFAULT NULL,
-    PostalCode      VARCHAR(20)      DEFAULT NULL,
+    Street          VARCHAR(255)     DEFAULT NULL,
+    Subdistrict     VARCHAR(255)     DEFAULT NULL,
+    District        VARCHAR(255)     DEFAULT NULL,
+    Province        VARCHAR(30)      DEFAULT NULL,
+    Country         VARCHAR(255)     DEFAULT NULL,
+    PostalCode      VARCHAR(30)      DEFAULT NULL,
 
     Note            TEXT             DEFAULT NULL,
-    Status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
-
-    CreatedAt       DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy       INT UNSIGNED     DEFAULT NULL,
-    UpdatedAt       DATETIME         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UpdatedBy       INT UNSIGNED     DEFAULT NULL,
-
-    PRIMARY KEY (LocationID),
-    UNIQUE KEY uq_locations_ref (RefLocationID),
-    CONSTRAINT fk_location_createdby FOREIGN KEY (CreatedBy)
-        REFERENCES staffs(StaffID)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_location_updatedby FOREIGN KEY (UpdatedBy)
-        REFERENCES staffs(StaffID)
-        ON DELETE SET NULL ON UPDATE CASCADE
-)
+    Status          ENUM('active','inactive') NOT NULL DEFAULT 'active'
+);
 
 
 
 
--- CUSTOMERS v2 [requirement: locations, staffs]
+-- CUSTOMERS v3
 CREATE TABLE customers (
-    CustomerID      BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    RefCustomerID   VARCHAR(30)      DEFAULT NULL,
+    CustomerID      BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    RefCustomerID   VARCHAR(30)      DEFAULT NULL UNIQUE,
+    CustomerName    VARCHAR(255)     NOT NULL,
     LocationID      BIGINT UNSIGNED  DEFAULT NULL,
-    CustomerName    VARCHAR(200)     NOT NULL,
-    OrgName         VARCHAR(200)     DEFAULT NULL,
-    Email           VARCHAR(254)     DEFAULT NULL,
-    Phone           VARCHAR(32)      DEFAULT NULL,
-    TaxID           VARCHAR(32)      DEFAULT NULL,
-    ContactPerson   VARCHAR(200)     DEFAULT NULL,
+    OrgName         VARCHAR(255)     DEFAULT NULL,
+    Email           VARCHAR(255)     DEFAULT NULL,
+    Phone           VARCHAR(30)      DEFAULT NULL,
+    TaxID           VARCHAR(30)      DEFAULT NULL,
+    ContactPerson   VARCHAR(255)     DEFAULT NULL,
 
     Notes           TEXT             DEFAULT NULL,
-    Status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
-
-    CreatedAt       DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy       INT UNSIGNED     DEFAULT NULL,
-    UpdatedAt       DATETIME         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UpdatedBy       INT UNSIGNED     DEFAULT NULL,
-
-    PRIMARY KEY (CustomerID),
-    UNIQUE KEY uq_customers_ref (RefCustomerID),
-    KEY idx_customer_location (LocationID),
-    CONSTRAINT fk_customer_location FOREIGN KEY (LocationID)
-        REFERENCES locations(LocationID)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_customer_createdby FOREIGN KEY (CreatedBy)
-        REFERENCES staffs(StaffID)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_customer_updatedby FOREIGN KEY (UpdatedBy)
-        REFERENCES staffs(StaffID)
-        ON DELETE SET NULL ON UPDATE CASCADE
-)
+    Status          ENUM('active','inactive') NOT NULL DEFAULT 'active'
+);
 
 
 
 
--- EVENTS [requirement: staffs, customers, locations] v3
+-- SUPPLIERS v2
+CREATE TABLE suppliers (
+    SupplierID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    RefSupplierID   VARCHAR(30) DEFAULT NULL UNIQUE,
+    LocationID      BIGINT UNSIGNED DEFAULT NULL,
+    SupplierName    VARCHAR(255) NOT NULL,
+    OrgName         VARCHAR(255) DEFAULT NULL,
+    ContactPerson   VARCHAR(255) DEFAULT NULL,
+    Email           VARCHAR(255) DEFAULT NULL,
+    Phone           VARCHAR(30)  DEFAULT NULL,
+    TaxID           VARCHAR(30)  DEFAULT NULL,
+
+    Note            TEXT         DEFAULT NULL,
+    Status          ENUM('active','inactive') NOT NULL DEFAULT 'active'
+);
+
+
+
+
+-- WAREHOUSE v2
+CREATE TABLE warehouse (
+    WarehouseID    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    LocationID     BIGINT UNSIGNED NOT NULL,
+    WarehouseName  VARCHAR(255) NOT NULL,
+    WarehouseSN    VARCHAR(255) DEFAULT NULL UNIQUE,
+
+    Note           TEXT DEFAULT NULL,
+    Status         ENUM('active','inactive') NOT NULL DEFAULT 'active'
+);
+
+
+
+
+-- EVENTS v4
 CREATE TABLE events (
-    EventID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    RefEventID   VARCHAR(30)      DEFAULT NULL,
-    EventName    VARCHAR(200)     NOT NULL,
-    StaffID      INT  UNSIGNED    DEFAULT NULL,
+    EventID      BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    RefEventID   VARCHAR(30)      DEFAULT NULL UNIQUE,
+    EventName    VARCHAR(255)     NOT NULL,
+    StaffID      INT UNSIGNED     DEFAULT NULL,
     CustomerID   BIGINT UNSIGNED  DEFAULT NULL,
     LocationID   BIGINT UNSIGNED  DEFAULT NULL,
     StartDate    DATETIME         DEFAULT NULL,
@@ -139,157 +153,77 @@ CREATE TABLE events (
     
     Description  TEXT             DEFAULT NULL,
     Notes        TEXT             DEFAULT NULL,
-    Status       ENUM('draft','planning','waiting','processing','billing','completed','cancelled') NOT NULL DEFAULT 'draft',
-
-    CreatedAt    DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy    INT  UNSIGNED    DEFAULT NULL,
-    UpdatedAt    DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UpdatedBy    INT  UNSIGNED    DEFAULT NULL,
-
-    PRIMARY KEY (EventID),
-    UNIQUE KEY uq_events_ref (RefEventID),
-
-    KEY idx_status_start (Status, StartDate),
-    KEY idx_dates (StartDate, EndDate),
-    KEY idx_staff (StaffID),
-    KEY idx_customer (CustomerID),
-    KEY idx_location (LocationID),
-    KEY idx_createdby (CreatedBy),
-    KEY idx_updatedby (UpdatedBy),
-
-    CONSTRAINT chk_event_dates CHECK (
-        StartDate IS NULL OR EndDate IS NULL OR EndDate >= StartDate
-    ),
-
-    CONSTRAINT fk_event_staff
-        FOREIGN KEY (StaffID)   REFERENCES staffs(StaffID)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_event_customer
-        FOREIGN KEY (CustomerID) REFERENCES customers(CustomerID)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_event_location
-        FOREIGN KEY (LocationID) REFERENCES locations(LocationID)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_event_createdby
-        FOREIGN KEY (CreatedBy) REFERENCES staffs(StaffID)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT fk_event_updatedby
-        FOREIGN KEY (UpdatedBy) REFERENCES staffs(StaffID)
-        ON DELETE SET NULL ON UPDATE CASCADE
-)
-
-
-
-
--- ITEMCATEGORY [requirement: staffs] v1
-CREATE TABLE itemcategory (
-    ItemCategoryID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Name           VARCHAR(150) NOT NULL,
-    CreatedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy       INT UNSIGNED DEFAULT NULL,
-    UpdatedAt       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UpdatedBy       INT UNSIGNED DEFAULT NULL,
-    Note           TEXT DEFAULT NULL,
-    PRIMARY KEY (ItemCategoryID)
-)
-
-
-
-
--- ITEMS [requirement: staffs, itemcategory] v1
-CREATE TABLE items (
-    ItemID          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    RefItemID       VARCHAR(30) DEFAULT NULL,
-    ItemName        VARCHAR(200) NOT NULL,
-    ItemType        ENUM('อุปกร','วัสดุ','บริการ','') NULL DEFAULT 'อุปกร';
-    ItemCategoryID  BIGINT UNSIGNED DEFAULT NULL,
-    Brand           VARCHAR(100) DEFAULT NULL,
-    Model           VARCHAR(100) DEFAULT NULL,
-    UOM             VARCHAR(50) NOT NULL DEFAULT 'unit',
-    Rate            DECIMAL(10,2) DEFAULT NULL,
-    Period          ENUM('ต่อชั่วโมง','ต่อวัน','ต่ออีเว้น') NOT NULL DEFAULT 'ต่อวัน';
-    CreatedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy       INT UNSIGNED DEFAULT NULL,
-    UpdatedAt       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UpdatedBy       INT UNSIGNED DEFAULT NULL,
-    PRIMARY KEY (ItemID),
-    KEY idx_item_category (ItemCategoryID),
-    CONSTRAINT fk_item_category FOREIGN KEY (ItemCategoryID)
-        REFERENCES itemcategory(ItemCategoryID)
-        ON DELETE SET NULL ON UPDATE CASCADE
-)
-
-
-
-
--- ITEM_UNIT [requirement: staffs, itemcategory, ITEMS] v1
-CREATE TABLE item_unit (
-    ItemUnitID       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    ItemID           BIGINT UNSIGNED NOT NULL,
-    WarehouseID      BIGINT UNSIGNED DEFAULT NULL,
-    SupplierID       BIGINT UNSIGNED DEFAULT NULL,
-    SerialNumber     VARCHAR(150) DEFAULT NULL,
-    OwnerShip        ENUM('company','rented') NULL DEFAULT 'company',
-    ConditionIn      ENUM('good','damaged') NULL DEFAULT 'good',
-    ConditionOut     ENUM('good','damaged') NULL DEFAULT 'good',
-    ExpectedReturnAt DATETIME DEFAULT NULL,
-    ReturnAt         DATETIME DEFAULT NULL,
-    Status           ENUM('useable','in use','pending booking','booked','damaged','reparing','delivering','returned','archived') NOT NULL DEFAULT 'useable',
-    CreatedAt        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy        INT UNSIGNED DEFAULT NULL,
-    UpdatedAt        DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UpdatedBy        INT UNSIGNED DEFAULT NULL,
-    PRIMARY KEY (ItemUnitID),
-    KEY idx_itemunit_item (ItemID),
-    CONSTRAINT fk_itemunit_item FOREIGN KEY (ItemID)
-        REFERENCES items(ItemID)
-        ON DELETE CASCADE ON UPDATE CASCADE
-)
-
-
-
-
--- REQUESTS [requirement: events, staffs] v1
-CREATE TABLE requests (
-    RequestID     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    EventID       BIGINT UNSIGNED NOT NULL,
-    RequestName   VARCHAR(200) NOT NULL,
-    RequestSeqNo  INT UNSIGNED DEFAULT NULL,
-
-    CreatedAt     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy     INT UNSIGNED NOT NULL,
-    UpdatedAt     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UpdatedBy     INT UNSIGNED DEFAULT NULL,
-
-    Status        ENUM('draft','submitted','approved','closed','cancelled') NOT NULL DEFAULT 'draft',
-
-    PRIMARY KEY (RequestID),
-
-    KEY idx_request_event  (EventID),
-    KEY idx_request_status (Status),
-    KEY idx_request_createdby (CreatedBy),
-    KEY idx_request_updatedby (UpdatedBy),
-
-    CONSTRAINT fk_request_event
-        FOREIGN KEY (EventID)
-        REFERENCES events(EventID)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT fk_request_createdby
-        FOREIGN KEY (CreatedBy)
-        REFERENCES staffs(StaffID)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT fk_request_updatedby
-        FOREIGN KEY (UpdatedBy)
-        REFERENCES staffs(StaffID)
-        ON DELETE SET NULL ON UPDATE CASCADE
+    Status       ENUM('draft','planning','waiting','processing','billing','completed','cancelled') NOT NULL DEFAULT 'draft'
 );
 
 
 
 
--- REQUEST_LINES [requirement: requests, events, staffs] v1
+-- ITEMCATEGORY v2
+CREATE TABLE itemcategorys (
+    ItemCategoryID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    Name           VARCHAR(255)    NOT NULL,
+    Note           TEXT            DEFAULT NULL
+);
+
+
+
+
+-- ITEMS v2
+CREATE TABLE items (
+    ItemID          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    RefItemID       VARCHAR(30)     DEFAULT NULL UNIQUE,
+    ItemName        VARCHAR(255)    NOT NULL,
+    ItemType        ENUM('อุปกร','วัสดุ','บริการ','') NULL DEFAULT 'อุปกร',
+    ItemCategoryID  BIGINT UNSIGNED DEFAULT NULL,
+    Brand           VARCHAR(255)    DEFAULT NULL,
+    Model           VARCHAR(255)    DEFAULT NULL,
+    UOM             VARCHAR(30)     NULL DEFAULT 'unit',
+    Rate            DECIMAL(10,2)   DEFAULT NULL,
+    Period          ENUM('ต่อชั่วโมง','ต่อวัน','ต่ออีเว้น') NOT NULL DEFAULT 'ต่อวัน',
+
+    Note            TEXT            DEFAULT NULL,
+    Status          ENUM('active','inactive') NOT NULL DEFAULT 'active'
+);
+
+
+
+
+-- ITEM_UNIT v2
+CREATE TABLE item_units (
+    ItemUnitID       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    SerialNumber     VARCHAR(255) DEFAULT NULL UNIQUE,
+    ItemID           BIGINT UNSIGNED NOT NULL,
+    WarehouseID      BIGINT UNSIGNED DEFAULT NULL,
+    SupplierID       BIGINT UNSIGNED DEFAULT NULL,
+    OwnerShip        ENUM('company','rented','') NULL DEFAULT 'company',
+    ConditionIn      ENUM('good','damaged','') NULL DEFAULT 'good',
+    ConditionOut     ENUM('good','damaged','') NULL DEFAULT 'good',
+    ExpectedReturnAt DATETIME DEFAULT NULL,
+    ReturnAt         DATETIME DEFAULT NULL,
+
+    Note             TEXT DEFAULT NULL,
+    Status           ENUM('useable','in use','pending booking','booked','damaged','reparing','delivering','returned','archived') NOT NULL DEFAULT 'useable'
+);
+
+
+
+
+-- REQUESTS v2
+CREATE TABLE requests (
+    RequestID     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    RefRequestID  VARCHAR(255) DEFAULT NULL UNIQUE,
+    RequestName   VARCHAR(255) NOT NULL,
+    EventID       BIGINT UNSIGNED NOT NULL,
+    RequestSeqNo  INT UNSIGNED NOT NULL,
+
+    Note          TEXT DEFAULT NULL,
+    Status        ENUM('draft','submitted','approved','closed','cancelled') NOT NULL DEFAULT 'draft'
+);
+
+-- REQUEST_LINES v2
 CREATE TABLE request_lines (
-    RequestLineID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    RequestLineID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     RequestID          BIGINT UNSIGNED NOT NULL,
     LineNo             INT UNSIGNED NOT NULL,
     ItemID             BIGINT UNSIGNED NOT NULL,
@@ -297,91 +231,24 @@ CREATE TABLE request_lines (
     StartTime          DATETIME NOT NULL,
     EndTime            DATETIME NOT NULL,
     FulfillmentStatus  ENUM('pending','partial','fulfilled','cancelled') NOT NULL DEFAULT 'pending',
-    Note               VARCHAR(500) DEFAULT NULL,
-    Status             ENUM('active','deleted') NOT NULL DEFAULT 'active',
 
-    PRIMARY KEY (RequestLineID),
-
-    KEY idx_requestline_request (RequestID, LineNo),
-    KEY idx_requestline_item    (ItemID),
-    KEY idx_requestline_status  (Status),
-
-    CONSTRAINT chk_requestline_qty
-        CHECK (QuantityRequested > 0),
-
-    CONSTRAINT chk_requestline_time
-        CHECK (EndTime >= StartTime),
-
-    CONSTRAINT fk_requestline_request
-        FOREIGN KEY (RequestID)
-        REFERENCES requests(RequestID)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-
-    CONSTRAINT fk_requestline_item
-        FOREIGN KEY (ItemID)
-        REFERENCES items(ItemID)
-        ON DELETE RESTRICT ON UPDATE CASCADE
+    Note               TEXT DEFAULT NULL,
+    Status             ENUM('active','deleted') NOT NULL DEFAULT 'active'
 );
 
 
 
 
--- BOOKING [requirement: -] v1
+-- BOOKING (aka: item schedule) v2
 CREATE TABLE booking (
-    BookingID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    BookingID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     RequestAllocationID BIGINT UNSIGNED NOT NULL,
     ItemUnitID BIGINT UNSIGNED NOT NULL,
     StartTime DATETIME NOT NULL,
     EndTime DATETIME NOT NULL,
     ExpireAt DATETIME NULL,
-    CancelReason VARCHAR(500) NULL,
-    Status ENUM('reserved','checked_out','in_use','returned','cancelled','expired') NOT NULL DEFAULT 'reserved',
-    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy BIGINT UNSIGNED NOT NULL,
-    UpdatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UpdatedBy BIGINT UNSIGNED NULL,
+    CancelReason TEXT DEFAULT NULL,
 
-    PRIMARY KEY (BookingID)
-);
-
-
-
-
--- SUPPLIERS [requirement: -] v1
-CREATE TABLE suppliers (
-    SupplierID      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    RefSupplierID   VARCHAR(30) DEFAULT NULL,
-    LocationID      BIGINT UNSIGNED DEFAULT NULL,
-    SupplierName    VARCHAR(200) NOT NULL,
-    OrgName         VARCHAR(200) DEFAULT NULL,
-    ContactPerson   VARCHAR(200) DEFAULT NULL,
-    Email           VARCHAR(254) DEFAULT NULL,
-    Phone           VARCHAR(32)  DEFAULT NULL,
-    TaxID           VARCHAR(20)  DEFAULT NULL,
-    Note            VARCHAR(500) DEFAULT NULL,
-    CreatedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy       BIGINT UNSIGNED NOT NULL,
-    UpdatedAt       DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UpdatedBy       BIGINT UNSIGNED DEFAULT NULL,
-    Status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
-    PRIMARY KEY (SupplierID),
-    UNIQUE KEY uq_supplier_ref (RefSupplierID)
-);
-
-
-
-
--- WAREHOUSE [requirement: -] v1
-CREATE TABLE warehouse (
-    WarehouseID    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    LocationID     BIGINT UNSIGNED NOT NULL,
-    WarehouseName  VARCHAR(200) NOT NULL,
-    WarehouseSN    VARCHAR(200) DEFAULT NULL UNIQUE,
-    Note           VARCHAR(500) DEFAULT NULL,
-    CreatedAt      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CreatedBy      BIGINT UNSIGNED NOT NULL,
-    UpdatedAt      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UpdatedBy      BIGINT UNSIGNED NOT NULL,
-    Status         ENUM('active','inactive') NOT NULL DEFAULT 'active',
-    PRIMARY KEY (WarehouseID)
+    Note TEXT DEFAULT NULL,
+    Status ENUM('reserved','checked_out','in_use','returned','cancelled','expired') NOT NULL DEFAULT 'reserved'
 );
