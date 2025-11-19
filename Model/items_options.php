@@ -27,7 +27,7 @@ try {
             i.Rate AS rate,
             COALESCE(i.Period, '') AS period
         FROM items i
-        LEFT JOIN itemcategory c ON c.ItemCategoryID = i.ItemCategoryID
+        LEFT JOIN itemcategorys c ON c.ItemCategoryID = i.ItemCategoryID
     ";
     $params = [];
     if ($query !== '') {

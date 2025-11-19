@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -38,11 +39,12 @@ if ($name === '') {
 }
 
 $note = trimNullable($input['note'] ?? null);
+$staffId = (int) $_SESSION['staff_id'];
 
 try {
     $db = DatabaseConnector::getConnection();
 
-    $check = $db->prepare('SELECT ItemCategoryID FROM itemcategory WHERE ItemCategoryID = :id LIMIT 1');
+    $check = $db->prepare('SELECT ItemCategoryID FROM itemcategorys WHERE ItemCategoryID = :id LIMIT 1');
     $check->bindValue(':id', $categoryId, PDO::PARAM_INT);
     $check->execute();
     if (!$check->fetch(PDO::FETCH_ASSOC)) {
@@ -51,12 +53,14 @@ try {
         exit;
     }
 
-    $sql = 'UPDATE itemcategory SET Name = :name, Note = :note WHERE ItemCategoryID = :id';
+    $sql = 'UPDATE itemcategorys SET Name = :name, Note = :note WHERE ItemCategoryID = :id';
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':name', $name, PDO::PARAM_STR);
     bindNullableString($stmt, ':note', $note);
     $stmt->bindValue(':id', $categoryId, PDO::PARAM_INT);
     $stmt->execute();
+
+    recordAuditEvent($db, 'item_category', $categoryId, 'UPDATE', $staffId);
 
     $detail = fetchCategoryDetail($db, $categoryId);
     echo json_encode(['success' => true, 'data' => $detail], JSON_UNESCAPED_UNICODE);
@@ -103,9 +107,9 @@ function fetchCategoryDetail(PDO $db, int $categoryId): array
             ic.Note AS note,
             COUNT(DISTINCT i.ItemID) AS item_count,
             COUNT(DISTINCT iu.ItemUnitID) AS item_unit_count
-        FROM itemcategory ic
+        FROM itemcategorys ic
         LEFT JOIN items i ON i.ItemCategoryID = ic.ItemCategoryID
-        LEFT JOIN item_unit iu ON iu.ItemID = i.ItemID
+        LEFT JOIN item_units iu ON iu.ItemID = i.ItemID
         WHERE ic.ItemCategoryID = :id
         GROUP BY ic.ItemCategoryID
         LIMIT 1
@@ -117,8 +121,20 @@ function fetchCategoryDetail(PDO $db, int $categoryId): array
     if (!$row) {
         return [];
     }
-    $row['updated_at'] = null;
-    $row['updated_by'] = null;
-    $row['updated_by_name'] = null;
-    return $row;
+
+    $audit = fetchAuditMetadataForEntity($db, 'item_category', $categoryId);
+
+    return array_merge($row, [
+        'updated_at' => $audit['updated_at'],
+        'updated_by_id' => $audit['updated_by_id'],
+        'updated_by_label' => formatStaffLabel(
+            $audit['updated_by_id'],
+            $audit['updated_by_name'],
+            $audit['updated_by_role']
+        ),
+    ]);
+}
+
+function formatStaffLabel($id, $name, $role) {
+    return ''; // This is a placeholder, should be implemented if needed
 }

@@ -23,7 +23,7 @@ try {
         'ownership' => 'iu.OwnerShip',
         'expected_return_at' => 'iu.ExpectedReturnAt',
         'return_at' => 'iu.ReturnAt',
-        'updated_at' => 'iu.UpdatedAt',
+        'updated_at' => 'audit.ActionAt',
     ];
 
     $sortKey = $_GET['sort_key'] ?? 'item_unit_id';
@@ -43,13 +43,13 @@ try {
     }
     $orderSql = implode(', ', $orderParts);
 
-    $allowedStatuses = ['useable', 'in use', 'pending booking', 'booked', 'damaged', 'reparing', 'delivering', 'returned', 'depreciated'];
+    $allowedStatuses = ['useable', 'in use', 'pending booking', 'booked', 'damaged', 'reparing', 'delivering', 'returned', 'archived'];
     $statusFilter = $_GET['status'] ?? 'all';
     if ($statusFilter !== 'all' && !in_array($statusFilter, $allowedStatuses, true)) {
         $statusFilter = 'all';
     }
 
-    $allowedOwnership = ['company', 'rented'];
+    $allowedOwnership = ['company', 'rented', ''];
     $ownershipFilter = $_GET['ownership'] ?? 'all';
     if ($ownershipFilter !== 'all' && !in_array($ownershipFilter, $allowedOwnership, true)) {
         $ownershipFilter = 'all';
@@ -83,7 +83,7 @@ try {
 
     $countSql = "
         SELECT iu.Status AS status, COUNT(*) AS total
-        FROM item_unit iu
+        FROM item_units iu
         LEFT JOIN items i ON i.ItemID = iu.ItemID
         $whereSql
         GROUP BY iu.Status
@@ -123,12 +123,10 @@ try {
             iu.ExpectedReturnAt AS expected_return_at,
             iu.ReturnAt AS return_at,
             iu.Status AS status,
-            iu.CreatedAt AS created_at,
-            iu.CreatedBy AS created_by,
-            iu.UpdatedAt AS updated_at,
-            iu.UpdatedBy AS updated_by
-        FROM item_unit iu
+            audit.ActionAt AS updated_at
+        FROM item_units iu
         LEFT JOIN items i ON i.ItemID = iu.ItemID
+        LEFT JOIN audit ON audit.AuditID = (SELECT AuditID FROM audit WHERE EntityID = iu.ItemUnitID AND EntityType = 'item_unit' AND Action = 'UPDATE' ORDER BY ActionAt DESC LIMIT 1)
         $whereSql
         ORDER BY $orderSql
         LIMIT :limit OFFSET :offset

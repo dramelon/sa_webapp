@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -114,7 +115,6 @@ try {
             s.Email AS email,
             s.Phone AS phone,
             s.Status AS status,
-            s.CreatedAt AS created_at,
             l.LocationName AS location_name
         FROM suppliers s
         LEFT JOIN locations l ON l.LocationID = s.LocationID
@@ -138,6 +138,14 @@ try {
         $hasNext = true;
         $rows = array_slice($rows, 0, SUPPLIERS_PER_PAGE);
     }
+
+    $metadata = fetchAuditMetadataForEntities($db, 'supplier', array_column($rows, 'supplier_id'));
+    foreach ($rows as &$row) {
+        $audit = $metadata[$row['supplier_id']] ?? buildEmptyAuditMetadata();
+        $row['created_at'] = $audit['created_at'];
+        $row['updated_at'] = $audit['updated_at'];
+    }
+    unset($row);
 
     echo json_encode([
         'data' => $rows,

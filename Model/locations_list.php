@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -108,9 +109,7 @@ try {
             l.PostalCode AS postal_code,
             l.Country AS country,
             l.Note AS notes,
-            l.Status AS status,
-            l.CreatedAt AS created_at,
-            l.UpdatedAt AS updated_at
+            l.Status AS status
         FROM locations l
         $whereSql
         ORDER BY $orderSql
@@ -131,6 +130,14 @@ try {
         $hasNext = true;
         $rows = array_slice($rows, 0, LOCATIONS_PER_PAGE);
     }
+
+    $metadata = fetchAuditMetadataForEntities($db, 'location', array_column($rows, 'location_id'));
+    foreach ($rows as &$row) {
+        $audit = $metadata[$row['location_id']] ?? buildEmptyAuditMetadata();
+        $row['created_at'] = $audit['created_at'];
+        $row['updated_at'] = $audit['updated_at'];
+    }
+    unset($row);
 
     echo json_encode([
         'data' => $rows,

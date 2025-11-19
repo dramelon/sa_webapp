@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -37,6 +38,7 @@ if ($requestName === '') {
     exit;
 }
 $requestName = mb_substr($requestName, 0, 200, 'UTF-8');
+$note = trim((string) ($input['note'] ?? ''));
 
 $allowedStatuses = ['draft', 'submitted', 'approved', 'closed', 'cancelled'];
 $statusInput = strtolower((string) ($input['status'] ?? 'draft'));
@@ -120,17 +122,18 @@ try {
     $seqRow = $seqStmt->fetch(PDO::FETCH_ASSOC);
     $nextSeq = (int) ($seqRow['max_seq'] ?? 0) + 1;
 
-    $requestStmt = $db->prepare('INSERT INTO requests (EventID, RequestName, RequestSeqNo, Status, CreatedBy, UpdatedBy) VALUES (:event_id, :request_name, :seq_no, :status, :created_by, :updated_by)');
+    $requestStmt = $db->prepare('INSERT INTO requests (EventID, RequestName, RequestSeqNo, Status, Note) VALUES (:event_id, :request_name, :seq_no, :status, :note)');
     $requestStmt->execute([
         ':event_id' => $eventId,
         ':request_name' => $requestName,
         ':seq_no' => $nextSeq,
         ':status' => $status,
-        ':created_by' => $createdBy,
-        ':updated_by' => $createdBy,
+        ':note' => $note ?: null,
     ]);
 
     $requestId = (int) $db->lastInsertId();
+
+    recordAuditEvent($db, 'request', $requestId, 'CREATE', $createdBy);
 
     $lineStmt = $db->prepare('INSERT INTO request_lines (RequestID, LineNo, ItemID, QuantityRequested, StartTime, EndTime, FulfillmentStatus, Note, Status) VALUES (:request_id, :line_no, :item_id, :quantity, :start_time, :end_time, :fulfillment_status, :note, :status)');
     foreach ($cleanLines as $lineNo => $line) {

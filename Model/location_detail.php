@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -33,18 +34,8 @@ try {
             l.Country AS country,
             l.PostalCode AS postal_code,
             l.Note AS note,
-            l.Status AS status,
-            l.CreatedAt AS created_at,
-            l.UpdatedAt AS updated_at,
-            l.CreatedBy AS created_by_id,
-            l.UpdatedBy AS updated_by_id,
-            created.FullName AS created_by_name,
-            created.Role AS created_by_role,
-            updated.FullName AS updated_by_name,
-            updated.Role AS updated_by_role
+            l.Status AS status
         FROM locations l
-        LEFT JOIN staffs created ON created.StaffID = l.CreatedBy
-        LEFT JOIN staffs updated ON updated.StaffID = l.UpdatedBy
         WHERE l.LocationID = :id
         LIMIT 1
     ";
@@ -59,6 +50,8 @@ try {
         echo json_encode(['error' => 'not_found']);
         exit;
     }
+
+    $audit = fetchAuditMetadataForEntity($db, 'location', (int) $row['location_id']);
 
     $payload = [
         'location_id' => (int) $row['location_id'],
@@ -79,12 +72,12 @@ try {
         'country' => $row['country'],
         'notes' => $row['note'],
         'status' => $row['status'],
-        'created_at' => $row['created_at'],
-        'updated_at' => $row['updated_at'],
-        'created_by_id' => $row['created_by_id'] !== null ? (int) $row['created_by_id'] : null,
-        'updated_by_id' => $row['updated_by_id'] !== null ? (int) $row['updated_by_id'] : null,
-        'created_by_label' => formatStaffLabel($row['created_by_id'], $row['created_by_name'], $row['created_by_role']),
-        'updated_by_label' => formatStaffLabel($row['updated_by_id'], $row['updated_by_name'], $row['updated_by_role']),
+        'created_at' => $audit['created_at'],
+        'updated_at' => $audit['updated_at'],
+        'created_by_id' => $audit['created_by_id'],
+        'updated_by_id' => $audit['updated_by_id'],
+        'created_by_label' => formatStaffLabel($audit['created_by_id'], $audit['created_by_name'], $audit['created_by_role']),
+        'updated_by_label' => formatStaffLabel($audit['updated_by_id'], $audit['updated_by_name'], $audit['updated_by_role']),
     ];
 
     echo json_encode(['data' => $payload], JSON_UNESCAPED_UNICODE);

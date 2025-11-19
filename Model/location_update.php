@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -82,8 +83,7 @@ try {
             Country = :country,
             PostalCode = :postal_code,
             Note = :note,
-            Status = :status,
-            UpdatedBy = :updated_by
+            Status = :status
         WHERE LocationID = :id
         LIMIT 1
     ";
@@ -106,9 +106,10 @@ try {
     bindNullableString($stmt, ':postal_code', $postalCode);
     bindNullableString($stmt, ':note', $notes);
     $stmt->bindValue(':status', $status, PDO::PARAM_STR);
-    $stmt->bindValue(':updated_by', $staffId, PDO::PARAM_INT);
     $stmt->bindValue(':id', $locationId, PDO::PARAM_INT);
     $stmt->execute();
+
+    recordAuditEvent($db, 'location', $locationId, 'UPDATE', $staffId);
 
     $detail = fetchLocationDetail($db, $locationId);
 
@@ -147,18 +148,8 @@ function fetchLocationDetail(PDO $db, int $locationId): array
             l.Country AS country,
             l.PostalCode AS postal_code,
             l.Note AS note,
-            l.Status AS status,
-            l.CreatedAt AS created_at,
-            l.UpdatedAt AS updated_at,
-            l.CreatedBy AS created_by_id,
-            l.UpdatedBy AS updated_by_id,
-            created.FullName AS created_by_name,
-            created.Role AS created_by_role,
-            updated.FullName AS updated_by_name,
-            updated.Role AS updated_by_role
+            l.Status AS status
         FROM locations l
-        LEFT JOIN staffs created ON created.StaffID = l.CreatedBy
-        LEFT JOIN staffs updated ON updated.StaffID = l.UpdatedBy
         WHERE l.LocationID = :id
         LIMIT 1
     ";
@@ -167,6 +158,8 @@ function fetchLocationDetail(PDO $db, int $locationId): array
     $stmt->bindValue(':id', $locationId, PDO::PARAM_INT);
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+    $audit = fetchAuditMetadataForEntity($db, 'location', $locationId);
 
     return [
         'location_id' => $locationId,
@@ -187,12 +180,12 @@ function fetchLocationDetail(PDO $db, int $locationId): array
         'country' => $row['country'] ?? null,
         'notes' => $row['note'] ?? null,
         'status' => $row['status'] ?? null,
-        'created_at' => $row['created_at'] ?? null,
-        'updated_at' => $row['updated_at'] ?? null,
-        'created_by_id' => isset($row['created_by_id']) ? (int) $row['created_by_id'] : null,
-        'updated_by_id' => isset($row['updated_by_id']) ? (int) $row['updated_by_id'] : null,
-        'created_by_label' => formatStaffLabel($row['created_by_id'] ?? null, $row['created_by_name'] ?? null, $row['created_by_role'] ?? null),
-        'updated_by_label' => formatStaffLabel($row['updated_by_id'] ?? null, $row['updated_by_name'] ?? null, $row['updated_by_role'] ?? null),
+        'created_at' => $audit['created_at'],
+        'updated_at' => $audit['updated_at'],
+        'created_by_id' => $audit['created_by_id'],
+        'updated_by_id' => $audit['updated_by_id'],
+        'created_by_label' => formatStaffLabel($audit['created_by_id'], $audit['created_by_name'], $audit['created_by_role']),
+        'updated_by_label' => formatStaffLabel($audit['updated_by_id'], $audit['updated_by_name'], $audit['updated_by_role']),
         'location_label' => formatLocationLabel($locationId, $row['location_name'] ?? ''),
     ];
 }

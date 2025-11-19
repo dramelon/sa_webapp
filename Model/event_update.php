@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -62,7 +63,7 @@ try {
 
     $db->beginTransaction();
 
-    $checkStmt = $db->prepare('SELECT Status, CreatedAt FROM events WHERE EventID = :id FOR UPDATE');
+    $checkStmt = $db->prepare('SELECT Status FROM events WHERE EventID = :id FOR UPDATE');
     $checkStmt->bindValue(':id', $eventId, PDO::PARAM_INT);
     $checkStmt->execute();
     $existingRow = $checkStmt->fetch(PDO::FETCH_ASSOC);
@@ -95,8 +96,7 @@ try {
             EndDate = :end_date,
             Description = :description,
             Notes = :notes,
-            RefEventID = :ref_event_id,
-            UpdatedBy = :updated_by
+            RefEventID = :ref_event_id
         WHERE EventID = :event_id
     ";
 
@@ -111,39 +111,35 @@ try {
     bindNullableString($stmt, ':description', $description);
     bindNullableString($stmt, ':notes', $notes);
     bindNullableString($stmt, ':ref_event_id', $refEventId);
-    $stmt->bindValue(':updated_by', $updatedBy, PDO::PARAM_INT);
     $stmt->bindValue(':event_id', $eventId, PDO::PARAM_INT);
     $stmt->execute();
 
+    recordAuditEvent($db, 'event', $eventId, 'UPDATE', $updatedBy);
+
     $finalRefEventId = $refEventId;
     if ($finalRefEventId === null) {
-        $finalRefEventId = assignGeneratedRefEventId($db, $eventId, $existingRow['CreatedAt'] ?? null);
+        $auditMeta = fetchAuditMetadataForEntity($db, 'event', $eventId);
+        $finalRefEventId = assignGeneratedRefEventId($db, $eventId, $auditMeta['created_at'] ?? null);
     }
     
     $detailSql = "
         SELECT
             e.EventID AS event_id,
             e.Status AS status,
-            e.UpdatedAt AS updated_at,
             e.CustomerID AS customer_id,
             e.StaffID AS staff_id,
             e.LocationID AS location_id,
-            e.UpdatedBy AS updated_by_id,
-            c.CustomerName AS customer_name,
             e.RefEventID AS ref_event_id,
             c.CustomerName AS customer_name,
             c.Phone AS customer_phone,
             c.Email AS customer_email,
             l.LocationName AS location_name,
             s.FullName AS staff_name,
-            s.Role AS staff_role,
-            updated.FullName AS updated_by_name,
-            updated.Role AS updated_by_role
+            s.Role AS staff_role
         FROM events e
         LEFT JOIN customers c ON c.CustomerID = e.CustomerID
         LEFT JOIN locations l ON l.LocationID = e.LocationID
         LEFT JOIN staffs s ON s.StaffID = e.StaffID
-        LEFT JOIN staffs updated ON updated.StaffID = e.UpdatedBy
         WHERE e.EventID = :event_id
         LIMIT 1
     ";
@@ -153,12 +149,14 @@ try {
     $detailStmt->execute();
     $row = $detailStmt->fetch(PDO::FETCH_ASSOC);
 
+    $audit = fetchAuditMetadataForEntity($db, 'event', $eventId);
+
     $db->commit();
     
     $response = [
         'success' => true,
         'status' => $row['status'] ?? $status,
-        'updated_at' => $row['updated_at'] ?? null,
+        'updated_at' => $audit['updated_at'],
         'customer_id' => isset($row['customer_id']) ? (int) $row['customer_id'] : null,
         'customer_label' => formatCustomerLabel($row['customer_id'] ?? null, $row['customer_name'] ?? null),
         'customer_name' => $row['customer_name'] ?? null,
@@ -169,8 +167,8 @@ try {
         'location_id' => isset($row['location_id']) ? (int) $row['location_id'] : null,
         'location_label' => formatLocationLabel($row['location_id'] ?? null, $row['location_name'] ?? null),
         'location_name' => $row['location_name'] ?? null,
-        'updated_by_id' => isset($row['updated_by_id']) ? (int) $row['updated_by_id'] : $updatedBy,
-        'updated_by_label' => formatStaffLabel($row['updated_by_id'] ?? $updatedBy, $row['updated_by_name'] ?? null, $row['updated_by_role'] ?? null),
+        'updated_by_id' => $audit['updated_by_id'],
+        'updated_by_label' => formatStaffLabel($audit['updated_by_id'], $audit['updated_by_name'], $audit['updated_by_role']),
         'ref_event_id' => $row['ref_event_id'] ?? $finalRefEventId,
     ];
 

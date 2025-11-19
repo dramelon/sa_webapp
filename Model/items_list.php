@@ -24,7 +24,7 @@ try {
         'brand' => 'i.Brand',
         'uom' => 'i.UOM',
         'rate' => 'i.Rate',
-        'updated_at' => 'i.UpdatedAt',
+        'updated_at' => 'audit.ActionAt',
     ];
 
     $sortKey = $_GET['sort_key'] ?? 'item_id';
@@ -42,14 +42,11 @@ try {
     if ($sortKey !== 'item_id') {
         $statusFilter = $_GET['status'] ?? 'all';
     $allowedStatuses = ['all', 'with_items', 'empty'];
-    if (!in_array($statusFilter, $allowedStatuses, true)) {
-        $statusFilter = 'all';
-    }
         $orderParts[] = 'i.ItemID DESC';
     }
     $orderSql = implode(', ', $orderParts);
 
-    $allowedTypes = ['อุปกร', 'วัสดุ', 'บริการ'];
+    $allowedTypes = ['อุปกร', 'วัสดุ', 'บริการ', ''];
     $typeFilter = $_GET['type'] ?? 'all';
     if ($typeFilter !== 'all' && !in_array($typeFilter, $allowedTypes, true)) {
         $typeFilter = 'all';
@@ -121,12 +118,12 @@ try {
             i.UOM AS uom,
             i.Rate AS rate,
             i.Period AS period,
-            i.UpdatedAt AS updated_at,
-            i.CreatedAt AS created_at,
+            audit.ActionAt AS updated_at,
             c.ItemCategoryID AS category_id,
             c.Name AS category_name
         FROM items i
-        LEFT JOIN itemcategory c ON c.ItemCategoryID = i.ItemCategoryID
+        LEFT JOIN itemcategorys c ON c.ItemCategoryID = i.ItemCategoryID
+        LEFT JOIN audit ON audit.AuditID = (SELECT AuditID FROM audit WHERE EntityID = i.ItemID AND EntityType = 'item' AND Action = 'UPDATE' ORDER BY ActionAt DESC LIMIT 1)
         $whereSql
         ORDER BY $orderSql
         LIMIT :limit OFFSET :offset

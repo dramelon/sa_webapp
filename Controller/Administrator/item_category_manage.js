@@ -5,8 +5,10 @@
     const categoryIdDisplay = document.getElementById('categoryIdDisplay');
     const categoryItemCount = document.getElementById('categoryItemCount');
     const categoryUnitCount = document.getElementById('categoryUnitCount');
-    const categoryUpdatedAt = document.getElementById('categoryUpdatedAt');
-    const categoryUpdatedBy = document.getElementById('categoryUpdatedBy');
+    const categoryUpdatedAt = document.getElementById('itemCategoryUpdatedAt');
+    const categoryUpdatedBy = document.getElementById('itemCategoryUpdatedBy');
+    const categoryCreatedAt = document.getElementById('itemCategoryCreatedAt');
+    const categoryCreatedBy = document.getElementById('itemCategoryCreatedBy');
     const btnBack = document.getElementById('btnBack');
     const btnSave = document.getElementById('btnSave');
     const breadcrumbLink = document.querySelector('.breadcrumb a');
@@ -195,7 +197,9 @@
         }
 
         if (categoryUpdatedAt) categoryUpdatedAt.textContent = `อัปเดตล่าสุด: ${formatDateTime(data?.updated_at)}`;
-        if (categoryUpdatedBy) categoryUpdatedBy.textContent = `ปรับปรุงโดย: ${data?.updated_by_name || '—'}`;
+        if (categoryUpdatedBy) categoryUpdatedBy.textContent = `โดย: ${data?.updated_by_label || '—'}`;
+        if (categoryCreatedAt) categoryCreatedAt.textContent = `สร้างเมื่อ: ${formatDateTime(data?.created_at)}`;
+        if (categoryCreatedBy) categoryCreatedBy.textContent = `โดย: ${data?.created_by_label || '—'}`;
     }
 
     function populateForm(data) {
@@ -253,6 +257,7 @@
     async function handleSubmit(event) {
         event.preventDefault();
         if (!form || isSaving) return;
+        let detail;
         const payload = serializeForm();
         if (!payload.name) {
             showMessage('กรุณากรอกชื่อหมวดหมู่', 'error');
@@ -283,7 +288,7 @@
                 const code = result?.error || mapStatusToError(response.status);
                 throw new RequestError(code);
             }
-            const detail = result.data || {};
+            detail = result.data || {};
             currentCategoryId = detail.item_category_id != null ? String(detail.item_category_id) : currentCategoryId;
             isCreateMode = false;
             if (currentCategoryId) {
@@ -307,6 +312,7 @@
         } finally {
             isSaving = false;
             updateSaveButtonState();
+            updateMeta(detail);
         }
     }
 

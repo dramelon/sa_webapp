@@ -21,7 +21,7 @@ try {
         'location_name' => 'l.LocationName',
         'warehouse_sn' => 'w.WarehouseSN',
         'status' => 'w.Status',
-        'updated_at' => 'w.UpdatedAt',
+        'updated_at' => 'audit.ActionAt',
     ];
     $sortKey = $_GET['sort_key'] ?? 'warehouse_id';
     if (!isset($allowedSorts[$sortKey])) {
@@ -91,11 +91,12 @@ try {
             w.WarehouseName AS warehouse_name,
             w.WarehouseSN AS warehouse_sn,
             w.Status AS status,
-            w.UpdatedAt AS updated_at,
+            audit.ActionAt AS updated_at,
             w.Note AS note,
             l.LocationName AS location_name
         FROM warehouse w
         LEFT JOIN locations l ON l.LocationID = w.LocationID
+        LEFT JOIN audit ON audit.AuditID = (SELECT AuditID FROM audit WHERE EntityID = w.WarehouseID AND EntityType = 'warehouse' AND Action IN ('CREATE', 'UPDATE') ORDER BY ActionAt DESC LIMIT 1)
         $dataWhere
         ORDER BY $orderSql
         LIMIT :limit OFFSET :offset

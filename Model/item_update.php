@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -37,13 +38,14 @@ if ($itemName === '') {
     exit;
 }
 
-$allowedTypes = ['อุปกร', 'วัสดุ', 'บริการ'];
+$allowedTypes = ['อุปกร', 'วัสดุ', 'บริการ', ''];
 $itemType = $input['item_type'] ?? 'อุปกร';
 if (!in_array($itemType, $allowedTypes, true)) {
     $itemType = 'อุปกร';
 }
 
 $refItemId = trimNullable($input['ref_item_id'] ?? null);
+$note = trimNullable($input['note'] ?? null);
 $categoryId = parseNullableInt($input['item_category_id'] ?? null);
 $brand = trimNullable($input['brand'] ?? null);
 $model = trimNullable($input['model'] ?? null);
@@ -51,9 +53,10 @@ $uom = trim((string) ($input['uom'] ?? 'unit'));
 if ($uom === '') {
     $uom = 'unit';
 }
-$period = trim((string) ($input['period'] ?? 'day'));
-if ($period === '') {
-    $period = 'day';
+$allowedPeriods = ['ต่อชั่วโมง', 'ต่อวัน', 'ต่ออีเว้น'];
+$period = $input['period'] ?? 'ต่อวัน';
+if (!in_array($period, $allowedPeriods, true)) {
+    $period = 'ต่อวัน';
 }
 $rate = null;
 if (isset($input['rate']) && $input['rate'] !== '') {
@@ -78,7 +81,7 @@ try {
     }
 
     if ($categoryId !== null) {
-        $checkCategory = $db->prepare('SELECT ItemCategoryID FROM itemcategory WHERE ItemCategoryID = :id LIMIT 1');
+        $checkCategory = $db->prepare('SELECT ItemCategoryID FROM itemcategorys WHERE ItemCategoryID = :id LIMIT 1');
         $checkCategory->bindValue(':id', $categoryId, PDO::PARAM_INT);
         $checkCategory->execute();
         if (!$checkCategory->fetch(PDO::FETCH_ASSOC)) {
@@ -98,7 +101,7 @@ try {
             UOM = :uom,
             Rate = :rate,
             Period = :period,
-            UpdatedBy = :updated_by
+            Note = :note
         WHERE ItemID = :item_id
     ";
 
@@ -112,9 +115,11 @@ try {
     $stmt->bindValue(':uom', $uom, PDO::PARAM_STR);
     bindNullableFloat($stmt, ':rate', $rate);
     $stmt->bindValue(':period', $period, PDO::PARAM_STR);
-    bindNullableInt($stmt, ':updated_by', $staffId ?: null);
+    bindNullableString($stmt, ':note', $note);
     $stmt->bindValue(':item_id', $itemId, PDO::PARAM_INT);
     $stmt->execute();
+
+    recordAuditEvent($db, 'item', $itemId, 'UPDATE', $staffId);
 
     $detail = fetchItemDetail($db, $itemId);
     echo json_encode(['success' => true, 'data' => $detail], JSON_UNESCAPED_UNICODE);
@@ -184,17 +189,10 @@ function fetchItemDetail(PDO $db, int $itemId): array
             i.UOM AS uom,
             i.Rate AS rate,
             i.Period AS period,
-            i.CreatedAt AS created_at,
-            i.CreatedBy AS created_by,
-            i.UpdatedAt AS updated_at,
-            i.UpdatedBy AS updated_by,
-            c.Name AS category_name,
-            cb.FullName AS created_by_name,
-            ub.FullName AS updated_by_name
+            i.Note AS note,
+            c.Name AS category_name
         FROM items i
-        LEFT JOIN itemcategory c ON c.ItemCategoryID = i.ItemCategoryID
-        LEFT JOIN staffs cb ON cb.StaffID = i.CreatedBy
-        LEFT JOIN staffs ub ON ub.StaffID = i.UpdatedBy
+        LEFT JOIN itemcategorys c ON c.ItemCategoryID = i.ItemCategoryID
         WHERE i.ItemID = :item_id
         LIMIT 1
     ";
@@ -203,5 +201,15 @@ function fetchItemDetail(PDO $db, int $itemId): array
     $stmt->bindValue(':item_id', $itemId, PDO::PARAM_INT);
     $stmt->execute();
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $result ?: [];
+    if (!$result) return [];
+
+    $audit = fetchAuditMetadataForEntity($db, 'item', $itemId);
+    $result['created_at'] = $audit['created_at'];
+    $result['updated_at'] = $audit['updated_at'];
+    $result['created_by_name'] = $audit['created_by_name'];
+    $result['updated_by_name'] = $audit['updated_by_name'];
+    $result['created_by'] = $audit['created_by_id'];
+    $result['updated_by'] = $audit['updated_by_id'];
+
+    return $result;
 }

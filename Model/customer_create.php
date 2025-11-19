@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -70,9 +71,7 @@ try {
             ContactPerson,
             Status,
             Notes,
-            LocationID,
-            CreatedBy,
-            UpdatedBy
+            LocationID
         ) VALUES (
             :ref_customer_id,
             :name,
@@ -83,9 +82,7 @@ try {
             :contact_person,
             :status,
             :notes,
-            :location_id,
-            :created_by,
-            :updated_by
+            :location_id
         )
     ";
 
@@ -100,11 +97,11 @@ try {
     $stmt->bindValue(':status', $status, PDO::PARAM_STR);
     bindNullableString($stmt, ':notes', $notes);
     bindNullableInt($stmt, ':location_id', $locationId);
-    $stmt->bindValue(':created_by', $staffId, PDO::PARAM_INT);
-    $stmt->bindValue(':updated_by', $staffId, PDO::PARAM_INT);
     $stmt->execute();
 
     $customerId = (int) $db->lastInsertId();
+
+    recordAuditEvent($db, 'customer', $customerId, 'CREATE', $staffId);
 
     $detail = fetchCustomerDetail($db, $customerId);
 
@@ -137,19 +134,9 @@ function fetchCustomerDetail(PDO $db, int $customerId): array
             c.Status AS status,
             c.Notes AS notes,
             c.LocationID AS location_id,
-            c.CreatedAt AS created_at,
-            c.UpdatedAt AS updated_at,
-            c.CreatedBy AS created_by_id,
-            c.UpdatedBy AS updated_by_id,
-            l.LocationName AS location_name,
-            created.FullName AS created_by_name,
-            created.Role AS created_by_role,
-            updated.FullName AS updated_by_name,
-            updated.Role AS updated_by_role
+            l.LocationName AS location_name
         FROM customers c
         LEFT JOIN locations l ON l.LocationID = c.LocationID
-        LEFT JOIN staffs created ON created.StaffID = c.CreatedBy
-        LEFT JOIN staffs updated ON updated.StaffID = c.UpdatedBy
         WHERE c.CustomerID = :id
         LIMIT 1
     ";
@@ -158,6 +145,8 @@ function fetchCustomerDetail(PDO $db, int $customerId): array
     $stmt->bindValue(':id', $customerId, PDO::PARAM_INT);
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+    $audit = fetchAuditMetadataForEntity($db, 'customer', $customerId);
 
     return [
         'customer_id' => $customerId,
@@ -172,12 +161,12 @@ function fetchCustomerDetail(PDO $db, int $customerId): array
         'notes' => $row['notes'] ?? null,
         'location_id' => isset($row['location_id']) ? (int) $row['location_id'] : null,
         'location_name' => $row['location_name'] ?? null,
-        'created_at' => $row['created_at'] ?? null,
-        'updated_at' => $row['updated_at'] ?? null,
-        'created_by_id' => isset($row['created_by_id']) ? (int) $row['created_by_id'] : null,
-        'updated_by_id' => isset($row['updated_by_id']) ? (int) $row['updated_by_id'] : null,
-        'created_by_label' => formatStaffLabel($row['created_by_id'] ?? null, $row['created_by_name'] ?? null, $row['created_by_role'] ?? null),
-        'updated_by_label' => formatStaffLabel($row['updated_by_id'] ?? null, $row['updated_by_name'] ?? null, $row['updated_by_role'] ?? null),
+        'created_at' => $audit['created_at'],
+        'updated_at' => $audit['updated_at'],
+        'created_by_id' => $audit['created_by_id'],
+        'updated_by_id' => $audit['updated_by_id'],
+        'created_by_label' => formatStaffLabel($audit['created_by_id'], $audit['created_by_name'], $audit['created_by_role']),
+        'updated_by_label' => formatStaffLabel($audit['updated_by_id'], $audit['updated_by_name'], $audit['updated_by_role']),
         'customer_label' => formatCustomerLabel($customerId, $row['customer_name'] ?? ''),
     ];
 }

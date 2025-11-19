@@ -227,7 +227,8 @@
             params.set('search', term);
         }
         try {
-            const response = await fetch(`${modelRoot}/warehouses_list.php?${params.toString()}`, {
+            // const response = await fetch(`${modelRoot}/warehouses_list.php?${params.toString()}`, {
+            const response = await fetch(`${modelRoot}/warehouses_list.php`, {
                 credentials: 'same-origin',
             });
             if (!response.ok) throw new Error('network');

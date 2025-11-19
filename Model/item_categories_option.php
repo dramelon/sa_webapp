@@ -17,7 +17,7 @@ try {
 
     $sql = "
         SELECT ItemCategoryID AS id, Name AS name
-        FROM itemcategory
+        FROM itemcategorys
     ";
     $params = [];
     if ($query !== '') {

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -72,9 +73,7 @@ try {
             EndDate,
             Description,
             Notes,
-            CreatedBy,
-            RefEventID,
-            UpdatedBy
+            RefEventID
         ) VALUES (
             :event_name,
             :status,
@@ -85,9 +84,7 @@ try {
             :end_date,
             :description,
             :notes,
-            :created_by,
-            :ref_event_id,
-            :updated_by
+            :ref_event_id
         )
     ";
 
@@ -101,12 +98,12 @@ try {
     bindNullableDateTime($stmt, ':end_date', $endDate);
     bindNullableString($stmt, ':description', $description);
     bindNullableString($stmt, ':notes', $notes);
-    $stmt->bindValue(':created_by', $createdBy, PDO::PARAM_INT);
     bindNullableString($stmt, ':ref_event_id', $refEventId);
-    $stmt->bindValue(':updated_by', $createdBy, PDO::PARAM_INT);
     $stmt->execute();
 
     $eventId = (int) $db->lastInsertId();
+
+    recordAuditEvent($db, 'event', $eventId, 'CREATE', $createdBy);
 
     $assignedRefEventId = $refEventId;
     if ($assignedRefEventId === null) {
@@ -236,13 +233,7 @@ function ensureUniqueRefEventId(PDO $db, string $refEventId, ?int $excludeEventI
 
 function assignGeneratedRefEventId(PDO $db, int $eventId, ?string $createdAt)
 {
-    if ($createdAt === null) {
-        $createdStmt = $db->prepare('SELECT CreatedAt FROM events WHERE EventID = :event_id');
-        $createdStmt->bindValue(':event_id', $eventId, PDO::PARAM_INT);
-        $createdStmt->execute();
-        $createdAt = $createdStmt->fetchColumn() ?: null;
-    }
-
+    // With audit log, createdAt is always passed as the current time on creation.
     try {
         $created = $createdAt ? new DateTimeImmutable($createdAt) : new DateTimeImmutable();
     } catch (Exception $ex) {

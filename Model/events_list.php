@@ -26,7 +26,7 @@ try {
         'staff_name' => 's.FullName',
         'start_date' => 'e.StartDate',
         'status' => 'e.Status',
-        'created_at' => 'e.CreatedAt',
+        'created_at' => 'a.ActionAt',
     ];
 
     $sortKey = $_GET['sort_key'] ?? 'event_id';
@@ -129,7 +129,7 @@ try {
             e.EventID AS event_id,
             e.RefEventID AS ref_event_id,
             e.EventName AS event_name,
-            e.CreatedAt AS created_at,
+            a.ActionAt AS created_at,
             e.StartDate AS start_date,
             e.Status AS status,
             c.CustomerName AS customer_name,
@@ -137,6 +137,7 @@ try {
             s.FullName AS staff_name,
             l.LocationName AS location_name
         FROM events e
+        LEFT JOIN audit a ON a.EntityID = e.EventID AND a.EntityType = 'event' AND a.Action = 'CREATE'
         LEFT JOIN customers c ON c.CustomerID = e.CustomerID
         LEFT JOIN staffs s ON s.StaffID = e.StaffID
         LEFT JOIN locations l ON l.LocationID = e.LocationID

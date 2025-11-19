@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/audit_log.php';
 require_once __DIR__ . '/database_connector.php';
 
 session_start();
@@ -63,7 +64,7 @@ try {
 
     $totalSql = "
         SELECT COUNT(*) AS total
-        FROM itemcategory ic
+        FROM itemcategorys ic
         $whereSql
     ";
     $totalStmt = $db->prepare($totalSql);
@@ -78,7 +79,7 @@ try {
         SELECT COUNT(*) AS used_total
         FROM (
             SELECT ic.ItemCategoryID
-            FROM itemcategory ic
+            FROM itemcategorys ic
             LEFT JOIN items i ON i.ItemCategoryID = ic.ItemCategoryID
             $whereSql
             GROUP BY ic.ItemCategoryID
@@ -106,10 +107,18 @@ try {
             ic.Name AS name,
             ic.Note AS note,
             COUNT(DISTINCT i.ItemID) AS item_count,
-            COUNT(DISTINCT iu.ItemUnitID) AS item_unit_count
-        FROM itemcategory ic
+            COUNT(DISTINCT iu.ItemUnitID) AS item_unit_count,
+            created_audit.ActionAt AS created_at,
+            updated_audit.ActionAt AS updated_at,
+            created_by.FullName AS created_by_name,
+            updated_by.FullName AS updated_by_name
+        FROM itemcategorys ic
         LEFT JOIN items i ON i.ItemCategoryID = ic.ItemCategoryID
-        LEFT JOIN item_unit iu ON iu.ItemID = i.ItemID
+        LEFT JOIN item_units iu ON iu.ItemID = i.ItemID
+        LEFT JOIN audit created_audit ON created_audit.AuditID = (SELECT AuditID FROM audit WHERE EntityID = ic.ItemCategoryID AND EntityType = 'item_category' AND Action = 'CREATE' ORDER BY ActionAt DESC LIMIT 1)
+        LEFT JOIN audit updated_audit ON updated_audit.AuditID = (SELECT AuditID FROM audit WHERE EntityID = ic.ItemCategoryID AND EntityType = 'item_category' AND Action = 'UPDATE' ORDER BY ActionAt DESC LIMIT 1)
+        LEFT JOIN staffs created_by ON created_by.StaffID = created_audit.ActionBy
+        LEFT JOIN staffs updated_by ON updated_by.StaffID = updated_audit.ActionBy
         $whereSql
         GROUP BY ic.ItemCategoryID
         $havingSql

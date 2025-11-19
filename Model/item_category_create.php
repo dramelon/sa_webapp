@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -31,17 +32,21 @@ if ($name === '') {
 }
 
 $note = trimNullable($input['note'] ?? null);
+$staffId = (int) $_SESSION['staff_id'];
 
 try {
     $db = DatabaseConnector::getConnection();
 
-    $sql = 'INSERT INTO itemcategory (Name, Note) VALUES (:name, :note)';
+    $sql = 'INSERT INTO itemcategorys (Name, Note) VALUES (:name, :note)';
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':name', $name, PDO::PARAM_STR);
     bindNullableString($stmt, ':note', $note);
     $stmt->execute();
 
     $categoryId = (int) $db->lastInsertId();
+
+    recordAuditEvent($db, 'item_category', $categoryId, 'CREATE', $staffId);
+
     $detail = fetchCategoryDetail($db, $categoryId);
 
     echo json_encode(['success' => true, 'data' => $detail], JSON_UNESCAPED_UNICODE);
@@ -77,9 +82,9 @@ function fetchCategoryDetail(PDO $db, int $categoryId): array
             ic.Note AS note,
             COUNT(DISTINCT i.ItemID) AS item_count,
             COUNT(DISTINCT iu.ItemUnitID) AS item_unit_count
-        FROM itemcategory ic
+        FROM itemcategorys ic
         LEFT JOIN items i ON i.ItemCategoryID = ic.ItemCategoryID
-        LEFT JOIN item_unit iu ON iu.ItemID = i.ItemID
+        LEFT JOIN item_units iu ON iu.ItemID = i.ItemID
         WHERE ic.ItemCategoryID = :id
         GROUP BY ic.ItemCategoryID
         LIMIT 1
@@ -88,11 +93,19 @@ function fetchCategoryDetail(PDO $db, int $categoryId): array
     $stmt->bindValue(':id', $categoryId, PDO::PARAM_INT);
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$row) {
-        return [];
-    }
-    $row['updated_at'] = null;
-    $row['updated_by'] = null;
-    $row['updated_by_name'] = null;
-    return $row;
+    if (!$row) return [];
+
+    $audit = fetchAuditMetadataForEntity($db, 'item_category', $categoryId);
+
+    return array_merge($row, [
+        'updated_at' => $audit['updated_at'],
+        'updated_by_id' => $audit['updated_by_id'],
+        'updated_by_label' => formatStaffLabel(
+            $audit['updated_by_id'],
+            $audit['updated_by_name'],
+            $audit['updated_by_role']
+        ),
+    ]);
 }
+
+function formatStaffLabel($id, $name, $role) { return ''; }

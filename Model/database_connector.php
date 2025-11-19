@@ -33,7 +33,7 @@ final class DatabaseConnector
             return self::$connection;
         }
 
-        $dsn = getenv('SA_WEBAPP_DB_DSN') ?: 'mysql:host=localhost;dbname=sa_webapp;charset=utf8mb4';
+        $dsn = getenv('SA_WEBAPP_DB_DSN') ?: 'mysql:host=localhost;dbname=sa_webapp2;charset=utf8mb4';
         $username = getenv('SA_WEBAPP_DB_USER') ?: 'dramelon';
         $password = getenv('SA_WEBAPP_DB_PASSWORD') ?: 'dramelon';
 

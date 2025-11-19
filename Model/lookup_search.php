@@ -67,7 +67,7 @@ try {
                     COALESCE(i.RefItemID, '') AS ref_id,
                     COALESCE(c.Name, '') AS category_name
                 FROM items i
-                LEFT JOIN itemcategory c ON c.ItemCategoryID = i.ItemCategoryID
+                LEFT JOIN itemcategorys c ON c.ItemCategoryID = i.ItemCategoryID
                 WHERE (
                     COALESCE(i.ItemName, '') LIKE :term
                     OR COALESCE(i.RefItemID, '') LIKE :term

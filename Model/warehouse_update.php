@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -71,8 +72,7 @@ try {
             WarehouseName = :name,
             WarehouseSN = :sn,
             Note = :note,
-            Status = :status,
-            UpdatedBy = :updated_by
+            Status = :status
         WHERE WarehouseID = :id
         LIMIT 1
     ";
@@ -82,9 +82,10 @@ try {
     bindNullableString($stmt, ':sn', $warehouseSn);
     bindNullableString($stmt, ':note', $note);
     $stmt->bindValue(':status', $status, PDO::PARAM_STR);
-    $stmt->bindValue(':updated_by', $staffId, PDO::PARAM_INT);
     $stmt->bindValue(':id', $warehouseId, PDO::PARAM_INT);
     $stmt->execute();
+
+    recordAuditEvent($db, 'warehouse', $warehouseId, 'UPDATE', $staffId);
 
     $detail = fetchWarehouseDetail($db, $warehouseId);
     echo json_encode(['success' => true, 'data' => $detail], JSON_UNESCAPED_UNICODE);
@@ -111,19 +112,9 @@ function fetchWarehouseDetail(PDO $db, int $warehouseId): array
             w.Status AS status,
             w.Note AS note,
             w.LocationID AS location_id,
-            w.CreatedAt AS created_at,
-            w.CreatedBy AS created_by_id,
-            w.UpdatedAt AS updated_at,
-            w.UpdatedBy AS updated_by_id,
-            l.LocationName AS location_name,
-            created.FullName AS created_by_name,
-            created.Role AS created_by_role,
-            updated.FullName AS updated_by_name,
-            updated.Role AS updated_by_role
+            l.LocationName AS location_name
         FROM warehouse w
         LEFT JOIN locations l ON l.LocationID = w.LocationID
-        LEFT JOIN staffs created ON created.StaffID = w.CreatedBy
-        LEFT JOIN staffs updated ON updated.StaffID = w.UpdatedBy
         WHERE w.WarehouseID = :id
         LIMIT 1
     ";
@@ -131,6 +122,8 @@ function fetchWarehouseDetail(PDO $db, int $warehouseId): array
     $stmt->bindValue(':id', $warehouseId, PDO::PARAM_INT);
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+    $audit = fetchAuditMetadataForEntity($db, 'warehouse', $warehouseId);
 
     return [
         'warehouse_id' => $warehouseId,
@@ -141,12 +134,12 @@ function fetchWarehouseDetail(PDO $db, int $warehouseId): array
         'location_id' => isset($row['location_id']) ? (int) $row['location_id'] : null,
         'location_name' => $row['location_name'] ?? null,
         'location_label' => formatLocationLabel($row['location_id'] ?? null, $row['location_name'] ?? ''),
-        'created_at' => $row['created_at'] ?? null,
-        'updated_at' => $row['updated_at'] ?? null,
-        'created_by_id' => isset($row['created_by_id']) ? (int) $row['created_by_id'] : null,
-        'updated_by_id' => isset($row['updated_by_id']) ? (int) $row['updated_by_id'] : null,
-        'created_by_label' => formatStaffLabel($row['created_by_id'] ?? null, $row['created_by_name'] ?? null, $row['created_by_role'] ?? null),
-        'updated_by_label' => formatStaffLabel($row['updated_by_id'] ?? null, $row['updated_by_name'] ?? null, $row['updated_by_role'] ?? null),
+        'created_at' => $audit['created_at'],
+        'updated_at' => $audit['updated_at'],
+        'created_by_id' => $audit['created_by_id'],
+        'updated_by_id' => $audit['updated_by_id'],
+        'created_by_label' => formatStaffLabel($audit['created_by_id'], $audit['created_by_name'], $audit['created_by_role']),
+        'updated_by_label' => formatStaffLabel($audit['updated_by_id'], $audit['updated_by_name'], $audit['updated_by_role']),
     ];
 }
 

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -42,20 +43,10 @@ try {
             r.EventID,
             r.RequestName,
             r.RequestSeqNo,
-            r.Status,
-            r.CreatedAt,
-            r.CreatedBy,
-            r.UpdatedAt,
-            r.UpdatedBy,
-            created.FullName AS created_by_name,
-            created.Role AS created_by_role,
-            updated.FullName AS updated_by_name,
-            updated.Role AS updated_by_role
+            r.Status
         FROM requests r
-        LEFT JOIN staffs created ON created.StaffID = r.CreatedBy
-        LEFT JOIN staffs updated ON updated.StaffID = r.UpdatedBy
         WHERE r.EventID = :event_id
-        ORDER BY COALESCE(r.UpdatedAt, r.CreatedAt) DESC, r.RequestID DESC
+        ORDER BY r.RequestID DESC
     SQL;
 
     $requestStmt = $db->prepare($requestSql);
@@ -63,8 +54,11 @@ try {
     $requestRows = $requestStmt->fetchAll(PDO::FETCH_ASSOC);
 
     $lineGroups = [];
+    $requestIds = [];
     if ($requestRows) {
-        $requestIds = array_column($requestRows, 'RequestID');
+        foreach ($requestRows as $row) {
+            $requestIds[] = (int) $row['RequestID'];
+        }
         $placeholders = implode(',', array_fill(0, count($requestIds), '?'));
         $lineSql = <<<SQL
             SELECT
@@ -115,6 +109,8 @@ try {
         }
     }
 
+    $auditMeta = fetchAuditMetadataForEntities($db, 'request', $requestIds);
+
     $statusMeta = [
         'draft' => 'ร่าง',
         'submitted' => 'ส่งคำขอ',
@@ -137,6 +133,7 @@ try {
         }
         $statusCounts[$statusKey] += 1;
 
+        $audit = $auditMeta[$requestId] ?? buildEmptyAuditMetadata();
         $lines = $lineGroups[$requestId] ?? [];
         $totalQuantity = 0;
         foreach ($lines as $line) {
@@ -155,16 +152,14 @@ try {
             'reference' => formatRequestReference($row['RequestSeqNo'], $requestId),
             'status' => $statusKey,
             'status_label' => $statusMeta[$statusKey] ?? $row['Status'],
-            'owner_id' => (int) $row['CreatedBy'],
-            'owner_name' => $row['created_by_name'] ?? '',
-            'owner_label' => formatStaffLabel($row['CreatedBy'], $row['created_by_name'] ?? '', $row['created_by_role'] ?? ''),
-            'created_at' => $row['CreatedAt'],
-            'updated_at' => $row['UpdatedAt'],
-            'updated_by_id' => $row['UpdatedBy'] !== null ? (int) $row['UpdatedBy'] : null,
-            'updated_by_name' => $row['updated_by_name'] ?? '',
-            'updated_by_label' => $row['UpdatedBy'] !== null
-                ? formatStaffLabel($row['UpdatedBy'], $row['updated_by_name'] ?? '', $row['updated_by_role'] ?? '')
-                : '',
+            'owner_id' => $audit['created_by_id'],
+            'owner_name' => $audit['created_by_name'],
+            'owner_label' => formatStaffLabel($audit['created_by_id'], $audit['created_by_name'], $audit['created_by_role']),
+            'created_at' => $audit['created_at'],
+            'updated_at' => $audit['updated_at'],
+            'updated_by_id' => $audit['updated_by_id'],
+            'updated_by_name' => $audit['updated_by_name'],
+            'updated_by_label' => formatStaffLabel($audit['updated_by_id'], $audit['updated_by_name'], $audit['updated_by_role']),
             'line_count' => count($lines),
             'total_quantity' => $totalQuantity,
             'lines' => $lines,

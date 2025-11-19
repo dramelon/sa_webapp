@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -44,6 +45,7 @@ if ($requestName === '') {
     exit;
 }
 $requestName = mb_substr($requestName, 0, 200, 'UTF-8');
+$note = trim((string) ($input['note'] ?? ''));
 
 $allowedStatuses = ['draft', 'submitted', 'approved', 'closed', 'cancelled'];
 $statusInput = strtolower((string) ($input['status'] ?? 'draft'));
@@ -140,11 +142,11 @@ try {
         $eventEnd = date('Y-m-d H:i:s', $endTimestamp);
     }
 
-    $updateRequest = $db->prepare('UPDATE requests SET RequestName = :name, Status = :status, UpdatedBy = :updated_by WHERE RequestID = :request_id');
+    $updateRequest = $db->prepare('UPDATE requests SET RequestName = :name, Status = :status, Note = :note WHERE RequestID = :request_id');
     $updateRequest->execute([
         ':name' => $requestName,
         ':status' => $status,
-        ':updated_by' => $updatedBy,
+        ':note' => $note ?: null,
         ':request_id' => $requestId,
     ]);
 
@@ -165,6 +167,8 @@ try {
             ':status' => 'active',
         ]);
     }
+
+    recordAuditEvent($db, 'request', $requestId, 'UPDATE', $updatedBy);
 
     $db->commit();
 

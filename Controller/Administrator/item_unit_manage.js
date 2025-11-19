@@ -1359,7 +1359,7 @@
             prepareCreateMode();
             const message = err instanceof RequestError && err.code === 'unauthorized'
                 ? 'สิทธิ์การใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่'
-                : 'ไม่พบข้อมูลหน่วยสินค้า กรุณาสร้างใหม่';
+                : 'ไม่พบข้อมูลหน่วยสินค้า';
             showMessage(message, 'error');
         }
     }

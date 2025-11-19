@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -26,23 +27,14 @@ try {
             r.EventID,
             r.RequestName,
             r.RequestSeqNo,
+            r.Note AS request_note,
             r.Status,
-            r.CreatedAt,
-            r.UpdatedAt,
-            r.CreatedBy,
-            r.UpdatedBy,
             e.EventName,
             e.RefEventID,
             e.StartDate,
-            e.EndDate,
-            created.FullName AS created_by_name,
-            created.Role AS created_by_role,
-            updated.FullName AS updated_by_name,
-            updated.Role AS updated_by_role
+            e.EndDate
         FROM requests r
         INNER JOIN events e ON e.EventID = r.EventID
-        LEFT JOIN staffs created ON created.StaffID = r.CreatedBy
-        LEFT JOIN staffs updated ON updated.StaffID = r.UpdatedBy
         WHERE r.RequestID = :request_id
         LIMIT 1
     ";
@@ -57,6 +49,8 @@ try {
         echo json_encode(['error' => 'not_found', 'message' => 'ไม่พบคำขอที่ต้องการ']);
         exit;
     }
+
+    $audit = fetchAuditMetadataForEntity($db, 'request', $requestId);
 
     $lineSql = "
         SELECT
@@ -76,7 +70,7 @@ try {
             c.Name AS category_name
         FROM request_lines rl
         LEFT JOIN items i ON i.ItemID = rl.ItemID
-        LEFT JOIN itemcategory c ON c.ItemCategoryID = i.ItemCategoryID
+        LEFT JOIN itemcategorys c ON c.ItemCategoryID = i.ItemCategoryID
         WHERE rl.RequestID = :request_id
         ORDER BY rl.LineNo ASC, rl.RequestLineID ASC
     ";
@@ -112,15 +106,16 @@ try {
         'request_id' => (int) $row['RequestID'],
         'event_id' => (int) $row['EventID'],
         'request_name' => $row['RequestName'],
+        'note' => $row['request_note'],
         'request_seq_no' => $row['RequestSeqNo'] !== null ? (int) $row['RequestSeqNo'] : null,
         'reference' => formatRequestReference($row['RequestSeqNo'], $row['RequestID']),
         'status' => $statusKey ?: 'draft',
-        'created_at' => $row['CreatedAt'],
-        'updated_at' => $row['UpdatedAt'],
-        'created_by_id' => $row['CreatedBy'] !== null ? (int) $row['CreatedBy'] : null,
-        'updated_by_id' => $row['UpdatedBy'] !== null ? (int) $row['UpdatedBy'] : null,
-        'created_by_label' => formatStaffLabel($row['CreatedBy'], $row['created_by_name'], $row['created_by_role']),
-        'updated_by_label' => formatStaffLabel($row['UpdatedBy'], $row['updated_by_name'], $row['updated_by_role']),
+        'created_at' => $audit['created_at'],
+        'updated_at' => $audit['updated_at'],
+        'created_by_id' => $audit['created_by_id'],
+        'updated_by_id' => $audit['updated_by_id'],
+        'created_by_label' => formatStaffLabel($audit['created_by_id'], $audit['created_by_name'], $audit['created_by_role']),
+        'updated_by_label' => formatStaffLabel($audit['updated_by_id'], $audit['updated_by_name'], $audit['updated_by_role']),
         'event' => [
             'event_id' => (int) $row['EventID'],
             'event_name' => $row['EventName'],

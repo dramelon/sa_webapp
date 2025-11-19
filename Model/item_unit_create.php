@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -36,7 +37,7 @@ if (!in_array($status, $allowedStatuses, true)) {
     $status = 'useable';
 }
 
-$allowedOwnership = ['company', 'rented'];
+$allowedOwnership = ['company', 'rented', ''];
 $ownership = $input['ownership'] ?? 'company';
 if (!in_array($ownership, $allowedOwnership, true)) {
     $ownership = 'company';
@@ -65,7 +66,7 @@ try {
     }
 
     $sql = "
-        INSERT INTO item_unit (
+        INSERT INTO item_units (
             ItemID,
             WarehouseID,
             SupplierID,
@@ -75,9 +76,7 @@ try {
             ConditionOut,
             ExpectedReturnAt,
             ReturnAt,
-            Status,
-            CreatedBy,
-            UpdatedBy
+            Status
         ) VALUES (
             :item_id,
             :warehouse_id,
@@ -88,9 +87,7 @@ try {
             :condition_out,
             :expected_return,
             :return_at,
-            :status,
-            :created_by,
-            :updated_by
+            :status
         )
     ";
 
@@ -105,11 +102,11 @@ try {
     bindNullableDate($stmt, ':expected_return', $expectedReturn);
     bindNullableDate($stmt, ':return_at', $returnAt);
     $stmt->bindValue(':status', $status, PDO::PARAM_STR);
-    bindNullableInt($stmt, ':created_by', $staffId ?: null);
-    bindNullableInt($stmt, ':updated_by', $staffId ?: null);
     $stmt->execute();
 
     $itemUnitId = (int) $db->lastInsertId();
+    recordAuditEvent($db, 'item_unit', $itemUnitId, 'CREATE', $staffId);
+
     $detail = fetchItemUnitDetail($db, $itemUnitId);
     echo json_encode(['success' => true, 'data' => $detail], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
@@ -198,16 +195,10 @@ function fetchItemUnitDetail(PDO $db, int $itemUnitId): array
             iu.ExpectedReturnAt AS expected_return_at,
             iu.ReturnAt AS return_at,
             iu.Status AS status,
-            iu.CreatedAt AS created_at,
-            iu.CreatedBy AS created_by,
-            iu.UpdatedAt AS updated_at,
-            iu.UpdatedBy AS updated_by,
-            cb.FullName AS created_by_name,
-            ub.FullName AS updated_by_name
-        FROM item_unit iu
+            w.WarehouseName AS warehouse_name
+        FROM item_units iu
         LEFT JOIN items i ON i.ItemID = iu.ItemID
-        LEFT JOIN staffs cb ON cb.StaffID = iu.CreatedBy
-        LEFT JOIN staffs ub ON ub.StaffID = iu.UpdatedBy
+        LEFT JOIN warehouses w ON w.WarehouseID = iu.WarehouseID
         WHERE iu.ItemUnitID = :id
         LIMIT 1
     ";
@@ -215,5 +206,15 @@ function fetchItemUnitDetail(PDO $db, int $itemUnitId): array
     $stmt->bindValue(':id', $itemUnitId, PDO::PARAM_INT);
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $row ?: [];
+    if (!$row) return [];
+
+    $audit = fetchAuditMetadataForEntity($db, 'item_unit', $itemUnitId);
+    $row['created_at'] = $audit['created_at'];
+    $row['updated_at'] = $audit['updated_at'];
+    $row['created_by_name'] = $audit['created_by_name'];
+    $row['updated_by_name'] = $audit['updated_by_name'];
+    $row['created_by'] = $audit['created_by_id'];
+    $row['updated_by'] = $audit['updated_by_id'];
+
+    return $row;
 }

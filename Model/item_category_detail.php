@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -21,9 +22,9 @@ try {
             ic.Note AS note,
             COUNT(DISTINCT i.ItemID) AS item_count,
             COUNT(DISTINCT iu.ItemUnitID) AS item_unit_count
-        FROM itemcategory ic
+        FROM itemcategorys ic
         LEFT JOIN items i ON i.ItemCategoryID = ic.ItemCategoryID
-        LEFT JOIN item_unit iu ON iu.ItemID = i.ItemID
+        LEFT JOIN item_units iu ON iu.ItemID = i.ItemID
         WHERE ic.ItemCategoryID = :id
         GROUP BY ic.ItemCategoryID
         LIMIT 1
@@ -40,12 +41,36 @@ try {
         exit;
     }
 
-    $row['updated_at'] = null;
-    $row['updated_by'] = null;
-    $row['updated_by_name'] = null;
+    $audit = fetchAuditMetadataForEntity($db, 'item_category', $categoryId);
 
-    echo json_encode($row, JSON_UNESCAPED_UNICODE);
+    $payload = [
+        'item_category_id' => (int) $row['item_category_id'],
+        'name' => $row['name'],
+        'note' => $row['note'],
+        'item_count' => (int) $row['item_count'],
+        'item_unit_count' => (int) $row['item_unit_count'],
+        'created_at' => $audit['created_at'],
+        'updated_at' => $audit['updated_at'],
+        'created_by_id' => $audit['created_by_id'],
+        'updated_by_id' => $audit['updated_by_id'],
+        'created_by_label' => formatStaffLabel($audit['created_by_id'], $audit['created_by_name'], $audit['created_by_role']),
+        'updated_by_label' => formatStaffLabel($audit['updated_by_id'], $audit['updated_by_name'], $audit['updated_by_role']),
+    ];
+
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => 'server']);
+}
+
+function formatStaffLabel($id, $name, $role)
+{
+    if ($id === null) {
+        return '';
+    }
+
+    $displayName = $name !== null && $name !== '' ? $name : 'ไม่ทราบชื่อผู้รับผิดชอบ';
+    $roleInitial = $role !== null && $role !== '' ? mb_strtoupper(mb_substr($role, 0, 1, 'UTF-8'), 'UTF-8') : 'S';
+
+    return sprintf('%s%d - %s', $roleInitial, $id, $displayName);
 }

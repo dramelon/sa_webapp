@@ -10,9 +10,9 @@ try {
     $q = $db->query(
         "SELECT a.AnnounceID, a.Topic, a.Description, a.AnnounceDate,
             COALESCE(s.FullName,'ไม่ทราบผู้ประกาศ') AS AnnouncerName
-     FROM Announcement a
+     FROM announcements a
      LEFT JOIN staffs s ON s.StaffID = a.Announcer
-     WHERE a.Archived = 0
+     WHERE a.Status = 'active'
      ORDER BY a.AnnounceDate DESC"
     );
     echo json_encode($q->fetchAll(PDO::FETCH_ASSOC));
