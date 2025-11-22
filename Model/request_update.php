@@ -95,6 +95,36 @@ $updatedBy = (int) $_SESSION['staff_id'];
 try {
     $db = DatabaseConnector::getConnection();
 
+    $currentRequestStmt = $db->prepare('SELECT RequestName, Status, Note FROM requests WHERE RequestID = :request_id LIMIT 1');
+    $currentRequestStmt->bindValue(':request_id', $requestId, PDO::PARAM_INT);
+    $currentRequestStmt->execute();
+    $currentRequest = $currentRequestStmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$currentRequest) {
+        http_response_code(404);
+        echo json_encode(['error' => 'not_found', 'message' => 'ไม่พบคำขอที่ต้องการบันทึก']);
+        exit;
+    }
+
+    $currentLinesStmt = $db->prepare('SELECT rl.ItemID, rl.QuantityRequested, rl.Note, i.ItemName FROM request_lines rl LEFT JOIN items i ON i.ItemID = rl.ItemID WHERE rl.RequestID = :request_id');
+    $currentLinesStmt->bindValue(':request_id', $requestId, PDO::PARAM_INT);
+    $currentLinesStmt->execute();
+    $currentLines = $currentLinesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $allItemIds = array_unique(array_merge(array_column($currentLines, 'ItemID'), array_column($cleanLines, 'item_id')));
+    $itemNames = [];
+    if (!empty($allItemIds)) {
+        $placeholders = implode(', ', array_fill(0, count($allItemIds), '?'));
+        $itemNameStmt = $db->prepare("SELECT ItemID, ItemName FROM items WHERE ItemID IN ($placeholders)");
+        foreach ($allItemIds as $idx => $id) {
+            $itemNameStmt->bindValue($idx + 1, (int) $id, PDO::PARAM_INT);
+        }
+        $itemNameStmt->execute();
+        while ($row = $itemNameStmt->fetch(PDO::FETCH_ASSOC)) {
+            $itemNames[(int) $row['ItemID']] = $row['ItemName'] ?? '';
+        }
+    }
+
     $db->beginTransaction();
 
     $requestStmt = $db->prepare('SELECT RequestID, EventID FROM requests WHERE RequestID = :request_id LIMIT 1');
@@ -168,7 +198,68 @@ try {
         ]);
     }
 
-    recordAuditEvent($db, 'request', $requestId, 'UPDATE', $updatedBy);
+    $reasonParts = [];
+    $previousName = trim((string) ($currentRequest['RequestName'] ?? ''));
+    if ($previousName !== $requestName) {
+        $reasonParts[] = sprintf('เปลี่ยนชื่อคำขอจาก "%s" เป็น "%s"', $previousName, $requestName);
+    }
+    $previousStatus = strtolower((string) ($currentRequest['Status'] ?? ''));
+    if ($previousStatus !== $status) {
+        $reasonParts[] = sprintf('เปลี่ยนสถานะจาก %s เป็น %s', $previousStatus ?: '—', $status);
+    }
+    $previousNote = trim((string) ($currentRequest['Note'] ?? ''));
+    $newNote = trim((string) ($note ?? ''));
+    if ($previousNote !== $newNote) {
+        $reasonParts[] = sprintf('แก้ไขหมายเหตุจาก "%s" เป็น "%s"', $previousNote ?: '—', $newNote ?: '—');
+    }
+
+    $existingLineMap = [];
+    foreach ($currentLines as $line) {
+        $existingLineMap[(int) $line['ItemID']] = [
+            'quantity' => (int) $line['QuantityRequested'],
+            'note' => $line['Note'] ?? '',
+        ];
+    }
+
+    $newLineMap = [];
+    foreach ($cleanLines as $line) {
+        $newLineMap[(int) $line['item_id']] = [
+            'quantity' => (int) $line['quantity'],
+            'note' => $line['note'] ?? '',
+        ];
+    }
+
+    foreach ($newLineMap as $itemId => $line) {
+        $itemLabel = $itemNames[$itemId] ?? ('Item#' . $itemId);
+        if (!isset($existingLineMap[$itemId])) {
+            $reasonParts[] = sprintf('เพิ่มสินค้า %s จำนวน %d', $itemLabel, $line['quantity']);
+            continue;
+        }
+        $existing = $existingLineMap[$itemId];
+        if ($existing['quantity'] !== $line['quantity']) {
+            $reasonParts[] = sprintf('ปรับจำนวนสินค้า %s จาก %d เป็น %d', $itemLabel, $existing['quantity'], $line['quantity']);
+        }
+        $existingNote = trim((string) $existing['note']);
+        $newLineNote = trim((string) $line['note']);
+        if ($existingNote !== $newLineNote) {
+            $reasonParts[] = sprintf('แก้ไขหมายเหตุสินค้า %s จาก "%s" เป็น "%s"', $itemLabel, $existingNote ?: '—', $newLineNote ?: '—');
+        }
+    }
+
+    foreach ($existingLineMap as $itemId => $line) {
+        if (!isset($newLineMap[$itemId])) {
+            $itemLabel = $itemNames[$itemId] ?? ('Item#' . $itemId);
+            $reasonParts[] = sprintf('ลบสินค้า %s ออกจากคำขอ', $itemLabel);
+        }
+    }
+
+    if (empty($reasonParts)) {
+        $reasonParts[] = 'ปรับปรุงรายละเอียดคำขอ';
+    }
+
+    $reasonText = implode('; ', $reasonParts);
+
+    recordAuditEvent($db, 'request', $requestId, 'UPDATE', $updatedBy, $reasonText);
 
     $db->commit();
 

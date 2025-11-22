@@ -51,6 +51,7 @@ try {
     }
 
     $audit = fetchAuditMetadataForEntity($db, 'request', $requestId);
+    $auditLogs = fetchAuditLogsForEntity($db, 'request', $requestId);
 
     $lineSql = "
         SELECT
@@ -116,6 +117,21 @@ try {
         'updated_by_id' => $audit['updated_by_id'],
         'created_by_label' => formatStaffLabel($audit['created_by_id'], $audit['created_by_name'], $audit['created_by_role']),
         'updated_by_label' => formatStaffLabel($audit['updated_by_id'], $audit['updated_by_name'], $audit['updated_by_role']),
+        'audit_logs' => array_map(
+            function ($log) {
+                return [
+                    'audit_id' => $log['audit_id'],
+                    'action' => $log['action'],
+                    'reason' => $log['reason'],
+                    'action_at' => $log['action_at'],
+                    'action_by_id' => $log['action_by_id'],
+                    'action_by_label' => formatStaffLabel($log['action_by_id'], $log['action_by_name'], $log['action_by_role']),
+                    'action_by_name' => $log['action_by_name'],
+                    'action_by_role' => $log['action_by_role'],
+                ];
+            },
+            $auditLogs
+        ),
         'event' => [
             'event_id' => (int) $row['EventID'],
             'event_name' => $row['EventName'],

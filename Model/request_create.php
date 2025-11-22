@@ -133,8 +133,14 @@ try {
 
     $requestId = (int) $db->lastInsertId();
 
-    recordAuditEvent($db, 'request', $requestId, 'CREATE', $createdBy);
-
+    $reason = sprintf(
+        'สร้างคำขอ "%s" สถานะ %s จำนวน %d รายการ',
+        $requestName,
+        $status,
+        count($cleanLines)
+    );
+    recordAuditEvent($db, 'request', $requestId, 'CREATE', $createdBy, $reason);
+    
     $lineStmt = $db->prepare('INSERT INTO request_lines (RequestID, LineNo, ItemID, QuantityRequested, StartTime, EndTime, FulfillmentStatus, Note, Status) VALUES (:request_id, :line_no, :item_id, :quantity, :start_time, :end_time, :fulfillment_status, :note, :status)');
     foreach ($cleanLines as $lineNo => $line) {
         $lineStmt->execute([

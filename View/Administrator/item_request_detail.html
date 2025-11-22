@@ -62,6 +62,7 @@
                     </div>
                     <p class="request-reference" id="requestReference">รหัสคำขอ: —</p>
                 </header>
+                <div id="requestInfoMessage" class="form-alert" role="alert" hidden></div>
                 <div class="detail-card-body request-info-grid">
                     <label class="field-block">
                         <span class="field-label">ชื่อคำขอ *</span>
@@ -77,6 +78,20 @@
                             <option value="cancelled">ยกเลิก</option>
                         </select>
                     </label>
+                </div>
+                <div class="request-audit">
+                    <div class="request-audit-head">
+                        <h4>ประวัติการดำเนินการ</h4>
+                        <p class="request-audit-sub">รายการบันทึกการสร้าง ปรับปรุง หรือจัดการคำขอนี้</p>
+                        <a class="btn btn-ghost btn-small" id="requestAuditLink" href="#" hidden aria-hidden="true">
+                            ดูทั้งหมด
+                        </a>
+                    </div>
+                    <div class="request-audit-empty empty-state" id="requestAuditEmpty" hidden>
+                        <span class="i inbox"></span>
+                        <p>ยังไม่มีประวัติการดำเนินการ</p>
+                    </div>
+                    <ol class="request-audit-list" id="requestAuditList" hidden></ol>
                 </div>
             </section>
 

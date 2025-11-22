@@ -96,3 +96,32 @@ function fetchAuditMetadataForEntity(PDO $db, string $entityType, int $entityId)
     $metadata = fetchAuditMetadataForEntities($db, $entityType, [$entityId]);
     return $metadata[$entityId] ?? buildEmptyAuditMetadata();
 }
+
+function fetchAuditLogsForEntity(PDO $db, string $entityType, int $entityId): array
+{
+    $stmt = $db->prepare(
+        'SELECT a.AuditID, a.Action, a.Reason, a.ActionAt, a.ActionBy, s.FullName AS staff_name, s.Role AS staff_role
+         FROM audit a
+         LEFT JOIN staffs s ON s.StaffID = a.ActionBy
+         WHERE a.EntityType = :entity_type AND a.EntityID = :entity_id
+         ORDER BY a.ActionAt DESC, a.AuditID DESC'
+    );
+    $stmt->bindValue(':entity_type', $entityType, PDO::PARAM_STR);
+    $stmt->bindValue(':entity_id', $entityId, PDO::PARAM_INT);
+    $stmt->execute();
+
+    $logs = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $logs[] = [
+            'audit_id' => (int) $row['AuditID'],
+            'action' => strtoupper((string) ($row['Action'] ?? '')),
+            'reason' => $row['Reason'],
+            'action_at' => $row['ActionAt'],
+            'action_by_id' => $row['ActionBy'] !== null ? (int) $row['ActionBy'] : null,
+            'action_by_name' => $row['staff_name'] ?? null,
+            'action_by_role' => $row['staff_role'] ?? null,
+        ];
+    }
+
+    return $logs;
+}

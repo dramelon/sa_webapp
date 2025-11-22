@@ -22,6 +22,7 @@
     const requestNameInput = document.getElementById('requestNameInput');
     const requestStatusSelect = document.getElementById('requestStatusSelect');
     const requestFormMessage = document.getElementById('requestFormMessage');
+    const requestInfoMessage = document.getElementById('requestInfoMessage');
     const requestReference = document.getElementById('requestReference');
     const requestLinesBody = document.getElementById('requestLinesBody');
     const requestLinesEmpty = document.getElementById('requestLinesEmpty');
@@ -29,6 +30,9 @@
     const unsavedBanner = document.getElementById('unsavedBanner');
     const inlineSaveButton = document.getElementById('btnSaveInline');
     const discardChangesButton = document.getElementById('btnDiscardChanges');
+    const requestAuditList = document.getElementById('requestAuditList');
+    const requestAuditEmpty = document.getElementById('requestAuditEmpty');
+    const requestAuditLink = document.getElementById('requestAuditLink');
 
     let modelRoot = '';
     let eventId = initialEventId ? String(initialEventId) : '';
@@ -255,6 +259,102 @@
         return '—';
     }
 
+    function formatAuditAction(action) {
+        const normalized = typeof action === 'string' ? action.trim().toUpperCase() : '';
+        const actionMap = {
+            CREATE: 'สร้างคำขอ',
+            UPDATE: 'ปรับปรุงคำขอ',
+            ARCHIVE: 'เก็บคำขอ',
+            UNARCHIVED: 'นำคำขอกลับมาใช้',
+            DELETE: 'ลบคำขอ',
+        };
+        return actionMap[normalized] || (normalized || 'ไม่ระบุการทำรายการ');
+    }
+
+    function resolveAuditActorLabel(log) {
+        if (log?.action_by_label && typeof log.action_by_label === 'string') {
+            const normalized = log.action_by_label.trim();
+            if (normalized) {
+                return normalized;
+            }
+        }
+        if (log?.action_by_name && typeof log.action_by_name === 'string' && log.action_by_name.trim()) {
+            return log.action_by_name.trim();
+        }
+        if (log?.action_by_id !== undefined && log.action_by_id !== null) {
+            const id = Number.parseInt(log.action_by_id, 10);
+            if (Number.isFinite(id)) {
+                return `Staff#${id}`;
+            }
+        }
+        return 'ไม่ระบุผู้ปฏิบัติ';
+    }
+
+    function renderAuditLogs(logs) {
+        if (!requestAuditList || !requestAuditEmpty) {
+            return;
+        }
+        requestAuditList.innerHTML = '';
+        const entries = Array.isArray(logs) ? logs.slice(0, 1) : [];
+        const hasEntries = entries.length > 0;
+        requestAuditList.hidden = !hasEntries;
+        requestAuditEmpty.hidden = hasEntries;
+        if (!hasEntries) {
+            return;
+        }
+        entries.forEach((log) => {
+            const item = document.createElement('li');
+            item.className = 'request-audit-entry';
+
+            const header = document.createElement('div');
+            header.className = 'request-audit-row';
+
+            const actionLabel = document.createElement('p');
+            actionLabel.className = 'request-audit-action';
+            actionLabel.textContent = formatAuditAction(log?.action);
+            header.appendChild(actionLabel);
+
+            const actorLabel = document.createElement('p');
+            actorLabel.className = 'request-audit-actor';
+            actorLabel.textContent = resolveAuditActorLabel(log);
+            header.appendChild(actorLabel);
+
+            const meta = document.createElement('p');
+            meta.className = 'request-audit-meta';
+            meta.textContent = formatDateTime(log?.action_at);
+
+            item.appendChild(header);
+            item.appendChild(meta);
+
+            if (log?.reason) {
+                const reason = document.createElement('p');
+                reason.className = 'request-audit-reason';
+                reason.textContent = `เหตุผล: ${log.reason}`;
+                item.appendChild(reason);
+            }
+
+        requestAuditList.appendChild(item);
+        });
+    }
+
+    function updateAuditLink() {
+        if (!requestAuditLink) {
+            return;
+        }
+        if (!requestId) {
+            requestAuditLink.hidden = true;
+            requestAuditLink.setAttribute('aria-hidden', 'true');
+            requestAuditLink.removeAttribute('href');
+            return;
+        }
+        const url = new URL('./audit_log.html', window.location.href);
+        url.searchParams.set('entity_type', 'request');
+        url.searchParams.set('entity_id', requestId);
+        requestAuditLink.hidden = false;
+        requestAuditLink.removeAttribute('aria-hidden');
+        requestAuditLink.href = `${url.pathname}${url.search}`;
+    }
+
     function setGlobalMessage(message, variant = 'info') {
         if (!globalMessage) {
             return;
@@ -279,6 +379,28 @@
 
     function clearGlobalMessage() {
         setGlobalMessage('');
+    }
+
+    function setRequestInfoMessage(message, variant = 'info') {
+        if (!requestInfoMessage) {
+            return;
+        }
+        const normalized = typeof message === 'string' ? message.trim() : '';
+        requestInfoMessage.classList.remove('success', 'error', 'info');
+        if (!normalized) {
+            requestInfoMessage.hidden = true;
+            requestInfoMessage.textContent = '';
+            return;
+        }
+        requestInfoMessage.hidden = false;
+        requestInfoMessage.textContent = normalized;
+        if (variant === 'success') {
+            requestInfoMessage.classList.add('success');
+        } else if (variant === 'error') {
+            requestInfoMessage.classList.add('error');
+        } else {
+            requestInfoMessage.classList.add('info');
+        }
     }
 
     function setFormMessage(message, variant = 'error') {
@@ -980,16 +1102,16 @@
             body: JSON.stringify(payload),
         });
         if (!response.ok) {
-            let message = 'ไม่สามารถบันทึกคำขอได้';
+            let errorInfo = { message: 'ไม่สามารถบันทึกคำขอได้', code: response.status };
             try {
                 const data = await response.json();
-                if (data?.message) {
-                    message = data.message;
-                }
+                errorInfo.message = data?.message || errorInfo.message;
+                errorInfo.code = data?.error || errorInfo.code;
             } catch (error) {
                 // ignore
             }
-            throw new Error(message);
+            const err = new Error(errorInfo.message);
+            throw Object.assign(err, { code: errorInfo.code });
         }
         return response.json();
     }
@@ -1004,16 +1126,16 @@
             body: JSON.stringify(payload),
         });
         if (!response.ok) {
-            let message = 'ไม่สามารถบันทึกคำขอได้';
+            let errorInfo = { message: 'ไม่สามารถบันทึกคำขอได้', code: response.status };
             try {
                 const data = await response.json();
-                if (data?.message) {
-                    message = data.message;
-                }
+                errorInfo.message = data?.message || errorInfo.message;
+                errorInfo.code = data?.error || errorInfo.code;
             } catch (error) {
                 // ignore
             }
-            throw new Error(message);
+            const err = new Error(errorInfo.message);
+            throw Object.assign(err, { code: errorInfo.code });
         }
         return response.json();
     }
@@ -1082,6 +1204,9 @@
         requestInfo = payload || null;
         const snapshot = createSnapshotFromPayload(payload || {});
         lastSnapshot = snapshot;
+        if (payload?.request_id) {
+            requestId = String(payload.request_id);
+        }
         runWithPopulation(() => {
             if (requestNameInput) {
                 requestNameInput.value = snapshot.request_name || '';
@@ -1107,6 +1232,13 @@
         if (createdByDisplay) {
             createdByDisplay.textContent = `สร้างโดย: ${payload?.created_by_label || '—'}`;
         }
+        renderAuditLogs(payload?.audit_logs || []);
+        if (!payload?.audit_logs || payload.audit_logs.length === 0) {
+            setRequestInfoMessage('ยังไม่มีประวัติการดำเนินการสำหรับคำขอนี้', 'info');
+        } else {
+            setRequestInfoMessage('');
+        }
+        updateAuditLink();
         updateTitle();
         setDirtyState(false);
     }
@@ -1194,7 +1326,9 @@
                         }
                         updateStatusBadge('draft');
                         resetRequestLines([]);
+                        renderAuditLogs([]);
                     });
+                    setRequestInfoMessage('ยังไม่มีประวัติการดำเนินการสำหรับคำขอนี้', 'info');
                     isDatasetLoaded = true;
                     updateTitle();
                     setDirtyState(false);

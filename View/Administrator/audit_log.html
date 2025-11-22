@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="th" data-root="../.." data-allowed="Administrator">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ประวัติการดำเนินการ</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body data-app-shell="admin" data-page="audit-log" data-shell-title="ประวัติการดำเนินการ">
+    <main class="page detail-page">
+        <section class="page-head">
+            <div>
+                <p class="breadcrumb"><a href="./event_document_manage.html">← กลับ</a></p>
+                <h2>ประวัติการดำเนินการ</h2>
+                <p class="date" id="auditEntityName">กำลังโหลด...</p>
+            </div>
+        </section>
+
+        <div class="form-alert" id="auditLogError" role="alert" hidden></div>
+        <div class="form-alert info" id="auditLogLoading" role="status">กำลังโหลดประวัติ...</div>
+
+        <section class="detail-card">
+            <header class="detail-card-head">
+                <div>
+                    <h3>รายการประวัติ</h3>
+                    <p>แสดงการสร้าง ปรับปรุง หรือการจัดการทั้งหมดของข้อมูลนี้</p>
+                </div>
+            </header>
+            <div class="detail-card-body">
+                <div class="empty-state" id="auditLogEmpty" hidden>
+                    <span class="i inbox"></span>
+                    <p>ยังไม่มีประวัติการดำเนินการ</p>
+                </div>
+                <ol id="auditLogList" class="stack-list" hidden></ol>
+            </div>
+        </section>
+    </main>
+
+    <script src="../../Controller/common/admin_shell.js" defer></script>
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Administrator/audit_log.js" defer></script>
+</body>
+
+</html>
