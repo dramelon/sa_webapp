@@ -46,6 +46,8 @@
     const locationModalSave = document.getElementById('locationModalSave');
     const eventDocumentsButton = document.getElementById('eventDocumentsButton');
     const documentsHint = document.getElementById('documentsHint');
+    const eventAuditButton = document.getElementById('eventAuditButton');
+    const auditHint = document.getElementById('auditHint');
     const customerModalFields = {
         name: document.getElementById('customerModalName'),
         org: document.getElementById('customerModalOrg'),
@@ -150,7 +152,16 @@
         });
     }
 
+    if (eventAuditButton) {
+        eventAuditButton.addEventListener('click', (event) => {
+            if (eventAuditButton.getAttribute('aria-disabled') === 'true') {
+                event.preventDefault();
+            }
+        });
+    }
+
     updateDocumentLink(currentEventId);
+    updateAuditLink(currentEventId);
     
     const statusMeta = {
         draft: { label: 'ร่าง', className: 'draft' },
@@ -250,6 +261,38 @@
             eventDocumentsButton.tabIndex = -1;
             if (documentsHint) {
                 documentsHint.hidden = false;
+            }
+        }
+    }
+
+    function updateAuditLink(eventId) {
+        if (!eventAuditButton) {
+            return;
+        }
+        const normalizedId = typeof eventId === 'string' ? eventId.trim() : eventId != null ? String(eventId).trim() : '';
+        const hasEvent = Boolean(normalizedId);
+        if (hasEvent) {
+            const auditUrl = new URL('./audit_log.html', window.location.href);
+            auditUrl.searchParams.set('entity_type', 'event');
+            auditUrl.searchParams.set('entity_id', normalizedId);
+            auditUrl.searchParams.set('event_id', normalizedId);
+            const returnParams = new URLSearchParams();
+            returnParams.set('event_id', normalizedId);
+            auditUrl.searchParams.set('return_to', `${window.location.pathname}?${returnParams.toString()}`);
+            eventAuditButton.href = `${auditUrl.pathname}${auditUrl.search}`;
+            eventAuditButton.setAttribute('aria-disabled', 'false');
+            eventAuditButton.classList.remove('is-disabled');
+            eventAuditButton.tabIndex = 0;
+            if (auditHint) {
+                auditHint.hidden = true;
+            }
+        } else {
+            eventAuditButton.href = '#';
+            eventAuditButton.setAttribute('aria-disabled', 'true');
+            eventAuditButton.classList.add('is-disabled');
+            eventAuditButton.tabIndex = -1;
+            if (auditHint) {
+                auditHint.hidden = false;
             }
         }
     }
@@ -1284,15 +1327,16 @@
     if (btnBack) {
         btnBack.addEventListener('click', () => {
             requestNavigation(() => {
-                if (isFromDocument) {
-                    window.location.href = './events.html';
-                    return;
-                }
-                if (window.history.length > 1) {
-                    window.history.back();
-                } else {
-                    window.location.href = './events.html';
-                }
+                window.location.href = './events.html';
+                // if (isFromDocument) {
+                //     window.location.href = './events.html';
+                //     return;
+                // }
+                // if (window.history.length > 1) {
+                //     window.history.back();
+                // } else {
+                //     window.location.href = './events.html';
+                // }
             });
         });
     }
@@ -1883,6 +1927,7 @@
             const eventIdValue = data.event_id != null ? String(data.event_id) : null;
             currentEventId = eventIdValue;
             updateDocumentLink(eventIdValue);
+            updateAuditLink(eventIdValue);
             isCreateMode = false;
             eventIdDisplay.textContent = formatEventDisplay(data.ref_event_id, eventIdValue);
             applyEventHeading(data.event_name, data.ref_event_id, eventIdValue);
@@ -1973,6 +2018,7 @@
         }
         currentEventId = null;
         updateDocumentLink(null);
+        updateAuditLink(null);
         isCreateMode = true;
         runWithPopulation(() => {
             eventForm.reset();
@@ -2064,6 +2110,7 @@
         const resolvedStatus = (result.status || payload.status || 'draft').toLowerCase();
         currentEventId = newEventId;
         updateDocumentLink(newEventId);
+        updateAuditLink(newEventId);
         isCreateMode = false;
         eventIdDisplay.textContent = formatEventDisplay(result.ref_event_id, newEventId);
         if (eventCodeField) {
