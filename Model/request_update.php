@@ -106,7 +106,12 @@ try {
         exit;
     }
 
-    $currentLinesStmt = $db->prepare('SELECT rl.ItemID, rl.QuantityRequested, rl.Note, i.ItemName FROM request_lines rl LEFT JOIN items i ON i.ItemID = rl.ItemID WHERE rl.RequestID = :request_id');
+    $currentLinesStmt = $db->prepare(
+        'SELECT rl.ItemID, rl.QuantityRequested, rl.Note, i.ItemName
+        FROM request_lines rl
+        LEFT JOIN items i ON i.ItemID = rl.ItemID
+        WHERE rl.RequestID = :request_id'
+    );
     $currentLinesStmt->bindValue(':request_id', $requestId, PDO::PARAM_INT);
     $currentLinesStmt->execute();
     $currentLines = $currentLinesStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -215,40 +220,62 @@ try {
 
     $existingLineMap = [];
     foreach ($currentLines as $line) {
-        $existingLineMap[(int) $line['ItemID']] = [
+        $itemId = (int) $line['ItemID'];
+        if (!isset($existingLineMap[$itemId])) {
+            $existingLineMap[$itemId] = [];
+        }
+        $existingLineMap[$itemId][] = [
             'quantity' => (int) $line['QuantityRequested'],
-            'note' => $line['Note'] ?? '',
+            'note' => trim((string) ($line['Note'] ?? '')),
         ];
     }
 
     $newLineMap = [];
     foreach ($cleanLines as $line) {
-        $newLineMap[(int) $line['item_id']] = [
+        $itemId = (int) $line['item_id'];
+        if (!isset($newLineMap[$itemId])) {
+            $newLineMap[$itemId] = [];
+        }
+        $newLineMap[$itemId][] = [
             'quantity' => (int) $line['quantity'],
-            'note' => $line['note'] ?? '',
+            'note' => trim((string) ($line['note'] ?? '')),
         ];
     }
 
-    foreach ($newLineMap as $itemId => $line) {
+    foreach ($newLineMap as $itemId => $lines) {
         $itemLabel = $itemNames[$itemId] ?? ('Item#' . $itemId);
-        if (!isset($existingLineMap[$itemId])) {
-            $reasonParts[] = sprintf('เพิ่มสินค้า %s จำนวน %d', $itemLabel, $line['quantity']);
-            continue;
+        $existingLines = $existingLineMap[$itemId] ?? [];
+
+        $pairCount = min(count($existingLines), count($lines));
+        for ($i = 0; $i < $pairCount; $i++) {
+            $existing = $existingLines[$i];
+            $current = $lines[$i];
+            if ($existing['quantity'] !== $current['quantity']) {
+                $reasonParts[] = sprintf('ปรับจำนวนสินค้า %s จาก %d เป็น %d', $itemLabel, $existing['quantity'], $current['quantity']);
+            }
+            if ($existing['note'] !== $current['note']) {
+                $reasonParts[] = sprintf('แก้ไขหมายเหตุสินค้า %s จาก "%s" เป็น "%s"', $itemLabel, $existing['note'] ?: '—', $current['note'] ?: '—');
+            }
         }
-        $existing = $existingLineMap[$itemId];
-        if ($existing['quantity'] !== $line['quantity']) {
-            $reasonParts[] = sprintf('ปรับจำนวนสินค้า %s จาก %d เป็น %d', $itemLabel, $existing['quantity'], $line['quantity']);
+
+        if (count($lines) > $pairCount) {
+            for ($i = $pairCount; $i < count($lines); $i++) {
+                $reasonParts[] = sprintf('เพิ่มสินค้า %s จำนวน %d', $itemLabel, $lines[$i]['quantity']);
+            }
         }
-        $existingNote = trim((string) $existing['note']);
-        $newLineNote = trim((string) $line['note']);
-        if ($existingNote !== $newLineNote) {
-            $reasonParts[] = sprintf('แก้ไขหมายเหตุสินค้า %s จาก "%s" เป็น "%s"', $itemLabel, $existingNote ?: '—', $newLineNote ?: '—');
+
+        if (count($existingLines) > $pairCount) {
+            for ($i = $pairCount; $i < count($existingLines); $i++) {
+                $reasonParts[] = sprintf('ลบสินค้า %s ออกจากคำขอ', $itemLabel);
+            }
         }
+
+        unset($existingLineMap[$itemId]);
     }
 
-    foreach ($existingLineMap as $itemId => $line) {
-        if (!isset($newLineMap[$itemId])) {
-            $itemLabel = $itemNames[$itemId] ?? ('Item#' . $itemId);
+    foreach ($existingLineMap as $itemId => $lines) {
+        $itemLabel = $itemNames[$itemId] ?? ('Item#' . $itemId);
+        foreach ($lines as $_) {
             $reasonParts[] = sprintf('ลบสินค้า %s ออกจากคำขอ', $itemLabel);
         }
     }

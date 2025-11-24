@@ -38,7 +38,7 @@ if ($requestName === '') {
     exit;
 }
 $requestName = mb_substr($requestName, 0, 200, 'UTF-8');
-$note = trim((string) ($input['note'] ?? ''));
+$requestNote = trim((string) ($input['note'] ?? ''));
 
 $allowedStatuses = ['draft', 'submitted', 'approved', 'closed', 'cancelled'];
 $statusInput = strtolower((string) ($input['status'] ?? 'draft'));

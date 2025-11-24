@@ -63,7 +63,12 @@ try {
 
     $db->beginTransaction();
 
-    $checkStmt = $db->prepare('SELECT Status FROM events WHERE EventID = :id FOR UPDATE');
+    $checkStmt = $db->prepare(
+        'SELECT EventName, Status, CustomerID, StaffID, LocationID, StartDate, EndDate, Description, Notes, RefEventID
+         FROM events
+         WHERE EventID = :id
+         FOR UPDATE'
+    );
     $checkStmt->bindValue(':id', $eventId, PDO::PARAM_INT);
     $checkStmt->execute();
     $existingRow = $checkStmt->fetch(PDO::FETCH_ASSOC);
@@ -84,7 +89,7 @@ try {
     if ($refEventId !== null) {
         ensureUniqueRefEventId($db, $refEventId, $eventId);
     }
-    
+
     $updateSql = "
         UPDATE events SET
             EventName = :event_name,
@@ -114,7 +119,21 @@ try {
     $stmt->bindValue(':event_id', $eventId, PDO::PARAM_INT);
     $stmt->execute();
 
-    recordAuditEvent($db, 'event', $eventId, 'UPDATE', $updatedBy);
+    $reasonParts = buildEventChangeReasons($existingRow, [
+        'event_name' => $eventName,
+        'status' => $status,
+        'customer_id' => $customerId,
+        'staff_id' => $staffId,
+        'location_id' => $locationId,
+        'start_date' => $startDate,
+        'end_date' => $endDate,
+        'description' => $description,
+        'notes' => $notes,
+        'ref_event_id' => $refEventId,
+    ]);
+    $reasonText = empty($reasonParts) ? 'ปรับปรุงข้อมูลอีเว้น' : implode('; ', $reasonParts);
+
+    recordAuditEvent($db, 'event', $eventId, 'UPDATE', $updatedBy, $reasonText);
 
     $finalRefEventId = $refEventId;
     if ($finalRefEventId === null) {
@@ -313,6 +332,101 @@ function assignGeneratedRefEventId(PDO $db, int $eventId, ?string $createdAt)
     $updateStmt->execute();
 
     return $refEventId;
+}
+
+function buildEventChangeReasons(array $previous, array $next): array
+{
+    $reasons = [];
+
+    $prevName = trim((string) ($previous['EventName'] ?? ''));
+    $nextName = trim((string) ($next['event_name'] ?? ''));
+    if ($prevName === '') {
+        if ($nextName !== '') {
+            $reasons[] = sprintf('สร้างอีเว้น "%s"', $nextName);
+        }
+    } elseif ($prevName !== $nextName && $nextName !== '') {
+        $reasons[] = sprintf('เปลี่ยนชื่ออีเว้นจาก "%s" เป็น "%s"', $prevName, $nextName);
+    }
+
+    $prevStatus = strtolower((string) ($previous['Status'] ?? ''));
+    $nextStatus = strtolower((string) ($next['status'] ?? ''));
+    if ($prevStatus === '') {
+        $reasons[] = sprintf('ตั้งสถานะเริ่มต้นเป็น %s', $nextStatus ?: 'draft');
+    } elseif ($prevStatus !== $nextStatus) {
+        $reasons[] = sprintf('เปลี่ยนสถานะจาก %s เป็น %s', $prevStatus ?: '—', $nextStatus ?: '—');
+    }
+
+    $reasons = array_merge($reasons, formatEntityChangeReason('ลูกค้า', $previous['CustomerID'] ?? null, $next['customer_id'] ?? null));
+    $reasons = array_merge($reasons, formatEntityChangeReason('ผู้รับผิดชอบ', $previous['StaffID'] ?? null, $next['staff_id'] ?? null));
+    $reasons = array_merge($reasons, formatEntityChangeReason('สถานที่', $previous['LocationID'] ?? null, $next['location_id'] ?? null));
+
+    $prevStart = $previous['StartDate'] ?? null;
+    $prevEnd = $previous['EndDate'] ?? null;
+    $nextStart = $next['start_date'] ?? null;
+    $nextEnd = $next['end_date'] ?? null;
+    if ($prevStart !== $nextStart || $prevEnd !== $nextEnd) {
+        $prevRange = formatAuditDateRange($prevStart, $prevEnd);
+        $nextRange = formatAuditDateRange($nextStart, $nextEnd);
+        $reasons[] = sprintf('ปรับช่วงเวลากิจกรรมจาก %s เป็น %s', $prevRange, $nextRange);
+    }
+
+    $prevDescription = trim((string) ($previous['Description'] ?? ''));
+    $nextDescription = trim((string) ($next['description'] ?? ''));
+    if ($prevDescription !== $nextDescription) {
+        $reasons[] = sprintf('แก้ไขคำอธิบายจาก "%s" เป็น "%s"', $prevDescription ?: '—', $nextDescription ?: '—');
+    }
+
+    $prevNotes = trim((string) ($previous['Notes'] ?? ''));
+    $nextNotes = trim((string) ($next['notes'] ?? ''));
+    if ($prevNotes !== $nextNotes) {
+        $reasons[] = sprintf('แก้ไขบันทึกเพิ่มเติมจาก "%s" เป็น "%s"', $prevNotes ?: '—', $nextNotes ?: '—');
+    }
+
+    $prevRefEvent = trim((string) ($previous['RefEventID'] ?? ''));
+    $nextRefEvent = trim((string) ($next['ref_event_id'] ?? ''));
+    if ($prevRefEvent !== $nextRefEvent) {
+        $reasons[] = sprintf('เปลี่ยนรหัสอ้างอิงจาก "%s" เป็น "%s"', $prevRefEvent ?: '—', $nextRefEvent ?: '—');
+    }
+
+    return $reasons;
+}
+
+function formatEntityChangeReason(string $label, $previousId, $nextId): array
+{
+    $prev = ($previousId === null || $previousId === '') ? null : (int) $previousId;
+    $next = ($nextId === null || $nextId === '') ? null : (int) $nextId;
+    if ($prev === $next) {
+        return [];
+    }
+    if ($prev === null && $next !== null) {
+        return [sprintf('ตั้ง%sเป็น %d', $label, $next)];
+    }
+    if ($prev !== null && $next === null) {
+        return [sprintf('ลบ%s (เดิม %d)', $label, $prev)];
+    }
+    return [sprintf('เปลี่ยน%sจาก %d เป็น %d', $label, $prev, $next)];
+}
+
+function formatAuditDateRange($start, $end): string
+{
+    $startText = formatAuditDateTime($start);
+    $endText = formatAuditDateTime($end);
+    if ($startText === 'ไม่ระบุ' && $endText === 'ไม่ระบุ') {
+        return 'ไม่ระบุ';
+    }
+    return sprintf('%s ถึง %s', $startText, $endText);
+}
+
+function formatAuditDateTime($value): string
+{
+    if ($value === null || $value === '') {
+        return 'ไม่ระบุ';
+    }
+    $timestamp = strtotime((string) $value);
+    if ($timestamp === false) {
+        return 'ไม่ระบุ';
+    }
+    return date('Y-m-d H:i', $timestamp);
 }
 
 function formatCustomerLabel($id, $name)

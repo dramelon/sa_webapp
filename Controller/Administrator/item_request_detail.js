@@ -532,7 +532,6 @@
             return results;
         } catch (error) {
             console.error(error);
-            itemSearchCache.set(cacheKey, []);
             return [];
         }
     }
@@ -1206,6 +1205,7 @@
     }
 
     function applyRequestInfo(payload) {
+        itemSearchCache.clear();
         requestInfo = payload || null;
         const snapshot = createSnapshotFromPayload(payload || {});
         lastSnapshot = snapshot;
