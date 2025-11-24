@@ -45,7 +45,7 @@ if ($requestName === '') {
     exit;
 }
 $requestName = mb_substr($requestName, 0, 200, 'UTF-8');
-$note = trim((string) ($input['note'] ?? ''));
+$requestNote = trim((string) ($input['note'] ?? ''));
 
 $allowedStatuses = ['draft', 'submitted', 'approved', 'closed', 'cancelled'];
 $statusInput = strtolower((string) ($input['status'] ?? 'draft'));
@@ -77,16 +77,16 @@ foreach ($linesInput as $index => $line) {
         echo json_encode(['error' => 'invalid_line_quantity', 'message' => sprintf('จำนวนต้องมากกว่า 0 ในรายการที่ %d', $index + 1)]);
         exit;
     }
-    $note = trim((string) ($line['note'] ?? ''));
-    if ($note !== '') {
-        $note = mb_substr($note, 0, 500, 'UTF-8');
+    $lineNote = trim((string) ($line['note'] ?? ''));
+    if ($lineNote !== '') {
+        $lineNote = mb_substr($lineNote, 0, 500, 'UTF-8');
     } else {
-        $note = null;
+        $lineNote = null;
     }
     $cleanLines[] = [
         'item_id' => $itemId,
         'quantity' => $quantity,
-        'note' => $note,
+        'note' => $lineNote,
     ];
 }
 
@@ -176,7 +176,7 @@ try {
     $updateRequest->execute([
         ':name' => $requestName,
         ':status' => $status,
-        ':note' => $note ?: null,
+        ':note' => $requestNote ?: null,
         ':request_id' => $requestId,
     ]);
 
@@ -208,7 +208,7 @@ try {
         $reasonParts[] = sprintf('เปลี่ยนสถานะจาก %s เป็น %s', $previousStatus ?: '—', $status);
     }
     $previousNote = trim((string) ($currentRequest['Note'] ?? ''));
-    $newNote = trim((string) ($note ?? ''));
+    $newNote = trim((string) ($requestNote ?? ''));
     if ($previousNote !== $newNote) {
         $reasonParts[] = sprintf('แก้ไขหมายเหตุจาก "%s" เป็น "%s"', $previousNote ?: '—', $newNote ?: '—');
     }

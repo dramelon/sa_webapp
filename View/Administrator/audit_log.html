@@ -12,8 +12,8 @@
     <main class="page detail-page">
         <section class="page-head">
             <div>
-                <p class="breadcrumb"><a href="./event_document_manage.html">← กลับ</a></p>
-                <h2>ประวัติการดำเนินการ</h2>
+                <p class="breadcrumb"><a id="auditBackLink" href="./event_document_manage.html">← กลับ</a></p>
+                <h2 id="auditPageTitle">ประวัติการดำเนินการ</h2>
                 <p class="date" id="auditEntityName">กำลังโหลด...</p>
             </div>
         </section>
@@ -25,15 +25,76 @@
             <header class="detail-card-head">
                 <div>
                     <h3>รายการประวัติ</h3>
-                    <p>แสดงการสร้าง ปรับปรุง หรือการจัดการทั้งหมดของข้อมูลนี้</p>
+                    <p id="auditLogSubtitle">แสดงการสร้าง ปรับปรุง หรือการจัดการทั้งหมดของข้อมูลนี้</p>
                 </div>
             </header>
             <div class="detail-card-body">
+                <div class="filter-bar" id="auditFilterBar">
+                    <div class="filter-group">
+                        <label class="field-inline">
+                            <span class="field-label">Action</span>
+                            <select id="auditActionFilter">
+                                <option value="">ทั้งหมด</option>
+                                <option value="CREATE">Create</option>
+                                <option value="UPDATE">Update</option>
+                                <option value="ARCHIVE">Archive</option>
+                                <option value="UNARCHIVED">Unarchive</option>
+                                <option value="DELETE">Delete</option>
+                            </select>
+                        </label>
+                        <label class="field-inline">
+                            <span class="field-label">Entity</span>
+                            <select id="auditEntityTypeFilter">
+                                <option value="">ทั้งหมด</option>
+                                <option value="request">Request</option>
+                                <option value="event">Event</option>
+                                <option value="item">Item</option>
+                                <option value="item_category">Item Category</option>
+                                <option value="item_unit">Item Unit</option>
+                                <option value="supplier">Supplier</option>
+                                <option value="customer">Customer</option>
+                                <option value="warehouse">Warehouse</option>
+                                <option value="location">Location</option>
+                                <option value="staff">Staff</option>
+                                <option value="announcement">Announcement</option>
+                            </select>
+                        </label>
+                        <label class="field-inline">
+                            <span class="field-label">Action By</span>
+                            <input type="number" id="auditActionByFilter" min="1" placeholder="รหัสพนักงาน" />
+                        </label>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn btn-secondary btn-small" type="button" id="auditApplyFilters">
+                            <span class="i filter"></span>
+                            กรองข้อมูล
+                        </button>
+                        <button class="btn btn-ghost btn-small" type="button" id="auditResetFilters">ล้างตัวกรอง</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="event-table" id="auditLogTable" hidden>
+                        <thead>
+                            <tr>
+                                <th scope="col">Action</th>
+                                <th scope="col">Entity</th>
+                                <th scope="col">รายละเอียด</th>
+                                <th scope="col">Action By</th>
+                                <th scope="col">เวลา</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditLogTableBody"></tbody>
+                    </table>
+                </div>
                 <div class="empty-state" id="auditLogEmpty" hidden>
                     <span class="i inbox"></span>
                     <p>ยังไม่มีประวัติการดำเนินการ</p>
                 </div>
-                <ol id="auditLogList" class="stack-list" hidden></ol>
+                <div class="pagination" id="auditPagination" hidden>
+                    <button class="btn btn-ghost btn-small" type="button" id="auditPrevPage">ก่อนหน้า</button>
+                    <p class="pagination-info" id="auditPageInfo">หน้า 1</p>
+                    <button class="btn btn-ghost btn-small" type="button" id="auditNextPage">ถัดไป</button>
+                </div>
             </div>
         </section>
     </main>

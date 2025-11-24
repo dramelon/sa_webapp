@@ -125,3 +125,16 @@ function fetchAuditLogsForEntity(PDO $db, string $entityType, int $entityId): ar
 
     return $logs;
 }
+
+function formatStaffLabel($id, $name, $role)
+{
+    if ($id === null) {
+        return '';
+    }
+
+    $displayName = $name !== null && $name !== '' ? $name : 'ไม่ทราบชื่อผู้รับผิดชอบ';
+    $roleInitial = $role !== null && $role !== '' ? mb_strtoupper(mb_substr($role, 0, 1, 'UTF-8'), 'UTF-8') : 'S';
+
+    return sprintf('%s%d - %s', $roleInitial, $id, $displayName);
+}
+?>

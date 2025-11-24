@@ -290,51 +290,50 @@
         return 'ไม่ระบุผู้ปฏิบัติ';
     }
 
+    function sortAuditLogs(logs = []) {
+        return logs
+            .filter((log) => log && typeof log === 'object')
+            .slice()
+            .sort((a, b) => {
+                const dateA = new Date(a?.action_at || 0).getTime();
+                const dateB = new Date(b?.action_at || 0).getTime();
+                if (Number.isNaN(dateA) && Number.isNaN(dateB)) return 0;
+                if (Number.isNaN(dateA)) return 1;
+                if (Number.isNaN(dateB)) return -1;
+                return dateB - dateA;
+            });
+    }
+
+    function formatAuditSummary(log) {
+        const parts = [];
+        parts.push(formatAuditAction(log?.action));
+        parts.push(resolveAuditActorLabel(log));
+        const timestamp = formatDateTime(log?.action_at);
+        if (timestamp && timestamp !== '—') {
+            parts.push(timestamp);
+        }
+        if (log?.reason) {
+            parts.push(log.reason);
+        }
+        return parts.join(' • ');
+    }
+
     function renderAuditLogs(logs) {
         if (!requestAuditList || !requestAuditEmpty) {
             return;
         }
         requestAuditList.innerHTML = '';
-        const entries = Array.isArray(logs) ? logs.slice(0, 1) : [];
-        const hasEntries = entries.length > 0;
-        requestAuditList.hidden = !hasEntries;
-        requestAuditEmpty.hidden = hasEntries;
-        if (!hasEntries) {
+        const [latest] = sortAuditLogs(Array.isArray(logs) ? logs : []);
+        const hasEntry = Boolean(latest);
+        requestAuditList.hidden = !hasEntry;
+        requestAuditEmpty.hidden = hasEntry;
+        if (!hasEntry) {
             return;
         }
-        entries.forEach((log) => {
-            const item = document.createElement('li');
-            item.className = 'request-audit-entry';
-
-            const header = document.createElement('div');
-            header.className = 'request-audit-row';
-
-            const actionLabel = document.createElement('p');
-            actionLabel.className = 'request-audit-action';
-            actionLabel.textContent = formatAuditAction(log?.action);
-            header.appendChild(actionLabel);
-
-            const actorLabel = document.createElement('p');
-            actorLabel.className = 'request-audit-actor';
-            actorLabel.textContent = resolveAuditActorLabel(log);
-            header.appendChild(actorLabel);
-
-            const meta = document.createElement('p');
-            meta.className = 'request-audit-meta';
-            meta.textContent = formatDateTime(log?.action_at);
-
-            item.appendChild(header);
-            item.appendChild(meta);
-
-            if (log?.reason) {
-                const reason = document.createElement('p');
-                reason.className = 'request-audit-reason';
-                reason.textContent = `เหตุผล: ${log.reason}`;
-                item.appendChild(reason);
-            }
-
-        requestAuditList.appendChild(item);
-        });
+        const entry = document.createElement('p');
+        entry.className = 'request-audit-entry';
+        entry.textContent = formatAuditSummary(latest);
+        requestAuditList.appendChild(entry);
     }
 
     function updateAuditLink() {
@@ -350,6 +349,12 @@
         const url = new URL('./audit_log.html', window.location.href);
         url.searchParams.set('entity_type', 'request');
         url.searchParams.set('entity_id', requestId);
+        if (eventId) {
+            url.searchParams.set('event_id', eventId);
+        }
+        if (backTarget) {
+            url.searchParams.set('return_to', backTarget);
+        }
         requestAuditLink.hidden = false;
         requestAuditLink.removeAttribute('aria-hidden');
         requestAuditLink.href = `${url.pathname}${url.search}`;

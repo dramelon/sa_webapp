@@ -70,16 +70,16 @@ foreach ($linesInput as $index => $line) {
         echo json_encode(['error' => 'invalid_line_quantity', 'message' => sprintf('จำนวนต้องมากกว่า 0 ในรายการที่ %d', $index + 1)]);
         exit;
     }
-    $note = trim((string) ($line['note'] ?? ''));
-    if ($note !== '') {
-        $note = mb_substr($note, 0, 500, 'UTF-8');
+    $lineNote = trim((string) ($line['note'] ?? ''));
+    if ($lineNote !== '') {
+        $lineNote = mb_substr($lineNote, 0, 500, 'UTF-8');
     } else {
-        $note = null;
+        $lineNote = null;
     }
     $cleanLines[] = [
         'item_id' => $itemId,
         'quantity' => $quantity,
-        'note' => $note,
+        'note' => $lineNote,
     ];
 }
 
@@ -128,7 +128,7 @@ try {
         ':request_name' => $requestName,
         ':seq_no' => $nextSeq,
         ':status' => $status,
-        ':note' => $note ?: null,
+        ':note' => $requestNote ?: null,
     ]);
 
     $requestId = (int) $db->lastInsertId();
@@ -140,7 +140,7 @@ try {
         count($cleanLines)
     );
     recordAuditEvent($db, 'request', $requestId, 'CREATE', $createdBy, $reason);
-    
+
     $lineStmt = $db->prepare('INSERT INTO request_lines (RequestID, LineNo, ItemID, QuantityRequested, StartTime, EndTime, FulfillmentStatus, Note, Status) VALUES (:request_id, :line_no, :item_id, :quantity, :start_time, :end_time, :fulfillment_status, :note, :status)');
     foreach ($cleanLines as $lineNo => $line) {
         $lineStmt->execute([
