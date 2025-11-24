@@ -132,7 +132,7 @@ function buildEntityLabels(PDO $db, array $logs): array
                 $labels[$type] = fetchLabels($db, 'itemcategorys', 'ItemCategoryID', 'Name', $uniqueIds);
                 break;
             case 'item_unit':
-                $labels[$type] = fetchLabels($db, 'itemunits', 'ItemUnitID', 'UnitName', $uniqueIds);
+                $labels[$type] = fetchLabels($db, 'item_units', 'ItemUnitID', 'SerialNumber', $uniqueIds);
                 break;
             case 'supplier':
                 $labels[$type] = fetchLabels($db, 'suppliers', 'SupplierID', 'SupplierName', $uniqueIds);
@@ -141,7 +141,7 @@ function buildEntityLabels(PDO $db, array $logs): array
                 $labels[$type] = fetchLabels($db, 'customers', 'CustomerID', 'CustomerName', $uniqueIds);
                 break;
             case 'warehouse':
-                $labels[$type] = fetchLabels($db, 'warehouses', 'WarehouseID', 'WarehouseName', $uniqueIds);
+                $labels[$type] = fetchLabels($db, 'warehouse', 'WarehouseID', 'WarehouseName', $uniqueIds);
                 break;
             case 'location':
                 $labels[$type] = fetchLabels($db, 'locations', 'LocationID', 'LocationName', $uniqueIds);
@@ -150,7 +150,7 @@ function buildEntityLabels(PDO $db, array $logs): array
                 $labels[$type] = fetchLabels($db, 'staffs', 'StaffID', 'FullName', $uniqueIds);
                 break;
             case 'announcement':
-                $labels[$type] = fetchLabels($db, 'announcements', 'AnnouncementID', 'Title', $uniqueIds);
+                $labels[$type] = fetchLabels($db, 'announcements', 'AnnounceID', 'Topic', $uniqueIds);
                 break;
             default:
                 $labels[$type] = [];
@@ -209,18 +209,23 @@ try {
     $countStmt->execute();
     $total = (int) $countStmt->fetchColumn();
 
-    $sql = 'SELECT a.AuditID, a.EntityType, a.EntityID, a.Action, a.Reason, a.ActionAt, a.ActionBy, s.FullName AS staff_name, s.Role AS staff_role'
-        . ' FROM audit a LEFT JOIN staffs s ON s.StaffID = a.ActionBy '
-        . $whereClause
-        . ' ORDER BY a.ActionAt DESC, a.AuditID DESC'
-        . ' LIMIT :limit OFFSET :offset';
+    $limitValue = (int) $pageSize;
+    $offsetValue = (int) (($page - 1) * $pageSize);
+
+    // MySQL does not accept bound parameters in LIMIT/OFFSET when emulation is disabled on PDO.
+    // Interpolate the validated integers directly to keep compatibility across environments.
+    $sql = sprintf(
+        'SELECT a.AuditID, a.EntityType, a.EntityID, a.Action, a.Reason, a.ActionAt, a.ActionBy, s.FullName AS staff_name, s.Role AS staff_role'
+        . ' FROM audit a LEFT JOIN staffs s ON s.StaffID = a.ActionBy %s ORDER BY a.ActionAt DESC, a.AuditID DESC LIMIT %d OFFSET %d',
+        $whereClause,
+        $limitValue,
+        $offsetValue
+    );
 
     $stmt = $db->prepare($sql);
     foreach ($bindings as $placeholder => [$value, $type]) {
         $stmt->bindValue($placeholder, $value, $type);
     }
-    $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', ($page - 1) * $pageSize, PDO::PARAM_INT);
     $stmt->execute();
 
     $logs = [];

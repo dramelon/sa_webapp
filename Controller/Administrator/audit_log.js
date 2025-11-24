@@ -1,5 +1,6 @@
 (function () {
-    const params = new URLSearchParams(window.location.search);
+    const getSearchParams = () => new URLSearchParams(window.location.search);
+    const params = getSearchParams();
     const entityTypeParam = params.get('entity_type') || '';
     const entityIdParam = params.get('entity_id') || '';
     const eventIdParam = params.get('event_id') || '';
@@ -108,17 +109,18 @@
     }
 
     function parseFilters() {
+        const currentParams = getSearchParams();
         return {
-            action: normalizeActionFilter(params.get('action')),
-            entityType: normalizeEntityType(params.get('entity_type')),
+            action: normalizeActionFilter(currentParams.get('action')),
+            entityType: normalizeEntityType(currentParams.get('entity_type')),
             actionBy: (() => {
-                const raw = params.get('action_by');
+                const raw = currentParams.get('action_by');
                 if (!raw) return '';
                 const numeric = Number.parseInt(raw, 10);
                 return Number.isFinite(numeric) && numeric > 0 ? String(numeric) : '';
             })(),
             page: (() => {
-                const numeric = Number.parseInt(params.get('page') || '1', 10);
+                const numeric = Number.parseInt(currentParams.get('page') || '1', 10);
                 return Number.isFinite(numeric) && numeric > 0 ? numeric : 1;
             })(),
         };
