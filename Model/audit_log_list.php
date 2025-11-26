@@ -37,6 +37,12 @@ if ($isEntityMode) {
     }
 }
 
+/**
+ * Normalizes a raw string of comma-separated action names.
+ * It filters them against a list of allowed actions, converts to uppercase, and removes duplicates.
+ * @param string $raw The raw string from the GET parameter.
+ * @return array An array of unique, valid action strings.
+ */
 function normalizeActions(string $raw): array
 {
     $allowedActions = ['CREATE', 'UPDATE', 'ARCHIVE', 'UNARCHIVED', 'DELETE'];
@@ -47,6 +53,13 @@ function normalizeActions(string $raw): array
     return array_values(array_unique($parts));
 }
 
+/**
+ * Normalizes a raw string of comma-separated entity types.
+ * It filters them against the allowed entity types and removes duplicates.
+ * @param string $raw The raw string from the GET parameter.
+ * @param array $allowedTypes The list of permissible entity types.
+ * @return array An array of unique, valid entity type strings.
+ */
 function normalizeEntityTypes(string $raw, array $allowedTypes): array
 {
     $parts = array_map('trim', explode(',', $raw));
@@ -56,6 +69,12 @@ function normalizeEntityTypes(string $raw, array $allowedTypes): array
     return array_values(array_unique($parts));
 }
 
+/**
+ * Normalizes a raw string of comma-separated user IDs.
+ * It parses them into positive integers and removes duplicates.
+ * @param string $raw The raw string from the GET parameter.
+ * @return array An array of unique, positive integer IDs.
+ */
 function normalizeActionBy(string $raw): array
 {
     $parts = array_map('trim', explode(',', $raw));
@@ -72,6 +91,13 @@ function normalizeActionBy(string $raw): array
     return array_values(array_unique($ids));
 }
 
+/**
+ * Generates an array of named placeholders for prepared SQL statements.
+ * This is useful for building dynamic IN clauses safely.
+ * @param string $prefix The prefix for each placeholder (e.g., 'id').
+ * @param int $count The number of placeholders to generate.
+ * @return array An array of placeholder strings (e.g., [':id0', ':id1']).
+ */
 function buildPlaceholders(string $prefix, int $count): array
 {
     $placeholders = [];
@@ -81,6 +107,16 @@ function buildPlaceholders(string $prefix, int $count): array
     return $placeholders;
 }
 
+/**
+ * Fetches labels for a given set of IDs from a specific database table.
+ * This is a generic helper to retrieve human-readable names for entities.
+ * @param PDO $db The database connection object.
+ * @param string $table The name of the database table.
+ * @param string $idColumn The name of the ID column in the table.
+ * @param string $labelColumn The name of the column containing the label/name.
+ * @param array $ids An array of IDs to fetch labels for.
+ * @return array An associative array mapping each ID to its corresponding label.
+ */
 function fetchLabels(PDO $db, string $table, string $idColumn, string $labelColumn, array $ids): array
 {
     if (empty($ids)) {
@@ -100,6 +136,13 @@ function fetchLabels(PDO $db, string $table, string $idColumn, string $labelColu
     return $labels;
 }
 
+/**
+ * Builds a comprehensive map of entity labels for a given set of audit logs.
+ * It groups entities by type, fetches their labels in batches, and returns a structured array.
+ * @param PDO $db The database connection object.
+ * @param array $logs The array of audit log records.
+ * @return array A nested associative array of labels, structured as [entity_type => [entity_id => label]].
+ */
 function buildEntityLabels(PDO $db, array $logs): array
 {
     $entities = [];

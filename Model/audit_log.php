@@ -1,6 +1,15 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
 
+/**
+ * Records a single audit event in the database.
+ * @param PDO $db The database connection object.
+ * @param string $entityType The type of the entity being audited (e.g., 'customer', 'item').
+ * @param int $entityId The ID of the entity.
+ * @param string $action The action performed (e.g., 'CREATE', 'UPDATE', 'DELETE').
+ * @param int|null $staffId The ID of the staff member who performed the action.
+ * @param string|null $reason An optional description or reason for the action.
+ */
 function recordAuditEvent(PDO $db, string $entityType, int $entityId, string $action, ?int $staffId = null, ?string $reason = null): void
 {
     $stmt = $db->prepare('INSERT INTO audit (EntityType, EntityID, Action, Reason, ActionBy) VALUES (:entity_type, :entity_id, :action, :reason, :action_by)');
@@ -20,6 +29,10 @@ function recordAuditEvent(PDO $db, string $entityType, int $entityId, string $ac
     $stmt->execute();
 }
 
+/**
+ * Creates a default, empty structure for audit metadata.
+ * @return array An associative array with null values for all audit-related fields.
+ */
 function buildEmptyAuditMetadata(): array
 {
     return [
@@ -34,6 +47,13 @@ function buildEmptyAuditMetadata(): array
     ];
 }
 
+/**
+ * Fetches creation and last update metadata for multiple entities of the same type in a single query.
+ * @param PDO $db The database connection object.
+ * @param string $entityType The type of entities to fetch metadata for.
+ * @param array $entityIds An array of entity IDs.
+ * @return array An associative array where keys are entity IDs and values are their audit metadata.
+ */
 function fetchAuditMetadataForEntities(PDO $db, string $entityType, array $entityIds): array
 {
     $entityIds = array_values(array_unique(array_map('intval', array_filter($entityIds, function ($value) {
@@ -91,12 +111,26 @@ function fetchAuditMetadataForEntities(PDO $db, string $entityType, array $entit
     return $metadata;
 }
 
+/**
+ * A wrapper around fetchAuditMetadataForEntities to get metadata for a single entity.
+ * @param PDO $db The database connection object.
+ * @param string $entityType The type of the entity.
+ * @param int $entityId The ID of the entity.
+ * @return array An associative array containing the audit metadata for the specified entity.
+ */
 function fetchAuditMetadataForEntity(PDO $db, string $entityType, int $entityId): array
 {
     $metadata = fetchAuditMetadataForEntities($db, $entityType, [$entityId]);
     return $metadata[$entityId] ?? buildEmptyAuditMetadata();
 }
 
+/**
+ * Fetches the complete history of audit logs for a specific entity.
+ * @param PDO $db The database connection object.
+ * @param string $entityType The type of the entity.
+ * @param int $entityId The ID of the entity.
+ * @return array A list of all audit log records for the entity, ordered from newest to oldest.
+ */
 function fetchAuditLogsForEntity(PDO $db, string $entityType, int $entityId): array
 {
     $stmt = $db->prepare(
@@ -127,6 +161,13 @@ function fetchAuditLogsForEntity(PDO $db, string $entityType, int $entityId): ar
 }
 
 if (!function_exists('formatStaffLabel')) {
+    /**
+     * Formats a standardized label for a staff member.
+     * @param int|null $id The staff member's ID.
+     * @param string|null $name The staff member's full name.
+     * @param string|null $role The staff member's role.
+     * @return string The formatted label (e.g., "A1 - John Doe") or an empty string if ID is null.
+     */
     function formatStaffLabel($id, $name, $role)
     {
         if ($id === null) {

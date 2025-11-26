@@ -4,7 +4,7 @@ CREATE DATABASE sa_webapp
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_general_ci;
 
-USE sa_webapp;
+USE sa_webapp2;
 
 
 

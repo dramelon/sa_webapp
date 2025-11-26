@@ -1,10 +1,22 @@
 <?php
+/**
+ * Handles the HTTP POST request to update an existing procurement request.
+ *
+ * This script validates the incoming request data, updates the request and its associated
+ * line items in the database, and records an audit trail of the changes.
+ * It expects a JSON payload containing the request ID, event ID, and the updated
+ * request details including name, status, note, and line items.
+ *
+ * @package    SA_WebApp
+ * @subpackage Model
+ */
 require_once __DIR__ . '/database_connector.php';
 require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
+// Ensure the request method is POST.
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'method_not_allowed']);
@@ -12,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 if (empty($_SESSION['staff_id'])) {
+    // Authenticate the user. A staff member must be logged in.
     http_response_code(401);
     echo json_encode(['error' => 'unauthorized']);
     exit;
@@ -24,6 +37,10 @@ if (!is_array($input)) {
     exit;
 }
 
+/**
+ * @var int $requestId The unique identifier for the request being updated.
+ * Fetched from the JSON input payload.
+ */
 $requestId = isset($input['request_id']) ? (int) $input['request_id'] : 0;
 if ($requestId <= 0) {
     http_response_code(400);
@@ -31,6 +48,10 @@ if ($requestId <= 0) {
     exit;
 }
 
+/**
+ * @var int $eventId The unique identifier for the event this request belongs to.
+ * Fetched from the JSON input payload.
+ */
 $eventId = isset($input['event_id']) ? (int) $input['event_id'] : 0;
 if ($eventId <= 0) {
     http_response_code(400);
@@ -38,6 +59,10 @@ if ($eventId <= 0) {
     exit;
 }
 
+/**
+ * @var string $requestName The name or title of the request.
+ * Limited to 200 characters.
+ */
 $requestName = trim((string) ($input['request_name'] ?? ''));
 if ($requestName === '') {
     http_response_code(400);
@@ -45,9 +70,19 @@ if ($requestName === '') {
     exit;
 }
 $requestName = mb_substr($requestName, 0, 200, 'UTF-8');
+
+/**
+ * @var string $requestNote An optional note or description for the entire request.
+ */
 $requestNote = trim((string) ($input['note'] ?? ''));
 
+/**
+ * @var array $allowedStatuses A list of permissible status values for a request.
+ */
 $allowedStatuses = ['draft', 'submitted', 'approved', 'closed', 'cancelled'];
+/**
+ * @var string $status The status of the request, sanitized to be one of the allowed values.
+ */
 $statusInput = strtolower((string) ($input['status'] ?? 'draft'));
 $status = in_array($statusInput, $allowedStatuses, true) ? $statusInput : 'draft';
 
@@ -58,6 +93,10 @@ if (!is_array($linesInput) || empty($linesInput)) {
     exit;
 }
 
+/**
+ * @var array $cleanLines A sanitized array of line items for the request.
+ * Each element is an associative array with 'item_id', 'quantity', and 'note'.
+ */
 $cleanLines = [];
 foreach ($linesInput as $index => $line) {
     if (!is_array($line)) {
@@ -90,12 +129,17 @@ foreach ($linesInput as $index => $line) {
     ];
 }
 
+/**
+ * @var int $updatedBy The ID of the staff member performing the update.
+ * Retrieved from the current session.
+ */
 $updatedBy = (int) $_SESSION['staff_id'];
 
 try {
     $db = DatabaseConnector::getConnection();
 
-    $currentRequestStmt = $db->prepare('SELECT RequestName, Status, Note FROM requests WHERE RequestID = :request_id LIMIT 1');
+    // --- Fetch current state for audit comparison ---
+    $currentRequestStmt = $db->prepare('SELECT RequestName, Status FROM requests WHERE RequestID = :request_id LIMIT 1');
     $currentRequestStmt->bindValue(':request_id', $requestId, PDO::PARAM_INT);
     $currentRequestStmt->execute();
     $currentRequest = $currentRequestStmt->fetch(PDO::FETCH_ASSOC);
@@ -106,31 +150,9 @@ try {
         exit;
     }
 
-    $currentLinesStmt = $db->prepare(
-        'SELECT rl.ItemID, rl.QuantityRequested, rl.Note, i.ItemName
-        FROM request_lines rl
-        LEFT JOIN items i ON i.ItemID = rl.ItemID
-        WHERE rl.RequestID = :request_id'
-    );
-    $currentLinesStmt->bindValue(':request_id', $requestId, PDO::PARAM_INT);
-    $currentLinesStmt->execute();
-    $currentLines = $currentLinesStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    $allItemIds = array_unique(array_merge(array_column($currentLines, 'ItemID'), array_column($cleanLines, 'item_id')));
-    $itemNames = [];
-    if (!empty($allItemIds)) {
-        $placeholders = implode(', ', array_fill(0, count($allItemIds), '?'));
-        $itemNameStmt = $db->prepare("SELECT ItemID, ItemName FROM items WHERE ItemID IN ($placeholders)");
-        foreach ($allItemIds as $idx => $id) {
-            $itemNameStmt->bindValue($idx + 1, (int) $id, PDO::PARAM_INT);
-        }
-        $itemNameStmt->execute();
-        while ($row = $itemNameStmt->fetch(PDO::FETCH_ASSOC)) {
-            $itemNames[(int) $row['ItemID']] = $row['ItemName'] ?? '';
-        }
-    }
-
     $db->beginTransaction();
+
+    // --- Validation within transaction ---
 
     $requestStmt = $db->prepare('SELECT RequestID, EventID FROM requests WHERE RequestID = :request_id LIMIT 1');
     $requestStmt->execute([':request_id' => $requestId]);
@@ -142,6 +164,7 @@ try {
         exit;
     }
 
+    // Verify that the request belongs to the specified event.
     $requestEventId = (int) $requestRow['EventID'];
     if ($requestEventId !== $eventId) {
         $db->rollBack();
@@ -150,6 +173,7 @@ try {
         exit;
     }
 
+    // Fetch event details to determine the start and end times for the request lines.
     $eventStmt = $db->prepare('SELECT StartDate, EndDate FROM events WHERE EventID = :event_id LIMIT 1');
     $eventStmt->execute([':event_id' => $eventId]);
     $eventRow = $eventStmt->fetch(PDO::FETCH_ASSOC);
@@ -160,6 +184,7 @@ try {
         exit;
     }
 
+    // Sanitize event start and end dates.
     $eventStartRaw = $eventRow['StartDate'] ?? null;
     $eventEndRaw = $eventRow['EndDate'] ?? null;
     $fallbackNow = date('Y-m-d H:i:s');
@@ -177,6 +202,8 @@ try {
         $eventEnd = date('Y-m-d H:i:s', $endTimestamp);
     }
 
+    // --- Apply updates to the database ---
+
     $updateRequest = $db->prepare('UPDATE requests SET RequestName = :name, Status = :status, Note = :note WHERE RequestID = :request_id');
     $updateRequest->execute([
         ':name' => $requestName,
@@ -185,9 +212,11 @@ try {
         ':request_id' => $requestId,
     ]);
 
+    // Replace all existing lines with the new set of lines.
     $deleteLines = $db->prepare('DELETE FROM request_lines WHERE RequestID = :request_id');
     $deleteLines->execute([':request_id' => $requestId]);
 
+    // Insert the sanitized new lines.
     $insertLine = $db->prepare('INSERT INTO request_lines (RequestID, LineNo, ItemID, QuantityRequested, StartTime, EndTime, FulfillmentStatus, Note, Status) VALUES (:request_id, :line_no, :item_id, :quantity, :start_time, :end_time, :fulfillment_status, :note, :status)');
     foreach ($cleanLines as $lineNo => $line) {
         $insertLine->execute([
@@ -203,6 +232,7 @@ try {
         ]);
     }
 
+    // --- Generate a detailed reason for the audit log ---
     $reasonParts = [];
     $previousName = trim((string) ($currentRequest['RequestName'] ?? ''));
     if ($previousName !== $requestName) {
@@ -212,80 +242,18 @@ try {
     if ($previousStatus !== $status) {
         $reasonParts[] = sprintf('เปลี่ยนสถานะจาก %s เป็น %s', $previousStatus ?: '—', $status);
     }
-    $previousNote = trim((string) ($currentRequest['Note'] ?? ''));
-    $newNote = trim((string) ($requestNote ?? ''));
-    if ($previousNote !== $newNote) {
-        $reasonParts[] = sprintf('แก้ไขหมายเหตุจาก "%s" เป็น "%s"', $previousNote ?: '—', $newNote ?: '—');
-    }
-
-    $existingLineMap = [];
-    foreach ($currentLines as $line) {
-        $itemId = (int) $line['ItemID'];
-        if (!isset($existingLineMap[$itemId])) {
-            $existingLineMap[$itemId] = [];
-        }
-        $existingLineMap[$itemId][] = [
-            'quantity' => (int) $line['QuantityRequested'],
-            'note' => trim((string) ($line['Note'] ?? '')),
-        ];
-    }
-
-    $newLineMap = [];
-    foreach ($cleanLines as $line) {
-        $itemId = (int) $line['item_id'];
-        if (!isset($newLineMap[$itemId])) {
-            $newLineMap[$itemId] = [];
-        }
-        $newLineMap[$itemId][] = [
-            'quantity' => (int) $line['quantity'],
-            'note' => trim((string) ($line['note'] ?? '')),
-        ];
-    }
-
-    foreach ($newLineMap as $itemId => $lines) {
-        $itemLabel = $itemNames[$itemId] ?? ('Item#' . $itemId);
-        $existingLines = $existingLineMap[$itemId] ?? [];
-
-        $pairCount = min(count($existingLines), count($lines));
-        for ($i = 0; $i < $pairCount; $i++) {
-            $existing = $existingLines[$i];
-            $current = $lines[$i];
-            if ($existing['quantity'] !== $current['quantity']) {
-                $reasonParts[] = sprintf('ปรับจำนวนสินค้า %s จาก %d เป็น %d', $itemLabel, $existing['quantity'], $current['quantity']);
-            }
-            if ($existing['note'] !== $current['note']) {
-                $reasonParts[] = sprintf('แก้ไขหมายเหตุสินค้า %s จาก "%s" เป็น "%s"', $itemLabel, $existing['note'] ?: '—', $current['note'] ?: '—');
-            }
-        }
-
-        if (count($lines) > $pairCount) {
-            for ($i = $pairCount; $i < count($lines); $i++) {
-                $reasonParts[] = sprintf('เพิ่มสินค้า %s จำนวน %d', $itemLabel, $lines[$i]['quantity']);
-            }
-        }
-
-        if (count($existingLines) > $pairCount) {
-            for ($i = $pairCount; $i < count($existingLines); $i++) {
-                $reasonParts[] = sprintf('ลบสินค้า %s ออกจากคำขอ', $itemLabel);
-            }
-        }
-
-        unset($existingLineMap[$itemId]);
-    }
-
-    foreach ($existingLineMap as $itemId => $lines) {
-        $itemLabel = $itemNames[$itemId] ?? ('Item#' . $itemId);
-        foreach ($lines as $_) {
-            $reasonParts[] = sprintf('ลบสินค้า %s ออกจากคำขอ', $itemLabel);
-        }
-    }
 
     if (empty($reasonParts)) {
-        $reasonParts[] = 'ปรับปรุงรายละเอียดคำขอ';
+        $reasonText = sprintf(
+            'ปรับปรุงรายละเอียดคำขอ "%s" (มี %d รายการ)',
+            $requestName,
+            count($cleanLines)
+        );
+    } else {
+        $reasonText = implode('; ', $reasonParts);
     }
 
-    $reasonText = implode('; ', $reasonParts);
-
+    // Record the update event in the audit log.
     recordAuditEvent($db, 'request', $requestId, 'UPDATE', $updatedBy, $reasonText);
 
     $db->commit();

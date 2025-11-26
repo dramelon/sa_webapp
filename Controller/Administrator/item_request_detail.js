@@ -352,9 +352,10 @@
         if (eventId) {
             url.searchParams.set('event_id', eventId);
         }
-        if (backTarget) {
-            url.searchParams.set('return_to', backTarget);
-        }
+
+        const returnUrl = new URL(window.location.href);
+        url.searchParams.set('return_to', `${returnUrl.pathname}${returnUrl.search}`);
+
         requestAuditLink.hidden = false;
         requestAuditLink.removeAttribute('aria-hidden');
         requestAuditLink.href = `${url.pathname}${url.search}`;
