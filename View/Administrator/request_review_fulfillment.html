@@ -31,6 +31,125 @@
                 <p class="review-line-ref" id="fulfillmentLineIdentifier">รหัสบรรทัดคำขอ: —</p>
                 <p class="review-line-progress" id="fulfillmentLineDetail">หมายเลขบรรทัด: —</p>
             </div>
+            <div class="detail-card-footer">
+                <label class="field-block field-span">
+                    <span class="field-label">หมายเหตุการจ่าย</span>
+                    <textarea id="fulfillmentNote" rows="3" placeholder="บันทึกข้อมูลหรือข้อความสำคัญเกี่ยวกับการจ่ายในบรรทัดนี้"></textarea>
+                </label>
+            </div>
+        </section>
+
+        <section class="detail-card fulfillment-custom-card">
+            <header class="detail-card-head">
+                <div>
+                    <h3>สร้างรายการกำหนดเอง (ตัวอย่าง)</h3>
+                    <p>ฟังก์ชันนี้จะรองรับการสร้าง Item Unit ใหม่เพื่อการจ่ายในอนาคต</p>
+                </div>
+                <span class="status-chip" aria-label="ฟีเจอร์กำลังพัฒนา">
+                    <span class="dot"></span>
+                    <span>กำลังพัฒนา</span>
+                </span>
+            </header>
+            <div class="detail-form">
+                <div class="detail-form-columns">
+                    <div class="detail-column">
+                        <label class="field-block">
+                            <span class="field-label">ชื่ออุปกรณ์ (ตัวอย่าง)</span>
+                            <input type="text" id="customItemName" value="ฟังก์ชันกำลังพัฒนา" disabled />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">บาร์โค้ด/ซีเรียล</span>
+                            <input type="text" id="customItemSerial" placeholder="จะสามารถระบุได้ในอนาคต" disabled />
+                        </label>
+                    </div>
+                    <div class="detail-column">
+                        <label class="field-block field-span">
+                            <span class="field-label">หมายเหตุ</span>
+                            <textarea id="customItemNote" rows="4" placeholder="พื้นที่นี้เป็นตัวอย่างการสร้างรายการใหม่" disabled></textarea>
+                        </label>
+                    </div>
+                </div>
+                <p class="meta-sub">ตัวอย่างนี้แสดงตำแหน่งของฟอร์มสร้างรายการกำหนดเองสำหรับการจ่ายอุปกรณ์</p>
+            </div>
+        </section>
+
+        <section class="detail-card fulfillment-selected-card">
+            <header class="detail-card-head">
+                <div>
+                    <h3>รายการที่เลือกสำหรับการจ่าย</h3>
+                    <p>กำหนดแหล่งที่มาและตัวเลือกเพิ่มเติมให้กับ Item Unit ที่จะจ่าย</p>
+                </div>
+            </header>
+            <div class="fulfillment-list fulfillment-selected-list" role="list" aria-label="รายการที่เลือก">
+                <div class="fulfillment-list-row fulfillment-list-header" aria-hidden="true">
+                    <span>Item Unit</span>
+                    <span>แหล่งที่มา</span>
+                    <span>ตัวเลือกเพิ่มเติม</span>
+                    <span></span>
+                </div>
+                <div class="fulfillment-list-row" id="selectedItemUnitTemplate" hidden>
+                    <div class="fulfillment-line-main">
+                        <p class="line-title">Item Unit #—</p>
+                        <p class="meta-sub">รายละเอียดเพิ่มเติมของ Item Unit</p>
+                    </div>
+                    <label class="field-inline">
+                        <span class="field-label">SourceType</span>
+                        <select class="source-type-input">
+                            <option value="inventory">inventory</option>
+                            <option value="customer_provided">customer_provided</option>
+                            <option value="other">other</option>
+                        </select>
+                    </label>
+                    <div class="field-inline checkbox-group">
+                        <label>
+                            <input type="checkbox" class="return-flag-input" /> คืนลูกค้า
+                        </label>
+                        <label>
+                            <input type="checkbox" class="paid-excluded-input" /> ไม่รวมจ่ายเงิน
+                        </label>
+                    </div>
+                    <button class="btn btn-ghost btn-icon remove-selected" type="button" aria-label="นำออกจากการเลือก">
+                        <span class="i trash"></span>
+                    </button>
+                </div>
+                <div id="selectedItemUnitList" aria-live="polite"></div>
+            </div>
+            <div class="empty-state" id="selectedItemUnitEmpty">
+                <span class="i inbox"></span>
+                <p>ยังไม่มี Item Unit ที่ถูกเลือกสำหรับการจ่าย</p>
+            </div>
+        </section>
+
+        <section class="detail-card fulfillment-available-card">
+            <header class="detail-card-head">
+                <div>
+                    <h3>Item Unit ทั้งหมดในคำขอ</h3>
+                    <p>เพิ่ม Item Unit ที่เกี่ยวข้องกับบรรทัดคำขอนี้เพื่อดำเนินการจ่าย</p>
+                </div>
+            </header>
+            <div class="fulfillment-list fulfillment-available-list" role="list" aria-label="รายการ Item Unit ทั้งหมด">
+                <div class="fulfillment-list-row fulfillment-list-header" aria-hidden="true">
+                    <span>Item Unit</span>
+                    <span>รายละเอียด</span>
+                    <span></span>
+                </div>
+                <div class="fulfillment-list-row" id="availableItemUnitTemplate" hidden>
+                    <div class="fulfillment-line-main">
+                        <p class="line-title">Item Unit #—</p>
+                        <p class="meta-sub">ระบุข้อมูลเพิ่มเติมของ Item Unit</p>
+                    </div>
+                    <div class="fulfillment-line-meta">
+                        <p class="meta-label">ItemID</p>
+                        <p class="meta-sub">จะเชื่อมโยงกับบรรทัดคำขอ</p>
+                    </div>
+                    <button class="btn btn-secondary add-item-unit" type="button">เพิ่ม</button>
+                </div>
+                <div id="availableItemUnitList" aria-live="polite"></div>
+            </div>
+            <div class="empty-state" id="availableItemUnitEmpty" hidden>
+                <span class="i inbox"></span>
+                <p>ไม่พบ Item Unit ที่เชื่อมกับบรรทัดคำขอ</p>
+            </div>
         </section>
     </main>
 

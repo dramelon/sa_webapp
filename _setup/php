@@ -259,14 +259,14 @@ CREATE TABLE booking (
 
 
 -- REQUEST_FULFILLMENT v1
-CREATE TABLE request_fulfillemnt (
+CREATE TABLE request_fulfillment (
     RequestFulfillmentID    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     RequestLineID           BIGINT UNSIGNED NOT NULL,
     Note                    TEXT DEFAULT NULL
 );
 
 -- REQUEST_FULFILLMENT_LINE v1
-CREATE TABLE request_fulfillemnt_line (
+CREATE TABLE request_fulfillment_line (
     RequestFulfillmentLineID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     RequestFulfillmentID     BIGINT UNSIGNED NOT NULL,
     ItemUnitID               BIGINT UNSIGNED NULL,
