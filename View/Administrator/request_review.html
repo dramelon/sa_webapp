@@ -53,31 +53,31 @@
             </div>
         </section>
 
-        <section class="detail-card review-allocation-card">
+        <section class="detail-card review-pending-card">
             <header class="detail-card-head">
                 <div>
-                    <h3>อุปกรณ์ที่จัดสรรได้จากคลัง</h3>
-                    <p>จับคู่คำขอแต่ละรายการกับหน่วยสินค้าในคลังที่พร้อมจ่าย</p>
+                    <h3>รายการรอตรวจสอบ</h3>
+                    <p>เลือกแต่ละบรรทัดเพื่อดำเนินการตรวจสอบและบันทึกการจ่ายอุปกรณ์</p>
                 </div>
             </header>
-            <div id="reviewAllocations" class="allocation-list" role="list"></div>
-            <div class="empty-state" id="reviewAllocationsEmpty" hidden>
+            <div id="reviewPendingList" class="review-line-list" role="list"></div>
+            <div class="empty-state" id="reviewPendingEmpty" hidden>
                 <span class="i inbox"></span>
-                <p>ยังไม่มีหน่วยสินค้าในคลังที่ตรงกับรายการคำขอ</p>
+                <p>ไม่มีรายการค้างตรวจสอบ</p>
             </div>
         </section>
 
-        <section class="detail-card review-shortage-card">
+        <section class="detail-card review-complete-card">
             <header class="detail-card-head">
                 <div>
-                    <h3>รายการที่ยังขาด</h3>
-                    <p>จำนวนที่ยังไม่สามารถจัดสรรได้ อาจต้องดำเนินการจัดซื้อหรือ RFQ เพิ่มเติม</p>
+                    <h3>รายการที่ตรวจสอบแล้ว</h3>
+                    <p>บันทึกการตรวจสอบและการจ่ายอุปกรณ์ที่เสร็จสิ้นแล้ว</p>
                 </div>
             </header>
-            <div id="reviewShortages" class="shortage-list" role="list"></div>
-            <div class="empty-state" id="reviewShortagesEmpty" hidden>
+            <div id="reviewCompleteList" class="review-line-list" role="list"></div>
+            <div class="empty-state" id="reviewCompleteEmpty" hidden>
                 <span class="i checklist"></span>
-                <p>ไม่มีรายการที่ขาดอุปกรณ์</p>
+                <p>ยังไม่มีรายการที่ตรวจสอบแล้ว</p>
             </div>
         </section>
     </main>

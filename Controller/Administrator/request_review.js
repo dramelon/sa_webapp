@@ -1,6 +1,7 @@
 (function () {
     const params = new URLSearchParams(window.location.search);
     const requestId = params.get('request_id');
+    const returnTo = params.get('return_to');
 
     const reviewTitle = document.getElementById('reviewTitle');
     const reviewDate = document.getElementById('reviewDate');
@@ -15,10 +16,10 @@
     const reviewUpdatedBy = document.getElementById('reviewUpdatedBy');
     const reviewStatusBadge = document.getElementById('reviewStatusBadge');
     const reviewStatusText = document.getElementById('reviewStatusText');
-    const reviewAllocations = document.getElementById('reviewAllocations');
-    const reviewAllocationsEmpty = document.getElementById('reviewAllocationsEmpty');
-    const reviewShortages = document.getElementById('reviewShortages');
-    const reviewShortagesEmpty = document.getElementById('reviewShortagesEmpty');
+    const reviewPendingList = document.getElementById('reviewPendingList');
+    const reviewPendingEmpty = document.getElementById('reviewPendingEmpty');
+    const reviewCompleteList = document.getElementById('reviewCompleteList');
+    const reviewCompleteEmpty = document.getElementById('reviewCompleteEmpty');
 
     let modelRoot = '';
 
@@ -100,103 +101,93 @@
     }
 
     function syncBackLink(eventId) {
-        const target = eventId ? `./event_document_manage.html?event_id=${encodeURIComponent(eventId)}` : './event_document_manage.html';
         if (reviewBackLink) {
-            reviewBackLink.href = target;
+            if (returnTo) {
+                reviewBackLink.href = returnTo;
+            } else {
+                const target = eventId ? `./event_document_manage.html?event_id=${encodeURIComponent(eventId)}` : './event_document_manage.html';
+                reviewBackLink.href = target;
+            }
         }
     }
 
-    function renderAllocation(line, units) {
+    function normalizeProgress(value) {
+        const num = Number(value);
+        return Number.isFinite(num) && num >= 0 ? num : 0;
+    }
+
+    function formatLineTitle(line) {
+        const idLabel = line.line_no || line.request_line_id || line.item_id;
+        const titleLabel = line.item_name || `สินค้า #${line.item_id}`;
+        return idLabel ? `${titleLabel} (#${idLabel})` : titleLabel;
+    }
+
+    function buildReviewCard(line) {
         const wrapper = document.createElement('article');
-        wrapper.className = 'allocation-card';
+        wrapper.className = 'review-line-card';
         wrapper.setAttribute('role', 'listitem');
+
+        const leftSide = document.createElement('div');
+        leftSide.className = 'review-line-left';
 
         const header = document.createElement('div');
-        header.className = 'allocation-head';
+        header.className = 'review-line-head';
         const title = document.createElement('h4');
-        title.textContent = `${line.item_name || 'สินค้า #' + line.item_id}`;
-        const meta = document.createElement('p');
-        meta.className = 'allocation-meta';
-        meta.textContent = `ขอ ${line.quantity} หน่วย`; 
+        title.textContent = formatLineTitle(line);
         header.appendChild(title);
-        header.appendChild(meta);
 
-        const list = document.createElement('ul');
-        list.className = 'allocation-unit-list';
+        const content = document.createElement('div');
+        content.className = 'review-line-body';
 
-        units.forEach((unit) => {
-            const item = document.createElement('li');
-            item.className = 'allocation-unit';
-            const titleSpan = document.createElement('span');
-            titleSpan.className = 'unit-label';
-            titleSpan.textContent = `ยูนิต #${unit.item_unit_id}`;
-            const detailSpan = document.createElement('span');
-            detailSpan.className = 'unit-detail';
-            const location = unit.warehouse_name ? ` - ${unit.warehouse_name}` : '';
-            detailSpan.textContent = `${unit.serial_number || 'ไม่มี Serial'} (${unit.status || '—'})${location}`;
-            item.appendChild(titleSpan);
-            item.appendChild(detailSpan);
-            list.appendChild(item);
-        });
+        const reference = document.createElement('p');
+        reference.className = 'review-line-ref';
+        reference.textContent = line.item_reference ? `รหัสอ้างอิง: ${line.item_reference}` : 'ไม่มีรหัสอ้างอิง';
 
-        wrapper.appendChild(header);
-        wrapper.appendChild(list);
+        const reviewedCount = normalizeProgress(line.fulfilled_quantity ?? line.quantity_fulfilled);
+        const total = normalizeProgress(line.quantity);
+        const progress = document.createElement('p');
+        progress.className = 'review-line-progress';
+        progress.textContent = `${reviewedCount}/${total} item fulfill`;
+
+        content.appendChild(reference);
+        content.appendChild(progress);
+
+        leftSide.appendChild(header);
+        leftSide.appendChild(content);
+
+        const rightSide = document.createElement('div');
+        rightSide.className = 'review-line-right';
+
+        const action = document.createElement('a');
+        action.className = 'btn btn-ghost';
+        const lineId = line.line_no || line.item_id || line.request_line_id;
+        const requestLineParam = encodeURIComponent(line.request_line_id);
+        const lineParam = lineId !== undefined && lineId !== null ? `&line_id=${encodeURIComponent(lineId)}` : '';
+        const returnToParam = `&return_to=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        action.href = `./request_review_fulfillment.html?request_line_id=${requestLineParam}${lineParam}${returnToParam}`;
+        action.textContent = 'ดำเนินการตรวจสอบ';
+        action.setAttribute('aria-label', `ตรวจสอบ ${formatLineTitle(line)}`);
+        rightSide.appendChild(action);
+
+        wrapper.appendChild(leftSide);
+        wrapper.appendChild(rightSide);
         return wrapper;
     }
 
-    function renderShortage(line, missingQty, availableCount) {
-        const wrapper = document.createElement('article');
-        wrapper.className = 'shortage-card';
-        wrapper.setAttribute('role', 'listitem');
-
-        const title = document.createElement('h4');
-        title.textContent = `${line.item_name || 'สินค้า #' + line.item_id}`;
-        const meta = document.createElement('p');
-        meta.className = 'shortage-meta';
-        meta.textContent = `ต้องการ ${line.quantity} หน่วย - จัดสรรได้ ${availableCount} หน่วย`; 
-        const missing = document.createElement('p');
-        missing.className = 'shortage-missing';
-        missing.textContent = `ยังขาด ${missingQty} หน่วย`; 
-
-        wrapper.appendChild(title);
-        wrapper.appendChild(meta);
-        wrapper.appendChild(missing);
-        return wrapper;
-    }
-
-    function renderAllocations(linesWithUnits) {
-        if (!reviewAllocations || !reviewAllocationsEmpty) {
+    function renderReviewList(lines, listEl, emptyEl) {
+        if (!listEl || !emptyEl) {
             return;
         }
-        reviewAllocations.innerHTML = '';
-        let any = false;
-        linesWithUnits.forEach(({ line, units }) => {
-            if (units.length) {
-                const card = renderAllocation(line, units);
-                reviewAllocations.appendChild(card);
-                any = true;
-            }
-        });
-        reviewAllocations.hidden = !any;
-        reviewAllocationsEmpty.hidden = any;
-    }
-
-    function renderShortages(linesWithUnits) {
-        if (!reviewShortages || !reviewShortagesEmpty) {
-            return;
+        listEl.innerHTML = '';
+        const hasItems = Array.isArray(lines) && lines.length > 0;
+        if (hasItems) {
+            lines.forEach((line) => {
+                const card = buildReviewCard(line);
+                listEl.appendChild(card);
+            });
         }
-        reviewShortages.innerHTML = '';
-        let any = false;
-        linesWithUnits.forEach(({ line, units }) => {
-            const missingQty = Math.max(0, (line.quantity || 0) - units.length);
-            if (missingQty > 0) {
-                const card = renderShortage(line, missingQty, units.length);
-                reviewShortages.appendChild(card);
-                any = true;
-            }
-        });
-        reviewShortages.hidden = !any;
-        reviewShortagesEmpty.hidden = any;
+        listEl.hidden = !hasItems;
+        emptyEl.hidden = hasItems;
     }
 
     async function fetchRequestDetail() {
@@ -210,26 +201,19 @@
         return payload?.data || null;
     }
 
-    async function fetchUnitsByItem(itemId) {
-        const response = await fetch(`${modelRoot}/item_units_by_item.php?item_id=${encodeURIComponent(itemId)}`, {
-            credentials: 'same-origin',
+    function renderReviewGroups(lines) {
+        const pending = [];
+        const reviewed = [];
+        lines.forEach((line) => {
+            const status = typeof line.fulfillment_status === 'string' ? line.fulfillment_status.toLowerCase() : '';
+            if (status && status !== 'pending') {
+                reviewed.push(line);
+            } else {
+                pending.push(line);
+            }
         });
-        if (!response.ok) {
-            throw new Error(`โหลดข้อมูลหน่วยสินค้าไม่สำเร็จ: ${response.status} ${response.statusText}`);
-        }
-        const payload = await response.json();
-        return Array.isArray(payload?.data) ? payload.data : [];
-    }
-
-    async function loadAllocations(lines) {
-        const results = [];
-        for (const line of lines) {
-            const units = await fetchUnitsByItem(line.item_id);
-            const availableUnits = Array.isArray(units) ? units.slice(0, Math.max(0, line.quantity || 0)) : [];
-            results.push({ line, units: availableUnits });
-        }
-        renderAllocations(results);
-        renderShortages(results);
+        renderReviewList(pending, reviewPendingList, reviewPendingEmpty);
+        renderReviewList(reviewed, reviewCompleteList, reviewCompleteEmpty);
     }
 
     function applyRequestInfo(data) {
@@ -280,7 +264,7 @@
             const data = await fetchRequestDetail();
             applyRequestInfo(data);
             const lines = Array.isArray(data?.lines) ? data.lines : [];
-            await loadAllocations(lines);
+            renderReviewGroups(lines);
         } catch (error) {
             console.error(error);
             setMessage(error?.message || 'ไม่สามารถโหลดข้อมูลเพื่อตรวจสอบได้', 'error');

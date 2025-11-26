@@ -254,3 +254,24 @@ CREATE TABLE booking (
     Note TEXT DEFAULT NULL,
     Status ENUM('reserved','checked_out','in_use','returned','cancelled','expired') NOT NULL DEFAULT 'reserved'
 );
+
+
+
+
+-- REQUEST_FULFILLMENT v1
+CREATE TABLE request_fulfillemnt (
+    RequestFulfillmentID    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    RequestLineID           BIGINT UNSIGNED NOT NULL,
+    Note                    TEXT DEFAULT NULL
+);
+
+-- REQUEST_FULFILLMENT_LINE v1
+CREATE TABLE request_fulfillemnt_line (
+    RequestFulfillmentLineID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    RequestFulfillmentID     BIGINT UNSIGNED NOT NULL,
+    ItemUnitID               BIGINT UNSIGNED NULL,
+    SourceType               ENUM('inventory','customer_provided','other') NOT NULL DEFAULT 'inventory',
+    Note                     TEXT NULL,
+    ReturnCustomerFlag       BOOLEAN NOT NULL DEFAULT FALSE,
+    PaidExcludedFlag         BOOLEAN NOT NULL DEFAULT FALSE
+);

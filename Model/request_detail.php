@@ -59,6 +59,7 @@ try {
             rl.LineNo,
             rl.ItemID,
             rl.QuantityRequested,
+            rl.FulfillmentStatus,
             rl.Note,
             rl.Status,
             i.ItemName,
@@ -87,10 +88,12 @@ try {
         }
         $lines[] = [
             'request_line_id' => (int) $line['RequestLineID'],
+            'line_no' => (int) $line['LineNo'],
             'item_id' => (int) $line['ItemID'],
             'item_name' => $line['ItemName'],
             'item_reference' => $line['RefItemID'],
             'quantity' => (int) $line['QuantityRequested'],
+            'fulfillment_status' => strtolower((string) $line['FulfillmentStatus']),
             'note' => $line['Note'],
             'uom' => $line['UOM'],
             'rate' => $line['Rate'],

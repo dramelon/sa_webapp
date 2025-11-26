@@ -1443,6 +1443,7 @@
         }
         const params = new URLSearchParams();
         params.set('request_id', requestId);
+        params.set('return_to', window.location.pathname + window.location.search);
         window.location.href = `./request_review.html?${params.toString()}`;
     }
 
