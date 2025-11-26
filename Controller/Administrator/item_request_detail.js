@@ -31,6 +31,8 @@
     const requestReference = document.getElementById('requestReference');
     const requestLinesBody = document.getElementById('requestLinesBody');
     const requestLinesEmpty = document.getElementById('requestLinesEmpty');
+    const requestLinesFilterEmpty = document.getElementById('requestLinesFilterEmpty');
+    const requestLinesSearch = document.getElementById('requestLinesSearch');
     const addRequestLineButton = document.getElementById('addRequestLine');
     const unsavedBanner = document.getElementById('unsavedBanner');
     const inlineSaveButton = document.getElementById('btnSaveInline');
@@ -52,6 +54,7 @@
     let isDirty = false;
     let isPopulating = false;
     let lastSnapshot = { request_name: '', status: 'draft', lines: [] };
+    let hasValidationError = false;
 
     const allowedStatuses = ['draft', 'submitted', 'pending', 'approved', 'closed', 'cancelled'];
 
@@ -104,7 +107,7 @@
     }
 
     function updateSaveButtonState() {
-        const shouldDisable = isSaving || !isDirty;
+        const shouldDisable = isSaving || !isDirty || hasValidationError;
         if (saveButton) {
             saveButton.disabled = shouldDisable;
             if (shouldDisable) {
@@ -585,6 +588,25 @@
         }
     }
 
+    function collectSelectedItemIds(skipRow = null) {
+        if (!requestLinesBody) {
+            return new Set();
+        }
+        const ids = new Set();
+        const rows = Array.from(requestLinesBody.querySelectorAll('.request-line-row'));
+        rows.forEach((row) => {
+            if (skipRow && row === skipRow) {
+                return;
+            }
+            const input = row.querySelector('.request-line-item-id');
+            const idValue = input ? Number.parseInt(input.value, 10) : Number.NaN;
+            if (Number.isFinite(idValue) && idValue > 0) {
+                ids.add(idValue);
+            }
+        });
+        return ids;
+    }
+
     function openInstantItemCreate() {
         const targetUrl = './item_manage.html?mode=create';
         const newWindow = window.open(targetUrl, '_blank', 'noopener');
@@ -652,7 +674,7 @@
         return parts.join(' • ');
     }
 
-    function createRequestItemTypeahead({ initialItem = null, onSelect = () => {}, onClear = () => {} } = {}) {
+    function createRequestItemTypeahead({ initialItem = null, onSelect = () => {}, onClear = () => {}, filterResults = null } = {}) {
         const root = document.createElement('div');
         root.className = 'typeahead';
         const input = document.createElement('input');
@@ -755,7 +777,8 @@
                 if (currentToken !== fetchToken) {
                     return;
                 }
-                renderList(results);
+                const filtered = typeof filterResults === 'function' ? filterResults(results) : results;
+                renderList(filtered);
                 if (list.children.length) {
                     list.hidden = false;
                 }
@@ -807,12 +830,146 @@
         };
     }
 
+    function applyDuplicateValidation(row, itemCounts) {
+        const itemIdInput = row.querySelector('.request-line-item-id');
+        const itemIdValue = itemIdInput ? Number.parseInt(itemIdInput.value, 10) : Number.NaN;
+        const isDuplicate = Number.isFinite(itemIdValue) && itemCounts.get(itemIdValue) > 1;
+        const typeaheadField = row.querySelector('.request-line-typeahead');
+        const duplicateHint = row.querySelector('.request-line-duplicate');
+        if (typeaheadField) {
+            typeaheadField.classList.toggle('has-error', isDuplicate);
+            if (isDuplicate) {
+                typeaheadField.setAttribute('aria-invalid', 'true');
+            } else {
+                typeaheadField.removeAttribute('aria-invalid');
+            }
+        }
+        if (duplicateHint) {
+            duplicateHint.hidden = !isDuplicate;
+        }
+        row.classList.toggle('has-duplicate', isDuplicate);
+        return isDuplicate;
+    }
+
+    function applyQuantityValidation(row) {
+        const quantityField = row.querySelector('.request-line-qty-field');
+        const quantityInput = row.querySelector('.request-line-quantity');
+        const quantityError = row.querySelector('.request-line-qty-error');
+        const raw = quantityInput ? quantityInput.value.trim() : '';
+        const numeric = raw === '' ? Number.NaN : Number(raw);
+        const isLarge = Number.isFinite(numeric) && numeric > 1000;
+        let hasError = false;
+        let message = '';
+        if (raw === '' || Number.isNaN(numeric)) {
+            hasError = true;
+            message = 'กรุณากรอกจำนวนเป็นตัวเลขจำนวนเต็ม';
+        } else if (!Number.isInteger(numeric)) {
+            hasError = true;
+            message = 'จำนวนต้องเป็นจำนวนเต็มเท่านั้น';
+        } else if (numeric < 0 || numeric > 1_000_000) {
+            hasError = true;
+            message = 'จำนวนต้องอยู่ระหว่าง 0 - 1,000,000';
+        }
+
+        if (quantityField) {
+            quantityField.classList.toggle('has-error', hasError);
+            quantityField.classList.toggle('is-large', isLarge);
+        }
+        if (quantityInput) {
+            if (hasError) {
+                quantityInput.setAttribute('aria-invalid', 'true');
+            } else {
+                quantityInput.removeAttribute('aria-invalid');
+            }
+        }
+        if (quantityError) {
+            quantityError.textContent = message;
+            quantityError.hidden = !hasError;
+        }
+        return hasError;
+    }
+
+    function updateValidationState() {
+        const rows = Array.from(requestLinesBody?.querySelectorAll('.request-line-row') || []);
+        const itemCounts = new Map();
+        rows.forEach((row) => {
+            const itemIdInput = row.querySelector('.request-line-item-id');
+            const itemIdValue = itemIdInput ? Number.parseInt(itemIdInput.value, 10) : Number.NaN;
+            if (Number.isFinite(itemIdValue) && itemIdValue > 0) {
+                itemCounts.set(itemIdValue, (itemCounts.get(itemIdValue) || 0) + 1);
+            }
+        });
+        let hasError = false;
+        rows.forEach((row) => {
+            const qtyError = applyQuantityValidation(row);
+            const duplicateError = applyDuplicateValidation(row, itemCounts);
+            if (qtyError || duplicateError) {
+                hasError = true;
+            }
+        });
+        hasValidationError = hasError;
+        updateSaveButtonState();
+        return hasError;
+    }
+
+    function buildRowSearchText(row) {
+        const parts = [];
+        const itemIdInput = row.querySelector('.request-line-item-id');
+        const itemInput = row.querySelector('.request-line-input');
+        const meta = row.querySelector('.request-line-meta');
+        const noteInput = row.querySelector('.request-line-note');
+        if (itemIdInput?.value) {
+            parts.push(itemIdInput.value);
+        }
+        if (itemInput?.value) {
+            parts.push(itemInput.value);
+        }
+        if (meta && !meta.hidden && meta.textContent) {
+            parts.push(meta.textContent);
+        }
+        if (noteInput?.value) {
+            parts.push(noteInput.value);
+        }
+        return parts.join(' ').toLowerCase();
+    }
+
+    function applyRequestLinesFilter() {
+        const rows = Array.from(requestLinesBody?.querySelectorAll('.request-line-row') || []);
+        const term = requestLinesSearch?.value?.trim().toLowerCase() || '';
+        let visibleCount = 0;
+        rows.forEach((row) => {
+            if (!term) {
+                row.hidden = false;
+                visibleCount += 1;
+                return;
+            }
+            const haystack = buildRowSearchText(row);
+            const matches = haystack.includes(term);
+            row.hidden = !matches;
+            if (matches) {
+                visibleCount += 1;
+            }
+        });
+        const hasAnyRow = rows.length > 0;
+        if (requestLinesEmpty) {
+            requestLinesEmpty.hidden = hasAnyRow;
+        }
+        if (requestLinesFilterEmpty) {
+            requestLinesFilterEmpty.hidden = Boolean(!term || visibleCount > 0 || !hasAnyRow);
+        }
+    }
+
     function updateRequestLinesEmpty() {
         if (!requestLinesEmpty) {
             return;
         }
         const hasRows = requestLinesBody && requestLinesBody.children.length > 0;
         requestLinesEmpty.hidden = hasRows;
+        if (hasRows) {
+            applyRequestLinesFilter();
+        } else if (requestLinesFilterEmpty) {
+            requestLinesFilterEmpty.hidden = true;
+        }
     }
 
     function isLastRequestLineRow(row) {
@@ -910,16 +1067,29 @@
                 if (!isPopulating) {
                     markDirty();
                 }
+                updateValidationState();
+                applyRequestLinesFilter();
             },
             onClear: () => {
                 updateItemMeta(null);
                 if (!isPopulating) {
                     markDirty();
                 }
+                updateValidationState();
+                applyRequestLinesFilter();
+            },
+            filterResults: (results) => {
+                const blockedIds = collectSelectedItemIds(row);
+                return results.filter((item) => !blockedIds.has(item.id));
             },
         });
 
-        itemField.append(typeahead.root, itemMeta);
+        const duplicateHint = document.createElement('p');
+        duplicateHint.className = 'request-line-error request-line-duplicate';
+        duplicateHint.textContent = 'มีสินค้านี้อยู่ในคำขอแล้ว';
+        duplicateHint.hidden = true;
+
+        itemField.append(typeahead.root, itemMeta, duplicateHint);
         itemCell.append(itemField);
 
         const quantityCell = document.createElement('td');
@@ -939,7 +1109,10 @@
         if (!quantityInput.value) {
             quantityInput.value = '1';
         }
-        quantityField.appendChild(quantityInput);
+        const quantityError = document.createElement('p');
+        quantityError.className = 'request-line-error request-line-qty-error';
+        quantityError.hidden = true;
+        quantityField.append(quantityInput, quantityError);
         quantityCell.appendChild(quantityField);
 
         const rateCell = document.createElement('td');
@@ -969,6 +1142,8 @@
             if (requestLinesBody && row.parentElement === requestLinesBody) {
                 requestLinesBody.removeChild(row);
                 updateRequestLinesEmpty();
+                updateValidationState();
+                applyRequestLinesFilter();
                 if (!isPopulating) {
                     markDirty();
                 }
@@ -979,37 +1154,30 @@
         row.append(itemCell, quantityCell, rateCell, noteCell, actionCell);
         requestLinesBody.appendChild(row);
         updateRequestLinesEmpty();
-
-        function updateQuantityState() {
-            const raw = quantityInput.value.trim();
-            const numeric = raw === '' ? Number.NaN : Number.parseInt(raw, 10);
-            const hasError = Number.isFinite(numeric) && (numeric < 0 || numeric > 1_000_000);
-            const isLarge = Number.isFinite(numeric) && numeric > 1000;
-            quantityField.classList.toggle('has-error', hasError);
-            quantityField.classList.toggle('is-large', isLarge);
-            if (hasError) {
-                quantityInput.setAttribute('aria-invalid', 'true');
-            } else {
-                quantityInput.removeAttribute('aria-invalid');
-            }
-        }
+        applyRequestLinesFilter();
 
         typeahead.input.addEventListener('input', () => {
             if (!isPopulating) {
                 markDirty();
             }
+            updateValidationState();
+            applyRequestLinesFilter();
         });
 
         const handleQuantityChange = () => {
-            updateQuantityState();
+            applyQuantityValidation(row);
             if (!isPopulating) {
                 markDirty();
             }
+            updateValidationState();
         };
 
         quantityInput.addEventListener('input', handleQuantityChange);
         quantityInput.addEventListener('change', handleQuantityChange);
-        quantityInput.addEventListener('blur', updateQuantityState);
+        quantityInput.addEventListener('blur', () => {
+            applyQuantityValidation(row);
+            updateValidationState();
+        });
 
         const handleAutoAdd = (event) => {
             if (event.key !== 'Enter' || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
@@ -1034,10 +1202,12 @@
             if (!isPopulating) {
                 markDirty();
             }
+            applyRequestLinesFilter();
         });
 
         updateItemMeta(initialItem);
-        updateQuantityState();
+        applyQuantityValidation(row);
+        updateValidationState();
 
         if (!isPopulating) {
             markDirty();
@@ -1064,6 +1234,7 @@
             updateRequestLinesEmpty();
         } finally {
             isPopulating = prev;
+            updateValidationState();
         }
     }
 
@@ -1091,7 +1262,16 @@
             setFormMessage('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ', 'error');
             return null;
         }
+        updateValidationState();
         const lines = [];
+        const itemCounts = new Map();
+        rows.forEach((row) => {
+            const itemIdInput = row.querySelector('.request-line-item-id');
+            const itemIdValue = itemIdInput ? Number.parseInt(itemIdInput.value, 10) : Number.NaN;
+            if (Number.isFinite(itemIdValue) && itemIdValue > 0) {
+                itemCounts.set(itemIdValue, (itemCounts.get(itemIdValue) || 0) + 1);
+            }
+        });
         for (let index = 0; index < rows.length; index += 1) {
             const row = rows[index];
             const itemIdInput = row.querySelector('.request-line-item-id');
@@ -1099,7 +1279,8 @@
             const noteInput = row.querySelector('.request-line-note');
             const noteValue = noteInput ? noteInput.value.trim() : '';
             const itemIdValue = itemIdInput ? Number.parseInt(itemIdInput.value, 10) : Number.NaN;
-            const quantityValue = quantityInput ? Number.parseInt(quantityInput.value, 10) : Number.NaN;
+            const quantityRaw = quantityInput ? quantityInput.value.trim() : '';
+            const quantityValue = quantityRaw === '' ? Number.NaN : Number(quantityRaw);
             const hasAnyValue = Boolean(itemIdInput?.value?.trim()) || Boolean(quantityInput?.value?.trim()) || noteValue !== '';
             if (!hasAnyValue) {
                 continue;
@@ -1112,16 +1293,24 @@
                 }
                 return null;
             }
-            if (!Number.isFinite(quantityValue) || quantityValue < 0) {
-                setFormMessage(`กรุณากรอกจำนวนที่ถูกต้อง (0 - 1,000,000) ในรายการที่ ${index + 1}`, 'error');
+            if (itemCounts.get(itemIdValue) > 1) {
+                setFormMessage(`ไม่สามารถเพิ่มสินค้าซ้ำกันได้ (รายการที่ ${index + 1})`, 'error');
+                const focusTarget = row.querySelector('.request-line-input');
+                if (focusTarget) {
+                    focusTarget.focus();
+                }
+                return null;
+            }
+            if (!Number.isInteger(quantityValue)) {
+                setFormMessage(`จำนวนในรายการที่ ${index + 1} ต้องเป็นจำนวนเต็ม`, 'error');
                 if (quantityInput) {
                     quantityInput.focus();
                     quantityInput.dispatchEvent(new Event('input'));
                 }
                 return null;
             }
-            if (quantityValue > 1_000_000) {
-                setFormMessage(`จำนวนในรายการที่ ${index + 1} ต้องไม่เกิน 1,000,000`, 'error');
+            if (!Number.isFinite(quantityValue) || quantityValue < 0 || quantityValue > 1_000_000) {
+                setFormMessage(`กรุณากรอกจำนวนที่ถูกต้อง (0 - 1,000,000) ในรายการที่ ${index + 1}`, 'error');
                 if (quantityInput) {
                     quantityInput.focus();
                     quantityInput.dispatchEvent(new Event('input'));
@@ -1130,7 +1319,7 @@
             }
             lines.push({
                 item_id: itemIdValue,
-                quantity: quantityValue,
+                quantity: Number.parseInt(quantityValue, 10),
                 note: noteValue || null,
             });
         }
@@ -1459,6 +1648,11 @@
         if (addRequestLineButton) {
             addRequestLineButton.addEventListener('click', () => {
                 addRequestLine();
+            });
+        }
+        if (requestLinesSearch) {
+            requestLinesSearch.addEventListener('input', () => {
+                applyRequestLinesFilter();
             });
         }
         if (inlineSaveButton) {

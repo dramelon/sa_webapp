@@ -132,6 +132,15 @@
                         <h3>รายการสินค้า</h3>
                         <p class="request-lines-sub">เพิ่มรายการอุปกรณ์ที่ต้องการเบิกสำหรับคำขอนี้</p>
                     </div>
+                    <label class="request-lines-search" for="requestLinesSearch">
+                        <span class="i search"></span>
+                        <input
+                            type="search"
+                            id="requestLinesSearch"
+                            placeholder="ค้นหาด้วยรหัสสินค้า ชื่อสินค้า หรือหมายเหตุ"
+                            aria-label="ค้นหารายการสินค้าในตาราง"
+                        />
+                    </label>
                 </header>
                 <div class="form-alert" id="requestFormMessage" role="alert" hidden></div>
                 <div class="table-wrap">
@@ -150,6 +159,10 @@
                     <div class="empty-state" id="requestLinesEmpty" hidden>
                         <span class="i inbox"></span>
                         <p>ยังไม่มีรายการสินค้าในคำขอ</p>
+                    </div>
+                    <div class="empty-state" id="requestLinesFilterEmpty" hidden>
+                        <span class="i search"></span>
+                        <p>ไม่พบรายการที่ตรงกับคำค้นหา</p>
                     </div>
                 </div>
                 <div class="request-lines-actions">
