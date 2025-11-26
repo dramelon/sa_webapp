@@ -79,7 +79,7 @@ $requestNote = trim((string) ($input['note'] ?? ''));
 /**
  * @var array $allowedStatuses A list of permissible status values for a request.
  */
-$allowedStatuses = ['draft', 'submitted', 'approved', 'closed', 'cancelled'];
+$allowedStatuses = ['draft', 'submitted', 'pending', 'approved', 'closed', 'cancelled'];
 /**
  * @var string $status The status of the request, sanitized to be one of the allowed values.
  */

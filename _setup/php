@@ -220,7 +220,7 @@ CREATE TABLE requests (
     RequestSeqNo  INT UNSIGNED NOT NULL,
 
     Note          TEXT DEFAULT NULL,
-    Status        ENUM('draft','submitted','approved','closed','cancelled') NOT NULL DEFAULT 'draft'
+    Status        ENUM('draft','submitted','pending','approved','closed','cancelled') NOT NULL DEFAULT 'draft'
 );
 
 -- REQUEST_LINES v2

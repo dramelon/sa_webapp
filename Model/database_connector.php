@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/database_connector.php';
 
 /**
  * Centralized database connector for the SA WebApp models.
@@ -8,7 +7,7 @@ require_once __DIR__ . '/database_connector.php';
  * instantiating PDO manually. The method reuses a single PDO instance per
  * request so multiple queries can share one stable connection.
  * 
- * version :1
+ * @version 1
  */
 final class DatabaseConnector
 {

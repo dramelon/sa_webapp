@@ -21,6 +21,11 @@
     const requestForm = document.getElementById('requestForm');
     const requestNameInput = document.getElementById('requestNameInput');
     const requestStatusSelect = document.getElementById('requestStatusSelect');
+    const submitRequestButton = document.getElementById('submitRequestButton');
+    const resetDraftButton = document.getElementById('resetDraftButton');
+    const cancelRequestButton = document.getElementById('cancelRequestButton');
+    const reviewRequestButton = document.getElementById('reviewRequestButton');
+    const requestStatusDescription = document.getElementById('requestStatusDescription');
     const requestFormMessage = document.getElementById('requestFormMessage');
     const requestInfoMessage = document.getElementById('requestInfoMessage');
     const requestReference = document.getElementById('requestReference');
@@ -48,7 +53,7 @@
     let isPopulating = false;
     let lastSnapshot = { request_name: '', status: 'draft', lines: [] };
 
-    const allowedStatuses = ['draft', 'submitted', 'approved', 'closed', 'cancelled'];
+    const allowedStatuses = ['draft', 'submitted', 'pending', 'approved', 'closed', 'cancelled'];
 
     function normalizeStatus(value) {
         const text = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -173,10 +178,7 @@
                 requestNameInput.value = snapshot.request_name || '';
             }
             const status = normalizeStatus(snapshot.status);
-            if (requestStatusSelect) {
-                requestStatusSelect.value = status;
-            }
-            updateStatusBadge(status);
+            syncStatusUI(status);
             resetRequestLines(snapshot.lines.map((line) => ({ ...line })));
         });
         updateTitle();
@@ -483,12 +485,58 @@
             const labels = {
                 draft: 'สถานะ: ร่าง',
                 submitted: 'สถานะ: ส่งคำขอ',
+                pending: 'สถานะ: รอตรวจสอบ',
                 approved: 'สถานะ: อนุมัติแล้ว',
                 closed: 'สถานะ: ปิดคำขอ',
                 cancelled: 'สถานะ: ยกเลิก',
             };
             statusText.textContent = labels[normalized] || `สถานะ: ${normalized || '—'}`;
         }
+    }
+
+    function updateStatusDescription(status) {
+        const normalized = typeof status === 'string' ? status.toLowerCase() : '';
+        if (!requestStatusDescription) {
+            return;
+        }
+        const descriptions = {
+            draft: 'ยังเป็นร่าง สามารถแก้ไขรายละเอียดหรือส่งคำขอได้',
+            submitted: 'ส่งคำขอแล้ว รอการตรวจสอบหรือเลือกเปิดหน้าตรวจสอบ',
+            pending: 'อยู่ระหว่างตรวจสอบ สามารถย้อนกลับเป็นร่างหรือยกเลิกได้',
+            approved: 'คำขอได้รับการอนุมัติแล้ว',
+            closed: 'คำขอปิดการดำเนินการแล้ว',
+            cancelled: 'คำขอถูกยกเลิกและเก็บเป็นประวัติ',
+        };
+        requestStatusDescription.textContent = descriptions[normalized] || 'กำหนดสถานะคำขอเพื่อดำเนินการต่อ';
+    }
+
+    function updateStatusActions(status) {
+        const normalized = normalizeStatus(status);
+        const isDraft = normalized === 'draft';
+        const isSubmitted = normalized === 'submitted';
+        const isPending = normalized === 'pending';
+        if (submitRequestButton) {
+            submitRequestButton.hidden = !isDraft;
+        }
+        if (resetDraftButton) {
+            resetDraftButton.hidden = !(isSubmitted || isPending);
+        }
+        if (reviewRequestButton) {
+            reviewRequestButton.hidden = !isSubmitted;
+        }
+        if (cancelRequestButton) {
+            cancelRequestButton.hidden = !(isDraft || isSubmitted || isPending);
+        }
+    }
+
+    function syncStatusUI(status) {
+        const normalized = normalizeStatus(status);
+        if (requestStatusSelect) {
+            requestStatusSelect.value = normalized;
+        }
+        updateStatusBadge(normalized);
+        updateStatusDescription(normalized);
+        updateStatusActions(normalized);
     }
 
     function formatItemDisplay(item) {
@@ -915,7 +963,8 @@
         const removeButton = document.createElement('button');
         removeButton.type = 'button';
         removeButton.className = 'ghost request-line-remove';
-        removeButton.textContent = 'ลบ';
+        removeButton.innerHTML = '<span class="i trash"></span>';
+        removeButton.setAttribute('aria-label', 'ลบรายการ');
         removeButton.addEventListener('click', () => {
             if (requestLinesBody && row.parentElement === requestLinesBody) {
                 requestLinesBody.removeChild(row);
@@ -1147,12 +1196,12 @@
 
     async function handleSave() {
         if (isSaving) {
-            return;
+            return false;
         }
         resetFormMessages();
         const payload = collectPayload();
         if (!payload) {
-            return;
+            return false;
         }
         try {
             setSavingBusy(true);
@@ -1175,15 +1224,37 @@
                     }
                     newParams.set('request_id', result.request_id);
                     window.location.href = `./item_request_detail.html?${newParams.toString()}`;
-                    return;
+                    return true;
                 }
                 await loadRequest();
             }
+            return true;
         } catch (error) {
             setFormMessage(error?.message || 'ไม่สามารถบันทึกคำขอได้', 'error');
+            return false;
         } finally {
             setSavingBusy(false);
         }
+    }
+
+    async function moveToReviewPage() {
+        const currentStatus = normalizeStatus(requestStatusSelect ? requestStatusSelect.value : 'draft');
+        if (currentStatus !== 'pending') {
+            syncStatusUI('pending');
+            markDirty();
+        }
+        const saved = await handleSave();
+        if (!saved) {
+            setFormMessage('กรุณาแก้ไขข้อมูลให้ถูกต้องก่อนเปิดหน้าตรวจสอบคำขอ', 'error');
+            return;
+        }
+        if (!requestId) {
+            setFormMessage('ไม่พบรหัสคำขอสำหรับเปิดหน้าตรวจสอบ', 'error');
+            return;
+        }
+        const params = new URLSearchParams();
+        params.set('request_id', requestId);
+        window.location.href = `./request_review.html?${params.toString()}`;
     }
 
     function applyEventInfo(info) {
@@ -1217,10 +1288,7 @@
             if (requestNameInput) {
                 requestNameInput.value = snapshot.request_name || '';
             }
-            if (requestStatusSelect) {
-                requestStatusSelect.value = snapshot.status;
-            }
-            updateStatusBadge(snapshot.status);
+            syncStatusUI(snapshot.status);
             resetRequestLines(snapshot.lines.map((line) => ({ ...line })));
         });
         if (requestReference) {
@@ -1327,10 +1395,7 @@
                         if (requestNameInput) {
                             requestNameInput.value = '';
                         }
-                        if (requestStatusSelect) {
-                            requestStatusSelect.value = 'draft';
-                        }
-                        updateStatusBadge('draft');
+                        syncStatusUI('draft');
                         resetRequestLines([]);
                         renderAuditLogs([]);
                     });
@@ -1364,9 +1429,31 @@
         if (requestStatusSelect) {
             requestStatusSelect.addEventListener('change', (event) => {
                 const value = normalizeStatus(event.target.value);
-                requestStatusSelect.value = value;
-                updateStatusBadge(value);
+                syncStatusUI(value);
                 markDirty();
+            });
+        }
+        if (submitRequestButton) {
+            submitRequestButton.addEventListener('click', () => {
+                syncStatusUI('submitted');
+                markDirty();
+            });
+        }
+        if (resetDraftButton) {
+            resetDraftButton.addEventListener('click', () => {
+                syncStatusUI('draft');
+                markDirty();
+            });
+        }
+        if (cancelRequestButton) {
+            cancelRequestButton.addEventListener('click', () => {
+                syncStatusUI('cancelled');
+                markDirty();
+            });
+        }
+        if (reviewRequestButton) {
+            reviewRequestButton.addEventListener('click', () => {
+                moveToReviewPage();
             });
         }
         if (addRequestLineButton) {
@@ -1408,6 +1495,7 @@
         setInterval(updateThaiDate, 60_000);
         syncBackLink();
         bindEvents();
+        syncStatusUI(requestStatusSelect ? requestStatusSelect.value : 'draft');
         updateSaveButtonState();
         resolveInitialState();
     }

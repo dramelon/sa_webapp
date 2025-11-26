@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="th" data-root="../.." data-allowed="Administrator">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ตรวจสอบคำขอเบิกอุปกรณ์</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body data-app-shell="admin" data-page="requests" data-shell-title="ตรวจสอบคำขอเบิกอุปกรณ์">
+    <main class="page detail-page request-review-page">
+        <section class="page-head">
+            <div>
+                <p class="breadcrumb"><a id="reviewBackLink" href="./item_request_detail.html">← กลับไปหน้าคำขอ</a></p>
+                <h2 id="reviewTitle">กำลังโหลดคำขอ...</h2>
+                <p class="date" id="reviewDate">วัน...</p>
+            </div>
+            <div class="head-actions">
+                <span class="status-chip" id="reviewStatusBadge">
+                    <span class="dot"></span>
+                    <span id="reviewStatusText">สถานะ: —</span>
+                </span>
+            </div>
+        </section>
+
+        <div class="form-alert" id="reviewMessage" role="alert" hidden></div>
+
+        <section class="detail-card review-summary-card">
+            <header class="detail-card-head">
+                <div>
+                    <h3>รายละเอียดคำขอ</h3>
+                    <p>สรุปข้อมูลที่ต้องใช้ในการตรวจสอบและจัดสรรอุปกรณ์</p>
+                </div>
+                <p class="request-reference" id="reviewReference">รหัสคำขอ: —</p>
+            </header>
+            <div class="review-summary-grid">
+                <div>
+                    <p class="meta-label">ชื่อคำขอ</p>
+                    <h4 id="reviewRequestName">—</h4>
+                </div>
+                <div>
+                    <p class="meta-label">อีเว้น</p>
+                    <h4 id="reviewEventName">—</h4>
+                    <p class="meta-sub" id="reviewEventCode">รหัสอีเว้น: —</p>
+                    <p class="meta-sub" id="reviewEventDates">ช่วงเวลา: —</p>
+                </div>
+                <div>
+                    <p class="meta-label">บันทึกล่าสุด</p>
+                    <p id="reviewUpdatedAt">—</p>
+                    <p id="reviewUpdatedBy">—</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="detail-card review-allocation-card">
+            <header class="detail-card-head">
+                <div>
+                    <h3>อุปกรณ์ที่จัดสรรได้จากคลัง</h3>
+                    <p>จับคู่คำขอแต่ละรายการกับหน่วยสินค้าในคลังที่พร้อมจ่าย</p>
+                </div>
+            </header>
+            <div id="reviewAllocations" class="allocation-list" role="list"></div>
+            <div class="empty-state" id="reviewAllocationsEmpty" hidden>
+                <span class="i inbox"></span>
+                <p>ยังไม่มีหน่วยสินค้าในคลังที่ตรงกับรายการคำขอ</p>
+            </div>
+        </section>
+
+        <section class="detail-card review-shortage-card">
+            <header class="detail-card-head">
+                <div>
+                    <h3>รายการที่ยังขาด</h3>
+                    <p>จำนวนที่ยังไม่สามารถจัดสรรได้ อาจต้องดำเนินการจัดซื้อหรือ RFQ เพิ่มเติม</p>
+                </div>
+            </header>
+            <div id="reviewShortages" class="shortage-list" role="list"></div>
+            <div class="empty-state" id="reviewShortagesEmpty" hidden>
+                <span class="i checklist"></span>
+                <p>ไม่มีรายการที่ขาดอุปกรณ์</p>
+            </div>
+        </section>
+    </main>
+
+    <script src="../../Controller/common/admin_shell.js" defer></script>
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Administrator/request_review.js" defer></script>
+</body>
+
+</html>

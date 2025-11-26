@@ -68,16 +68,6 @@
                         <span class="field-label">ชื่อคำขอ *</span>
                         <input type="text" id="requestNameInput" name="request_name" maxlength="200" required />
                     </label>
-                    <label class="field-block">
-                        <span class="field-label">สถานะคำขอ *</span>
-                        <select id="requestStatusSelect" name="status">
-                            <option value="draft">ร่าง</option>
-                            <option value="submitted">ส่งคำขอ</option>
-                            <option value="approved">อนุมัติแล้ว</option>
-                            <option value="closed">ปิดคำขอ</option>
-                            <option value="cancelled">ยกเลิก</option>
-                        </select>
-                    </label>
                 </div>
                 <div class="request-audit">
                     <div class="request-audit-head">
@@ -92,6 +82,47 @@
                         <p>ยังไม่มีประวัติการดำเนินการ</p>
                     </div>
                     <div class="request-audit-list" id="requestAuditList" hidden role="list"></div>
+                </div>
+            </section>
+
+            <section class="detail-card request-status-card">
+                <header class="detail-card-head">
+                    <div>
+                        <h3>สถานะคำขอ</h3>
+                        <p>จัดการขั้นตอนการส่งคำขอและการตรวจสอบ</p>
+                    </div>
+                </header>
+                <div class="request-status-body">
+                    <p class="status-helper" id="requestStatusDescription">ระบุสถานะคำขอเพื่อดำเนินการต่อ</p>
+                    <label class="field-block">
+                        <span class="field-label">สถานะคำขอ *</span>
+                        <select id="requestStatusSelect" name="status">
+                            <option value="draft">ร่าง</option>
+                            <option value="submitted">ส่งคำขอ</option>
+                            <option value="pending">รอตรวจสอบ</option>
+                            <option value="approved">อนุมัติแล้ว</option>
+                            <option value="closed">ปิดคำขอ</option>
+                            <option value="cancelled">ยกเลิก</option>
+                        </select>
+                    </label>
+                    <div class="status-actions" id="requestStatusActions">
+                        <button class="btn btn-secondary" type="button" id="submitRequestButton">
+                            <span class="i check"></span>
+                            ส่งคำขอ
+                        </button>
+                        <button class="btn btn-ghost" type="button" id="resetDraftButton">
+                            <span class="i refresh"></span>
+                            กลับเป็นร่าง
+                        </button>
+                        <button class="btn btn-secondary" type="button" id="reviewRequestButton">
+                            <span class="i progress"></span>
+                            ตรวจสอบคำขอ
+                        </button>
+                        <button class="btn btn-ghost status-danger" type="button" id="cancelRequestButton">
+                            <span class="i trash"></span>
+                            ยกเลิกคำขอ
+                        </button>
+                    </div>
                 </div>
             </section>
 

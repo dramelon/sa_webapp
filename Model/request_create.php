@@ -40,7 +40,7 @@ if ($requestName === '') {
 $requestName = mb_substr($requestName, 0, 200, 'UTF-8');
 $requestNote = trim((string) ($input['note'] ?? ''));
 
-$allowedStatuses = ['draft', 'submitted', 'approved', 'closed', 'cancelled'];
+$allowedStatuses = ['draft', 'submitted', 'pending', 'approved', 'closed', 'cancelled'];
 $statusInput = strtolower((string) ($input['status'] ?? 'draft'));
 $status = in_array($statusInput, $allowedStatuses, true) ? $statusInput : 'draft';
 
