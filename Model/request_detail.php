@@ -69,10 +69,17 @@ try {
             i.UOM,
             i.Brand,
             i.Model,
-            c.Name AS category_name
+            c.Name AS category_name,
+            rf.RequestFulfillmentID,
+            (
+                SELECT COUNT(*)
+                FROM request_fulfillment_line rfl
+                WHERE rfl.RequestFulfillmentID = rf.RequestFulfillmentID
+            ) AS fulfillment_line_count
         FROM request_lines rl
         LEFT JOIN items i ON i.ItemID = rl.ItemID
         LEFT JOIN itemcategorys c ON c.ItemCategoryID = i.ItemCategoryID
+        LEFT JOIN request_fulfillment rf ON rf.RequestLineID = rl.RequestLineID
         WHERE rl.RequestID = :request_id
         ORDER BY rl.LineNo ASC, rl.RequestLineID ASC
     ";
@@ -101,6 +108,8 @@ try {
             'category_name' => $line['category_name'],
             'brand' => $line['Brand'],
             'model' => $line['Model'],
+            'request_fulfillment_id' => $line['RequestFulfillmentID'] !== null ? (int) $line['RequestFulfillmentID'] : null,
+            'fulfillment_line_count' => $line['fulfillment_line_count'] !== null ? (int) $line['fulfillment_line_count'] : 0,
         ];
     }
 

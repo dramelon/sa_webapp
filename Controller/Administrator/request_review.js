@@ -14,10 +14,17 @@
     const reviewEventDates = document.getElementById('reviewEventDates');
     const reviewUpdatedAt = document.getElementById('reviewUpdatedAt');
     const reviewUpdatedBy = document.getElementById('reviewUpdatedBy');
+    const reviewCreatedAt = document.getElementById('reviewCreatedAt');
+    const reviewCreatedBy = document.getElementById('reviewCreatedBy');
     const reviewStatusBadge = document.getElementById('reviewStatusBadge');
     const reviewStatusText = document.getElementById('reviewStatusText');
+    const reviewOngoingCard = document.querySelector('.review-ongoing-card');
+    const reviewOngoingList = document.getElementById('reviewOngoingList');
+    const reviewOngoingEmpty = document.getElementById('reviewOngoingEmpty');
+    const reviewPendingCard = document.querySelector('.review-pending-card');
     const reviewPendingList = document.getElementById('reviewPendingList');
     const reviewPendingEmpty = document.getElementById('reviewPendingEmpty');
+    const reviewCompleteCard = document.querySelector('.review-complete-card');
     const reviewCompleteList = document.getElementById('reviewCompleteList');
     const reviewCompleteEmpty = document.getElementById('reviewCompleteEmpty');
 
@@ -128,6 +135,47 @@
         return idLabel ? `${titleLabel} (#${idLabel})` : titleLabel;
     }
 
+    function getFulfillmentCount(line) {
+        const fulfillmentLength = Array.isArray(line.fulfillment?.lines)
+            ? line.fulfillment.lines.length
+            : null;
+        if (Number.isFinite(line.fulfillment_line_count)) {
+            return normalizeProgress(line.fulfillment_line_count);
+        }
+        if (fulfillmentLength !== null) {
+            return normalizeProgress(fulfillmentLength);
+        }
+        return normalizeProgress(line.fulfillment?.quantity_fulfilled ?? line.fulfilled_quantity ?? line.quantity_fulfilled);
+    }
+
+    function buildProgressText(fulfilled, total) {
+        const progress = document.createElement('p');
+        progress.className = 'review-line-progress';
+
+        const overFilled = total > 0 && fulfilled > total;
+        const fullyFilled = total > 0 && fulfilled === total;
+        const hasSome = fulfilled > 0;
+
+        if (overFilled) {
+            progress.classList.add('state-over');
+            progress.textContent = `${fulfilled}/${total} item fulfill`;
+            const warning = document.createElement('span');
+            warning.className = 'overfill-note';
+            warning.textContent = ' ? (item was assigned more than it need)';
+            progress.appendChild(warning);
+            return { element: progress, overFilled, fullyFilled, hasSome };
+        }
+
+        if (fullyFilled) {
+            progress.classList.add('state-complete');
+        } else if (hasSome) {
+            progress.classList.add('state-partial');
+        }
+
+        progress.textContent = `${fulfilled}/${total} item fulfill`;
+        return { element: progress, overFilled, fullyFilled, hasSome };
+    }
+
     function buildReviewCard(line) {
         const wrapper = document.createElement('article');
         wrapper.className = 'review-line-card';
@@ -149,16 +197,12 @@
         reference.className = 'review-line-ref';
         reference.textContent = line.item_reference ? `รหัสอ้างอิง: ${line.item_reference}` : 'ไม่มีรหัสอ้างอิง';
 
-        const reviewedCount = normalizeProgress(
-            line.fulfillment?.quantity_fulfilled ?? line.fulfilled_quantity ?? line.quantity_fulfilled,
-        );
+        const reviewedCount = getFulfillmentCount(line);
         const total = normalizeProgress(line.quantity);
-        const progress = document.createElement('p');
-        progress.className = 'review-line-progress';
-        progress.textContent = `${reviewedCount}/${total} item fulfill`;
+        const progress = buildProgressText(reviewedCount, total);
 
         content.appendChild(reference);
-        content.appendChild(progress);
+        content.appendChild(progress.element);
 
         leftSide.appendChild(header);
         leftSide.appendChild(content);
@@ -179,10 +223,10 @@
 
         wrapper.appendChild(leftSide);
         wrapper.appendChild(rightSide);
-        return wrapper;
+        return { card: wrapper, progressMeta: progress };
     }
 
-    function renderReviewList(lines, listEl, emptyEl) {
+    function renderReviewList(lines, listEl, emptyEl, cardEl) {
         if (!listEl || !emptyEl) {
             return;
         }
@@ -190,12 +234,15 @@
         const hasItems = Array.isArray(lines) && lines.length > 0;
         if (hasItems) {
             lines.forEach((line) => {
-                const card = buildReviewCard(line);
+                const { card } = buildReviewCard(line);
                 listEl.appendChild(card);
             });
         }
         listEl.hidden = !hasItems;
         emptyEl.hidden = hasItems;
+        if (cardEl) {
+            cardEl.hidden = !hasItems;
+        }
     }
 
     async function fetchRequestDetail() {
@@ -209,19 +256,39 @@
         return payload?.data || null;
     }
 
+    function isLineComplete(status, reviewedCount, total) {
+        const normalized = typeof status === 'string' ? status.toLowerCase() : '';
+        if (total > 0 && reviewedCount > total) {
+            return false;
+        }
+        if (['complete', 'completed', 'fulfilled', 'done', 'closed'].includes(normalized)) {
+            return true;
+        }
+        return total > 0 && reviewedCount >= total;
+    }
+
     function renderReviewGroups(lines) {
         const pending = [];
+        const ongoing = [];
         const reviewed = [];
         lines.forEach((line) => {
             const status = typeof line.fulfillment_status === 'string' ? line.fulfillment_status.toLowerCase() : '';
-            if (status && status !== 'pending') {
+            const reviewedCount = getFulfillmentCount(line);
+            const total = normalizeProgress(line.quantity);
+            const complete = isLineComplete(status, reviewedCount, total);
+            const hasReviewStarted = reviewedCount > 0 || (status && status !== 'pending');
+
+            if (complete) {
                 reviewed.push(line);
+            } else if (hasReviewStarted) {
+                ongoing.push(line);
             } else {
                 pending.push(line);
             }
         });
-        renderReviewList(pending, reviewPendingList, reviewPendingEmpty);
-        renderReviewList(reviewed, reviewCompleteList, reviewCompleteEmpty);
+        renderReviewList(pending, reviewPendingList, reviewPendingEmpty, reviewPendingCard);
+        renderReviewList(ongoing, reviewOngoingList, reviewOngoingEmpty, reviewOngoingCard);
+        renderReviewList(reviewed, reviewCompleteList, reviewCompleteEmpty, reviewCompleteCard);
     }
 
     function applyRequestInfo(data) {
@@ -255,6 +322,12 @@
         }
         if (reviewUpdatedBy) {
             reviewUpdatedBy.textContent = `โดย: ${data.updated_by_label || '—'}`;
+        }
+        if (reviewCreatedAt) {
+            reviewCreatedAt.textContent = `สร้างเมื่อ: ${formatThaiDate(data.created_at)}`;
+        }
+        if (reviewCreatedBy) {
+            reviewCreatedBy.textContent = `สร้างโดย: ${data.created_by_label || '—'}`;
         }
         updateStatus(status);
         syncBackLink(data.event?.event_id);

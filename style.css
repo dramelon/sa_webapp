@@ -2058,6 +2058,20 @@ body {
     font-weight: 600;
 }
 
+.review-line-progress.state-complete {
+    color: #16a34a;
+}
+
+.review-line-progress.state-partial,
+.review-line-progress.state-over {
+    color: #f97316;
+}
+
+.review-line-progress .overfill-note {
+    font-weight: 500;
+    color: inherit;
+}
+
 .review-line-action {
     justify-self: end; /* This is a grid property, flex is used now */
 }

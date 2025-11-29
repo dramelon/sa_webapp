@@ -26,30 +26,41 @@
 
         <div class="form-alert" id="reviewMessage" role="alert" hidden></div>
 
-        <section class="detail-card review-summary-card">
+        <section class="detail-meta request-meta" aria-live="polite">
+            <div class="meta-primary">
+                <p class="meta-label">คำขอ</p>
+                <h3 id="reviewRequestName">—</h3>
+                <p class="meta-sub" id="reviewReference">รหัสคำขอ: —</p>
+            </div>
+            <div class="meta-secondary">
+                 <div class="meta-group">
+                    <p class="meta-label">อีเว้น</p>
+                    <p id="reviewEventName" class="meta-sub">—</p>
+                    <p id="reviewEventCode" class="meta-sub">รหัสอีเว้น: —</p>
+                    <p id="reviewEventDates" class="meta-sub">ช่วงเวลา: —</p>
+                 </div>
+                 <div class="meta-group">
+                    <p class="meta-updated" id="reviewUpdatedAt">อัปเดตล่าสุด: —</p>
+                    <p class="meta-updated-by" id="reviewUpdatedBy">โดย: —</p>
+                 </div>
+                 <div class="meta-group">
+                    <p class="meta-created" id="reviewCreatedAt">สร้างเมื่อ: —</p>
+                    <p class="meta-created-by" id="reviewCreatedBy">สร้างโดย: —</p>
+                 </div>
+            </div>
+        </section>
+
+        <section class="detail-card review-ongoing-card" hidden>
             <header class="detail-card-head">
                 <div>
-                    <h3>รายละเอียดคำขอ</h3>
-                    <p>สรุปข้อมูลที่ต้องใช้ในการตรวจสอบและจัดสรรอุปกรณ์</p>
+                    <h3>รายการกำลังดำเนินการตรวจสอบ</h3>
+                    <p>อยู่ระหว่างการตรวจสอบหรือจัดสรรอุปกรณ์</p>
                 </div>
-                <p class="request-reference" id="reviewReference">รหัสคำขอ: —</p>
             </header>
-            <div class="review-summary-grid">
-                <div>
-                    <p class="meta-label">ชื่อคำขอ</p>
-                    <h4 id="reviewRequestName">—</h4>
-                </div>
-                <div>
-                    <p class="meta-label">อีเว้น</p>
-                    <h4 id="reviewEventName">—</h4>
-                    <p class="meta-sub" id="reviewEventCode">รหัสอีเว้น: —</p>
-                    <p class="meta-sub" id="reviewEventDates">ช่วงเวลา: —</p>
-                </div>
-                <div>
-                    <p class="meta-label">บันทึกล่าสุด</p>
-                    <p id="reviewUpdatedAt">—</p>
-                    <p id="reviewUpdatedBy">—</p>
-                </div>
+            <div id="reviewOngoingList" class="review-line-list" role="list"></div>
+            <div class="empty-state" id="reviewOngoingEmpty" hidden>
+                <span class="i hourglass"></span>
+                <p>ยังไม่มีรายการที่อยู่ระหว่างดำเนินการ</p>
             </div>
         </section>
 
