@@ -530,15 +530,41 @@
     }
 
     function setDirtyState(next) {
-        if (isDirty === next) {
+        const nextState = Boolean(next);
+        if (isDirty === nextState) {
             updateSaveButtonState();
             return;
         }
-        isDirty = next;
+        isDirty = nextState;
         if (unsavedBanner) {
-            unsavedBanner.hidden = !isDirty;
+            if (isDirty) {
+                unsavedBanner.hidden = false;
+                requestAnimationFrame(() => {
+                    unsavedBanner.classList.add('is-active');
+                });
+            } else {
+                if (!unsavedBanner.classList.contains('is-active')) {
+                    unsavedBanner.hidden = true;
+                } else {
+                    unsavedBanner.classList.remove('is-active');
+                    const handleTransitionEnd = (event) => {
+                        if (event.propertyName === 'transform') {
+                            unsavedBanner.hidden = true;
+                            unsavedBanner.removeEventListener('transitionend', handleTransitionEnd);
+                        }
+                    };
+                    unsavedBanner.addEventListener('transitionend', handleTransitionEnd);
+                }
+            }
         }
         updateSaveButtonState();
+    }
+
+    function markDirty() {
+        if (isSaving || isPopulating || !initialSnapshot) {
+            return;
+        }
+        setDirtyState(true);
     }
 
     function updateMeta(data) {
@@ -820,13 +846,7 @@
     }
 
     function handleFieldMutated() {
-        if (isSaving || isPopulating || !initialSnapshot) {
-            updateSaveButtonState();
-            return;
-        }
-        const current = serializeForm();
-        const dirty = JSON.stringify(current) !== JSON.stringify(initialSnapshot);
-        setDirtyState(dirty);
+        markDirty();
     }
 
     function attachFieldListeners() {
@@ -917,6 +937,7 @@
         btnDiscardChanges.addEventListener('click', () => {
             pendingNavigationAction = null;
             restoreSnapshot(initialSnapshot);
+            setDirtyState(false);
             showMessage('ยกเลิกการแก้ไขแล้ว', 'info');
         });
     }

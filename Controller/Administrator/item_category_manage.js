@@ -121,13 +121,32 @@
     }
 
     function setDirty(next) {
-        if (isDirty === next) {
+        const nextState = Boolean(next);
+        if (isDirty === nextState) {
             updateSaveButtonState();
             return;
         }
-        isDirty = next;
+        isDirty = nextState;
         if (unsavedBanner) {
-            unsavedBanner.hidden = !isDirty;
+            if (isDirty) {
+                unsavedBanner.hidden = false;
+                requestAnimationFrame(() => {
+                    unsavedBanner.classList.add('is-active');
+                });
+            } else {
+                if (!unsavedBanner.classList.contains('is-active')) {
+                    unsavedBanner.hidden = true;
+                } else {
+                    unsavedBanner.classList.remove('is-active');
+                    const handleTransitionEnd = (event) => {
+                        if (event.propertyName === 'transform') {
+                            unsavedBanner.hidden = true;
+                            unsavedBanner.removeEventListener('transitionend', handleTransitionEnd);
+                        }
+                    };
+                    unsavedBanner.addEventListener('transitionend', handleTransitionEnd);
+                }
+            }
         }
         updateSaveButtonState();
     }
@@ -405,6 +424,7 @@
         btnDiscardChanges.addEventListener('click', () => {
             pendingNavigationAction = null;
             restoreSnapshot(initialSnapshot);
+            setDirty(false);
             showMessage('ยกเลิกการแก้ไขแล้ว', 'info');
         });
     }

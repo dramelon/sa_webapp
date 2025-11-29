@@ -858,13 +858,32 @@
     }
 
     function setDirtyState(next) {
-        if (isDirty === next) {
+        const nextState = Boolean(next);
+        if (isDirty === nextState) {
             updateSaveButtonState();
             return;
         }
-        isDirty = next;
+        isDirty = nextState;
         if (unsavedBanner) {
-            unsavedBanner.hidden = !isDirty;
+            if (isDirty) {
+                unsavedBanner.hidden = false;
+                requestAnimationFrame(() => {
+                    unsavedBanner.classList.add('is-active');
+                });
+            } else {
+                if (!unsavedBanner.classList.contains('is-active')) {
+                    unsavedBanner.hidden = true;
+                } else {
+                    unsavedBanner.classList.remove('is-active');
+                    const handleTransitionEnd = (event) => {
+                        if (event.propertyName === 'transform') {
+                            unsavedBanner.hidden = true;
+                            unsavedBanner.removeEventListener('transitionend', handleTransitionEnd);
+                        }
+                    };
+                    unsavedBanner.addEventListener('transitionend', handleTransitionEnd);
+                }
+            }
         }
         updateSaveButtonState();
     }
@@ -889,17 +908,8 @@
     }
 
     function handleFormMutated() {
-        refreshDateUiState();
-        if (isPopulating || !initialSnapshot) {
-            syncLocationDisplayFromForm();
-            syncCustomerDisplayFromForm();
-            return;
-        }
-        syncLocationDisplayFromForm();
-        syncCustomerDisplayFromForm();
-        const current = serializeForm();
-        const dirty = !snapshotsEqual(current, initialSnapshot);
-        setDirtyState(dirty);
+        if (isPopulating || !initialSnapshot) return;
+        setDirtyState(true);
     }
 
     function runWithPopulation(fn) {
@@ -913,6 +923,11 @@
     }
 
     function restoreSnapshot(snapshot) {
+        handleFormMutated();
+        refreshDateUiState();
+        syncLocationDisplayFromForm();
+        syncCustomerDisplayFromForm();
+
         if (!snapshot) {
             return;
         }
@@ -1288,6 +1303,7 @@
         btnDiscardChanges.addEventListener('click', () => {
             pendingNavigationAction = null;
             restoreSnapshot(initialSnapshot);
+            setDirtyState(false);
             showMessage('ยกเลิกการแก้ไขแล้ว', 'info');
         });
     }
@@ -1354,6 +1370,7 @@
     if (eventForm) {
         eventForm.addEventListener('input', handleFormMutated);
         eventForm.addEventListener('change', handleFormMutated);
+        eventForm.addEventListener('change', refreshDateUiState);
         preventEnterSubmit(eventForm);
     }
 
