@@ -301,25 +301,15 @@
         eventTitle.textContent = 'เอกสารของอีเว้น';
     }
 
-    function updateThaiDate() {
+    const updateThaiDate = () => {
         if (!pageDate) {
             return;
         }
         const now = new Date();
         const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
         const months = [
-            'มกราคม',
-            'กุมภาพันธ์',
-            'มีนาคม',
-            'เมษายน',
-            'พฤษภาคม',
-            'มิถุนายน',
-            'กรกฎาคม',
-            'สิงหาคม',
-            'กันยายน',
-            'ตุลาคม',
-            'พฤศจิกายน',
-            'ธันวาคม',
+            'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
         ];
         const day = days[now.getDay()];
         const date = now.getDate();
@@ -327,7 +317,7 @@
         const year = now.getFullYear() + 543;
         const time = now.toLocaleTimeString('th-TH', { hour12: false });
         pageDate.textContent = `วัน${day}ที่ ${date} ${month} ${year} เวลา ${time}`;
-    }
+    };
 
     function formatDateTime(value) {
         if (!value) {
@@ -1609,8 +1599,8 @@
 
     function boot({ root }) {
         modelRoot = `${root}/Model`;
-        updateThaiDate();
-        setInterval(updateThaiDate, 60_000);
+        updateThaiDate(); // Initial call
+        setInterval(updateThaiDate, 1000);
         resolveBackLinks();
         updateEventHeading();
         syncRequestEventDetails();

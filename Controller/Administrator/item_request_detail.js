@@ -201,7 +201,7 @@
 
     function updateThaiDate() {
         if (!pageDate) {
-            return;
+            return; // Exit if pageDate element is not found
         }
         const now = new Date();
         const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
@@ -224,7 +224,7 @@
         const month = months[now.getMonth()];
         const year = now.getFullYear() + 543;
         const time = now.toLocaleTimeString('th-TH', { hour12: false });
-        pageDate.textContent = `วัน${day}ที่ ${date} ${month} ${year} เวลา ${time}`;
+        pageDate.textContent = `วัน${day}ที่ ${date} ${month} ${year} เวลา ${time}`; // Update the text content
     }
 
     function formatDateTime(value) {
@@ -1686,8 +1686,8 @@
 
     function boot({ root }) {
         modelRoot = `${root}/Model`;
-        updateThaiDate();
-        setInterval(updateThaiDate, 60_000);
+        updateThaiDate(); // Initial call
+        setInterval(updateThaiDate, 1000);
         syncBackLink();
         bindEvents();
         syncStatusUI(requestStatusSelect ? requestStatusSelect.value : 'draft');

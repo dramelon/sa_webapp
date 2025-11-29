@@ -2059,7 +2059,7 @@ body {
 }
 
 .review-line-action {
-    /* justify-self: end; */ /* This is a grid property, flex is used now */
+    justify-self: end; /* This is a grid property, flex is used now */
 }
 
 .unit-detail {

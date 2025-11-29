@@ -4,7 +4,7 @@
     const returnTo = params.get('return_to');
 
     const reviewTitle = document.getElementById('reviewTitle');
-    const reviewDate = document.getElementById('reviewDate');
+    const pageDate = document.getElementById('pageDate');
     const reviewBackLink = document.getElementById('reviewBackLink');
     const reviewMessage = document.getElementById('reviewMessage');
     const reviewReference = document.getElementById('reviewReference');
@@ -70,17 +70,23 @@
         return startText !== '—' ? startText : endText;
     }
 
-    function updateThaiNow() {
-        if (!reviewDate) {
-            return;
+    const updateThaiDate = () => {
+        if (!pageDate) {
+            return; // Exit if pageDate element is not found
         }
         const now = new Date();
+        const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+        const months = [
+            'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+        ];
+        const day = days[now.getDay()];
+        const date = now.getDate();
+        const month = months[now.getMonth()];
         const thaiYear = now.getFullYear() + 543;
-        const formatted = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1)
-            .toString()
-            .padStart(2, '0')}/${thaiYear}`;
-        reviewDate.textContent = `วันที่ ${formatted}`;
-    }
+        const time = now.toLocaleTimeString('th-TH', { hour12: false });
+        pageDate.textContent = `วัน${day}ที่ ${date} ${month} ${thaiYear} เวลา ${time}`; // Update the text content
+    };
 
     function normalizeStatus(status) {
         const value = typeof status === 'string' ? status.trim().toLowerCase() : '';
@@ -258,8 +264,8 @@
             return;
         }
         modelRoot = `${root}/Model`;
-        updateThaiNow();
-        setInterval(updateThaiNow, 60_000);
+        updateThaiDate(); // Initial call
+        setInterval(updateThaiDate, 1000);
         try {
             const data = await fetchRequestDetail();
             applyRequestInfo(data);

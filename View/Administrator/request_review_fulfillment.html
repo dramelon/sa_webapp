@@ -14,7 +14,7 @@
             <div>
                 <p class="breadcrumb"><a id="fulfillmentBackLink" href="./request_review.html">← กลับไปหน้าตรวจสอบคำขอ</a></p>
                 <h2 id="fulfillmentTitle">กำลังเตรียมข้อมูล...</h2>
-                <p class="date" id="fulfillmentDate">วันที่ ...</p>
+                <p class="date" id="pageDate">วันที่ ...</p>
             </div>
         </section>
 
@@ -80,39 +80,36 @@
                     <p>กำหนดแหล่งที่มาและตัวเลือกเพิ่มเติมให้กับ Item Unit ที่จะจ่าย</p>
                 </div>
             </header>
-            <div class="fulfillment-list fulfillment-selected-list" role="list" aria-label="รายการที่เลือก">
-                <div class="fulfillment-list-row fulfillment-list-header" aria-hidden="true">
-                    <span>Item Unit</span>
-                    <span>แหล่งที่มา</span>
-                    <span>ตัวเลือกเพิ่มเติม</span>
-                    <span></span>
-                </div>
-                <div class="fulfillment-list-row" id="selectedItemUnitTemplate" hidden>
-                    <div class="fulfillment-line-main">
-                        <p class="line-title">Item Unit #—</p>
-                        <p class="meta-sub">รายละเอียดเพิ่มเติมของ Item Unit</p>
+            <div id="selectedItemUnitList" class="review-line-list" role="list" aria-label="รายการที่เลือก">
+                <article class="review-line-card" role="listitem" id="selectedItemUnitTemplate" hidden>
+                    <div class="review-line-left">
+                        <div class="review-line-head">
+                            <h4 class="line-title">Item Unit #—</h4>
+                        </div>
+                        <div class="review-line-body">
+                            <p class="review-line-ref meta-sub">รายละเอียดเพิ่มเติมของ Item Unit</p>
+                        </div>
                     </div>
-                    <label class="field-inline">
-                        <span class="field-label">SourceType</span>
-                        <select class="source-type-input">
-                            <option value="inventory">inventory</option>
-                            <option value="customer_provided">customer_provided</option>
-                            <option value="other">other</option>
-                        </select>
-                    </label>
-                    <div class="field-inline checkbox-group">
-                        <label>
-                            <input type="checkbox" class="return-flag-input" /> คืนลูกค้า
+                    <div class="review-line-middle">
+                        <label class="field-inline">
+                            <span class="field-label">SourceType</span>
+                            <select class="source-type-input">
+                                <option value="inventory">inventory</option>
+                                <option value="customer_provided">customer_provided</option>
+                                <option value="other">other</option>
+                            </select>
                         </label>
-                        <label>
-                            <input type="checkbox" class="paid-excluded-input" /> ไม่รวมจ่ายเงิน
-                        </label>
+                        <div class="field-inline">
+                            <label><input type="checkbox" class="return-flag-input" /> คืนลูกค้า</label>
+                            <label><input type="checkbox" class="paid-excluded-input" /> ไม่รวมจ่ายเงิน</label>
+                        </div>
                     </div>
-                    <button class="btn btn-ghost btn-icon remove-selected" type="button" aria-label="นำออกจากการเลือก">
-                        <span class="i trash"></span>
-                    </button>
-                </div>
-                <div id="selectedItemUnitList" aria-live="polite"></div>
+                    <div class="review-line-right">
+                        <button class="btn btn-ghost btn-icon remove-selected" type="button" aria-label="นำออกจากการเลือก">
+                            <span class="i trash"></span>
+                        </button>
+                    </div>
+                </article>
             </div>
             <div class="empty-state" id="selectedItemUnitEmpty">
                 <span class="i inbox"></span>
@@ -127,25 +124,22 @@
                     <p>เพิ่ม Item Unit ที่เกี่ยวข้องกับบรรทัดคำขอนี้เพื่อดำเนินการจ่าย</p>
                 </div>
             </header>
-            <div class="fulfillment-list fulfillment-available-list" role="list" aria-label="รายการ Item Unit ทั้งหมด">
-                <div class="fulfillment-list-row fulfillment-list-header" aria-hidden="true">
-                    <span>Item Unit</span>
-                    <span>รายละเอียด</span>
-                    <span></span>
-                </div>
-                <div class="fulfillment-list-row" id="availableItemUnitTemplate" hidden>
-                    <div class="fulfillment-line-main">
-                        <p class="line-title">Item Unit #—</p>
-                        <p class="meta-sub">ระบุข้อมูลเพิ่มเติมของ Item Unit</p>
+            <div id="availableItemUnitList" class="review-line-list" role="list" aria-label="รายการ Item Unit ทั้งหมด">
+                <article class="review-line-card" role="listitem" id="availableItemUnitTemplate" hidden>
+                    <div class="review-line-left">
+                        <div class="review-line-head">
+                            <h4 class="line-title">Item Unit #—</h4>
+                        </div>
+                        <div class="review-line-body">
+                            <p class="review-line-ref meta-sub">ระบุข้อมูลเพิ่มเติมของ Item Unit</p>
+                            <p class="review-line-progress item-id-ref">จะเชื่อมโยงกับบรรทัดคำขอ</p>
+                        </div>
                     </div>
-                    <div class="fulfillment-line-meta">
-                        <p class="meta-label">ItemID</p>
-                        <p class="meta-sub">จะเชื่อมโยงกับบรรทัดคำขอ</p>
+                    <div class="review-line-right">
+                        <button class="btn btn-secondary add-item-unit" type="button">เพิ่ม</button>
                     </div>
-                    <button class="btn btn-secondary add-item-unit" type="button">เพิ่ม</button>
+                </article>
                 </div>
-                <div id="availableItemUnitList" aria-live="polite"></div>
-            </div>
             <div class="empty-state" id="availableItemUnitEmpty" hidden>
                 <span class="i inbox"></span>
                 <p>ไม่พบ Item Unit ที่เชื่อมกับบรรทัดคำขอ</p>
