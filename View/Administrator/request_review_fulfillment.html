@@ -16,9 +16,20 @@
                 <h2 id="fulfillmentTitle">กำลังเตรียมข้อมูล...</h2>
                 <p class="date" id="pageDate">วันที่ ...</p>
             </div>
+            <div class="page-head-actions">
+                <button class="btn btn-primary" type="button" id="saveFulfillmentButton">บันทึกการจ่าย</button>
+            </div>
         </section>
 
         <div class="form-alert" id="fulfillmentMessage" role="alert" hidden></div>
+
+        <div id="unsavedBanner" class="unsaved-banner request-unsaved" role="status" hidden>
+            <span class="unsaved-text">ยังมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</span>
+            <div class="unsaved-actions">
+                <button type="button" class="unsaved-btn unsaved-btn-muted" id="btnDiscardChanges">ยกเลิกการเปลี่ยนแปลง</button>
+                <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnSaveInline">บันทึกตอนนี้</button>
+            </div>
+        </div>
 
         <section class="detail-card">
             <header class="detail-card-head">

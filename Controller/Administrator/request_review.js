@@ -149,7 +149,9 @@
         reference.className = 'review-line-ref';
         reference.textContent = line.item_reference ? `รหัสอ้างอิง: ${line.item_reference}` : 'ไม่มีรหัสอ้างอิง';
 
-        const reviewedCount = normalizeProgress(line.fulfilled_quantity ?? line.quantity_fulfilled);
+        const reviewedCount = normalizeProgress(
+            line.fulfillment?.quantity_fulfilled ?? line.fulfilled_quantity ?? line.quantity_fulfilled,
+        );
         const total = normalizeProgress(line.quantity);
         const progress = document.createElement('p');
         progress.className = 'review-line-progress';
