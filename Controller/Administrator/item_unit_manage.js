@@ -83,6 +83,7 @@
     const scheduleStatus = document.getElementById('scheduleStatus');
     const schedulePrevBtn = document.getElementById('schedulePrev');
     const scheduleNextBtn = document.getElementById('scheduleNext');
+    const scheduleTodayBtn = document.getElementById('scheduleToday');
     const bookingModal = document.getElementById('bookingModal');
     const bookingModalTitle = document.getElementById('bookingModalTitle');
     const bookingModalRange = document.getElementById('bookingModalRange');
@@ -354,6 +355,15 @@
     }
 
     function formatBookingChipLabel(booking) {
+        const eventName = booking?.event_name || booking?.EventName || '';
+        const eventCode = booking?.event_code || booking?.EventCode || '';
+        const eventLabel = eventName.trim() || eventCode.trim();
+        if (eventLabel) {
+            if (eventLabel.length > 32) {
+                return `${eventLabel.slice(0, 29)}...`;
+            }
+            return eventLabel;
+        }
         const rawNote = booking?.note || booking?.Note || '';
         const note = rawNote.trim();
         const scheduleLabel = formatScheduleStatusLabel(
@@ -462,7 +472,14 @@
                             booking.start_time || booking.StartTime,
                             booking.end_time || booking.EndTime,
                         );
-                        chip.addEventListener('click', () => openBookingModal(booking));
+                        chip.addEventListener('click', () => {
+                            const eventId = booking?.event_id || booking?.EventID;
+                            if (eventId) {
+                                window.location.href = `./event_manage.html?event_id=${encodeURIComponent(eventId)}`;
+                            } else {
+                                openBookingModal(booking);
+                            }
+                        });
                         chipList.append(chip);
                     });
                     cell.append(chipList);
@@ -511,6 +528,7 @@
         isLoadingSchedule = true;
         if (schedulePrevBtn) schedulePrevBtn.disabled = true;
         if (scheduleNextBtn) scheduleNextBtn.disabled = true;
+        if (scheduleTodayBtn) scheduleTodayBtn.disabled = true;
         updateScheduleStatus('กำลังโหลดตารางการใช้งาน...', 'info');
         try {
             const data = await fetchItemUnitBookings(currentUnitId, scheduleMonth);
@@ -527,6 +545,7 @@
             isLoadingSchedule = false;
             if (schedulePrevBtn) schedulePrevBtn.disabled = false;
             if (scheduleNextBtn) scheduleNextBtn.disabled = false;
+            if (scheduleTodayBtn) scheduleTodayBtn.disabled = false;
             renderScheduleGrid();
         }
     }
@@ -534,6 +553,19 @@
     function changeScheduleMonth(delta) {
         scheduleMonth = shiftMonth(scheduleMonth, delta);
         if (currentUnitId) {
+            loadSchedule();
+        } else {
+            renderScheduleGrid();
+        }
+    }
+
+    function resetScheduleToCurrentMonth() {
+        const currentMonth = getStartOfMonth(new Date());
+        const isSameMonth = scheduleMonth.getFullYear() === currentMonth.getFullYear()
+            && scheduleMonth.getMonth() === currentMonth.getMonth();
+        scheduleMonth = currentMonth;
+        if (currentUnitId) {
+            if (isLoadingSchedule && isSameMonth) return;
             loadSchedule();
         } else {
             renderScheduleGrid();
@@ -1678,6 +1710,10 @@
 
     if (scheduleNextBtn) {
         scheduleNextBtn.addEventListener('click', () => changeScheduleMonth(1));
+    }
+
+    if (scheduleTodayBtn) {
+        scheduleTodayBtn.addEventListener('click', resetScheduleToCurrentMonth);
     }
 
     if (btnBack) {

@@ -258,15 +258,16 @@ try {
             }
         } else {
             $insertBooking = $db->prepare(
-                'INSERT INTO booking (RequestAllocationID, ItemUnitID, StartTime, EndTime, Note, Status)
-                VALUES (:allocation_id, :item_unit_id, :start_time, :end_time, :note, :status)'
+                'INSERT INTO booking (RequestAllocationID, ItemUnitID, StartTime, EndTime, ScheduleStatus, Note, Status)
+                VALUES (:allocation_id, :item_unit_id, :start_time, :end_time, :schedule_status, :note, :status)'
             );
             $insertBooking->bindValue(':allocation_id', $requestLineId, PDO::PARAM_INT);
             $insertBooking->bindValue(':item_unit_id', $itemUnitId, PDO::PARAM_INT);
             $insertBooking->bindValue(':start_time', $eventStart, PDO::PARAM_STR);
             $insertBooking->bindValue(':end_time', $eventEnd, PDO::PARAM_STR);
+            $insertBooking->bindValue(':schedule_status', 'event_use', PDO::PARAM_STR);
             $insertBooking->bindValue(':note', 'Generated from fulfillment save', PDO::PARAM_STR);
-            $insertBooking->bindValue(':status', 'reserved', PDO::PARAM_STR);
+            $insertBooking->bindValue(':status', 'confirmed', PDO::PARAM_STR);
             $insertBooking->execute();
         }
     }

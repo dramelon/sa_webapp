@@ -52,19 +52,25 @@ try {
 
     $sql = "
         SELECT
-            BookingID,
-            RequestAllocationID,
-            ItemUnitID,
-            StartTime,
-            EndTime,
-            Note,
-            ScheduleStatus,
-            Status
-        FROM booking
-        WHERE ItemUnitID = :item_unit_id
-            AND StartTime < :range_end
-            AND EndTime >= :range_start
-        ORDER BY StartTime ASC
+            b.BookingID,
+            b.RequestAllocationID,
+            b.ItemUnitID,
+            b.StartTime,
+            b.EndTime,
+            b.Note,
+            b.ScheduleStatus,
+            b.Status,
+            e.EventID,
+            e.EventName,
+            e.RefEventID
+        FROM booking b
+        LEFT JOIN request_lines rl ON rl.RequestLineID = b.RequestAllocationID
+        LEFT JOIN requests r ON r.RequestID = rl.RequestID
+        LEFT JOIN events e ON e.EventID = r.EventID
+        WHERE b.ItemUnitID = :item_unit_id
+            AND b.StartTime < :range_end
+            AND b.EndTime >= :range_start
+        ORDER BY b.StartTime ASC
     ";
 
     $stmt = $db->prepare($sql);
@@ -86,6 +92,9 @@ try {
                 'note' => $row['Note'],
                 'schedule_status' => $row['ScheduleStatus'] ?? null,
                 'status' => $row['Status'],
+                'event_id' => isset($row['EventID']) ? (int) $row['EventID'] : null,
+                'event_name' => $row['EventName'] ?? null,
+                'event_code' => $row['RefEventID'] ?? null,
             ];
         },
         $rows
