@@ -23,7 +23,11 @@ try {
             w.Status AS status,
             w.Note AS note,
             w.LocationID AS location_id,
-            l.LocationName AS location_name
+            l.LocationName AS location_name,
+            l.RefLocationID AS ref_location_id,
+            l.Email AS location_email,
+            l.Phone AS location_phone,
+            l.Country AS location_country
         FROM warehouse w
         LEFT JOIN locations l ON l.LocationID = w.LocationID
         WHERE w.WarehouseID = :id
@@ -51,6 +55,10 @@ try {
         'location_id' => $row['location_id'] !== null ? (int) $row['location_id'] : null,
         'location_name' => $row['location_name'],
         'location_label' => formatLocationLabel($row['location_id'] ?? null, $row['location_name'] ?? ''),
+        'location_ref' => $row['ref_location_id'],
+        'location_email' => $row['location_email'],
+        'location_phone' => $row['location_phone'],
+        'location_country' => $row['location_country'],
         'created_at' => $audit['created_at'],
         'updated_at' => $audit['updated_at'],
         'created_by_id' => $audit['created_by_id'],

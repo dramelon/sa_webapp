@@ -68,6 +68,7 @@
             return null;
         }
         return {
+            request_line_id: line.request_line_id ?? null,
             item_id: line.item_id ?? line.id ?? null,
             item_name: line.item_name ?? line.name ?? '',
             item_reference: line.item_reference ?? line.ref_id ?? '',
@@ -998,6 +999,9 @@
         const row = document.createElement('tr');
         row.className = 'request-line-row';
         row.dataset.lineId = String(requestLineCounter);
+        if (Number.isFinite(initial?.request_line_id) && initial.request_line_id > 0) {
+            row.dataset.requestLineId = String(initial.request_line_id);
+        }
 
         const rateValue = document.createElement('span');
         rateValue.className = 'request-line-rate';
@@ -1060,6 +1064,11 @@
         const itemField = document.createElement('div');
         itemField.className = 'request-line-field';
 
+        const requestLineIdInput = document.createElement('input');
+        requestLineIdInput.type = 'hidden';
+        requestLineIdInput.className = 'request-line-id';
+        requestLineIdInput.value = row.dataset.requestLineId || '';
+
         const typeahead = createRequestItemTypeahead({
             initialItem,
             onSelect: (item) => {
@@ -1089,7 +1098,7 @@
         duplicateHint.textContent = 'มีสินค้านี้อยู่ในคำขอแล้ว';
         duplicateHint.hidden = true;
 
-        itemField.append(typeahead.root, itemMeta, duplicateHint);
+        itemField.append(requestLineIdInput, typeahead.root, itemMeta, duplicateHint);
         itemCell.append(itemField);
 
         const quantityCell = document.createElement('td');
@@ -1277,6 +1286,7 @@
             const itemIdInput = row.querySelector('.request-line-item-id');
             const quantityInput = row.querySelector('.request-line-quantity');
             const noteInput = row.querySelector('.request-line-note');
+            const requestLineIdInput = row.querySelector('.request-line-id');
             const noteValue = noteInput ? noteInput.value.trim() : '';
             const itemIdValue = itemIdInput ? Number.parseInt(itemIdInput.value, 10) : Number.NaN;
             const quantityRaw = quantityInput ? quantityInput.value.trim() : '';
@@ -1317,11 +1327,16 @@
                 }
                 return null;
             }
-            lines.push({
+            const requestLineIdValue = requestLineIdInput ? Number.parseInt(requestLineIdInput.value, 10) : Number.NaN;
+            const linePayload = {
                 item_id: itemIdValue,
                 quantity: Number.parseInt(quantityValue, 10),
                 note: noteValue || null,
-            });
+            };
+            if (Number.isFinite(requestLineIdValue) && requestLineIdValue > 0) {
+                linePayload.request_line_id = requestLineIdValue;
+            }
+            lines.push(linePayload);
         }
         if (!lines.length) {
             setFormMessage('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ', 'error');

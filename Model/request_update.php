@@ -95,7 +95,7 @@ if (!is_array($linesInput) || empty($linesInput)) {
 
 /**
  * @var array $cleanLines A sanitized array of line items for the request.
- * Each element is an associative array with 'item_id', 'quantity', and 'note'.
+ * Each element is an associative array with 'request_line_id', 'item_id', 'quantity', and 'note'.
  */
 $cleanLines = [];
 foreach ($linesInput as $index => $line) {
@@ -103,6 +103,10 @@ foreach ($linesInput as $index => $line) {
         http_response_code(400);
         echo json_encode(['error' => 'invalid_line', 'message' => 'ข้อมูลรายการสินค้าไม่ถูกต้อง']);
         exit;
+    }
+    $requestLineId = isset($line['request_line_id']) ? (int) $line['request_line_id'] : null;
+    if ($requestLineId !== null && $requestLineId <= 0) {
+        $requestLineId = null;
     }
     $itemId = isset($line['item_id']) ? (int) $line['item_id'] : 0;
     if ($itemId <= 0) {
@@ -123,6 +127,7 @@ foreach ($linesInput as $index => $line) {
         $lineNote = null;
     }
     $cleanLines[] = [
+        'request_line_id' => $requestLineId,
         'item_id' => $itemId,
         'quantity' => $quantity,
         'note' => $lineNote,
@@ -212,16 +217,100 @@ try {
         ':request_id' => $requestId,
     ]);
 
-    // Replace all existing lines with the new set of lines.
-    $deleteLines = $db->prepare('DELETE FROM request_lines WHERE RequestID = :request_id');
-    $deleteLines->execute([':request_id' => $requestId]);
+    // Fetch current lines for this request to avoid unnecessary deletions.
+    $currentLinesStmt = $db->prepare('SELECT RequestLineID, LineNo, ItemID, QuantityRequested, Note FROM request_lines WHERE RequestID = :request_id');
+    $currentLinesStmt->execute([':request_id' => $requestId]);
+    $existingLines = [];
+    while ($row = $currentLinesStmt->fetch(PDO::FETCH_ASSOC)) {
+        $existingLines[(int) $row['RequestLineID']] = [
+            'line_no' => (int) $row['LineNo'],
+            'item_id' => (int) $row['ItemID'],
+            'quantity' => (int) $row['QuantityRequested'],
+            'note' => $row['Note'] ?? null,
+        ];
+    }
 
-    // Insert the sanitized new lines.
+    $linesToInsert = [];
+    $linesToUpdate = [];
+    $linesToDelete = [];
+
+    $lineNoCounter = 1;
+    foreach ($cleanLines as $line) {
+        $desiredLineNo = $lineNoCounter;
+        $lineNoCounter += 1;
+
+        $lineId = $line['request_line_id'] ?? null;
+        if ($lineId !== null) {
+            if (!array_key_exists($lineId, $existingLines)) {
+                $db->rollBack();
+                http_response_code(400);
+                echo json_encode(['error' => 'invalid_line_reference', 'message' => 'ไม่สามารถบันทึกรายการสินค้าที่เลือกได้']);
+                exit;
+            }
+            $currentLine = $existingLines[$lineId];
+            unset($existingLines[$lineId]);
+
+            if ((int) $currentLine['item_id'] !== (int) $line['item_id']) {
+                $linesToDelete[] = $lineId;
+                $linesToInsert[] = [
+                    'line_no' => $desiredLineNo,
+                    'item_id' => $line['item_id'],
+                    'quantity' => $line['quantity'],
+                    'note' => $line['note'],
+                ];
+                continue;
+            }
+
+            $currentNote = trim((string) ($currentLine['note'] ?? ''));
+            $desiredNote = $line['note'] !== null ? trim((string) $line['note']) : '';
+            $needsUpdate = (int) $currentLine['quantity'] !== (int) $line['quantity']
+                || $currentNote !== $desiredNote
+                || (int) $currentLine['line_no'] !== $desiredLineNo;
+
+            if ($needsUpdate) {
+                $linesToUpdate[] = [
+                    'line_id' => $lineId,
+                    'line_no' => $desiredLineNo,
+                    'quantity' => $line['quantity'],
+                    'note' => $line['note'],
+                ];
+            }
+        } else {
+            $linesToInsert[] = [
+                'line_no' => $desiredLineNo,
+                'item_id' => $line['item_id'],
+                'quantity' => $line['quantity'],
+                'note' => $line['note'],
+            ];
+        }
+    }
+
+    if (!empty($existingLines)) {
+        $linesToDelete = array_merge($linesToDelete, array_keys($existingLines));
+    }
+
+    $fetchFulfillment = $db->prepare('SELECT RequestFulfillmentID FROM request_fulfillment WHERE RequestLineID = :line_id');
+    $deleteFulfillmentLines = $db->prepare('DELETE FROM request_fulfillment_line WHERE RequestFulfillmentID = :fulfillment_id');
+    $deleteFulfillment = $db->prepare('DELETE FROM request_fulfillment WHERE RequestFulfillmentID = :fulfillment_id');
+    $deleteBooking = $db->prepare('DELETE FROM booking WHERE RequestAllocationID = :allocation_id');
+    $deleteRequestLine = $db->prepare('DELETE FROM request_lines WHERE RequestLineID = :line_id');
+
+    foreach ($linesToDelete as $lineIdToDelete) {
+        $fetchFulfillment->execute([':line_id' => $lineIdToDelete]);
+        $fulfillmentIds = $fetchFulfillment->fetchAll(PDO::FETCH_COLUMN, 0);
+        foreach ($fulfillmentIds as $fulfillmentId) {
+            $deleteFulfillmentLines->execute([':fulfillment_id' => $fulfillmentId]);
+            $deleteFulfillment->execute([':fulfillment_id' => $fulfillmentId]);
+        }
+        $deleteBooking->execute([':allocation_id' => $lineIdToDelete]);
+        $deleteRequestLine->execute([':line_id' => $lineIdToDelete]);
+    }
+
     $insertLine = $db->prepare('INSERT INTO request_lines (RequestID, LineNo, ItemID, QuantityRequested, StartTime, EndTime, FulfillmentStatus, Note, Status) VALUES (:request_id, :line_no, :item_id, :quantity, :start_time, :end_time, :fulfillment_status, :note, :status)');
-    foreach ($cleanLines as $lineNo => $line) {
+    foreach ($linesToInsert as $line) {
         $insertLine->execute([
             ':request_id' => $requestId,
-            ':line_no' => $lineNo + 1,
+            ':line_no' => $line['line_no'],
             ':item_id' => $line['item_id'],
             ':quantity' => $line['quantity'],
             ':start_time' => $eventStart,
@@ -230,6 +319,18 @@ try {
             ':note' => $line['note'],
             ':status' => 'active',
         ]);
+    }
+
+    if (!empty($linesToUpdate)) {
+        $updateLine = $db->prepare('UPDATE request_lines SET LineNo = :line_no, QuantityRequested = :quantity, Note = :note WHERE RequestLineID = :line_id');
+        foreach ($linesToUpdate as $line) {
+            $updateLine->execute([
+                ':line_no' => $line['line_no'],
+                ':quantity' => $line['quantity'],
+                ':note' => $line['note'],
+                ':line_id' => $line['line_id'],
+            ]);
+        }
     }
 
     // --- Generate a detailed reason for the audit log ---
@@ -241,6 +342,20 @@ try {
     $previousStatus = strtolower((string) ($currentRequest['Status'] ?? ''));
     if ($previousStatus !== $status) {
         $reasonParts[] = sprintf('เปลี่ยนสถานะจาก %s เป็น %s', $previousStatus ?: '—', $status);
+    }
+
+    $lineChanges = [];
+    if (!empty($linesToInsert)) {
+        $lineChanges[] = sprintf('เพิ่ม %d รายการ', count($linesToInsert));
+    }
+    if (!empty($linesToUpdate)) {
+        $lineChanges[] = sprintf('อัปเดตรายการ %d รายการ', count($linesToUpdate));
+    }
+    if (!empty($linesToDelete)) {
+        $lineChanges[] = sprintf('ลบ %d รายการ', count($linesToDelete));
+    }
+    if (!empty($lineChanges)) {
+        $reasonParts[] = implode(', ', $lineChanges);
     }
 
     if (empty($reasonParts)) {

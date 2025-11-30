@@ -65,6 +65,7 @@ try {
         'notes' => $row['notes'],
         'location_id' => $row['location_id'] !== null ? (int) $row['location_id'] : null,
         'location_name' => $row['location_name'],
+        'location_label' => formatLocationLabel($row['location_id'] ?? null, $row['location_name'] ?? ''),
         'location_ref' => $row['ref_location_id'],
         'location_email' => $row['location_email'],
         'location_phone' => $row['location_phone'],
@@ -93,4 +94,13 @@ function formatStaffLabel($id, $name, $role)
     $roleInitial = $role !== null && $role !== '' ? mb_strtoupper(mb_substr($role, 0, 1, 'UTF-8'), 'UTF-8') : 'S';
 
     return sprintf('%s%d - %s', $roleInitial, $id, $displayName);
+}
+
+function formatLocationLabel($id, $name)
+{
+    if ($id === null) {
+        return '';
+    }
+    $labelName = $name !== null && $name !== '' ? $name : 'ไม่ระบุสถานที่';
+    return sprintf('%d - %s', $id, $labelName);
 }
