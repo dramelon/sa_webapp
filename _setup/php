@@ -241,7 +241,7 @@ CREATE TABLE request_lines (
 
 
 
--- BOOKING (aka: item schedule) v2
+-- BOOKING (aka: item schedule) v3
 CREATE TABLE booking (
     BookingID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     RequestAllocationID BIGINT UNSIGNED NOT NULL,
@@ -252,7 +252,31 @@ CREATE TABLE booking (
     CancelReason TEXT DEFAULT NULL,
 
     Note TEXT DEFAULT NULL,
-    Status ENUM('reserved','checked_out','in_use','returned','cancelled','expired') NOT NULL DEFAULT 'reserved'
+    ScheduleStatus ENUM(
+        'event_use',            -- ใช้งานในงานอีเวนต์ช่วงเวลาจริง
+        'event_setup',          -- เข้าไปเซ็ตอุปกรณ์ก่อนงาน
+        'event_teardown',       -- รื้อ/เก็บอุปกรณ์หลังงาน
+
+        'delivery_to_event',    -- ขนของออกจากคลังไปหน้างาน
+        'delivery_return',      -- ขนของจากหน้างานกลับคลัง
+        'internal_transfer',    -- ย้ายของระหว่างคลังภายในบริษัท
+
+        'maintenance_repair',   -- ส่งซ่อม/ซ่อมอุปกรณ์
+        'maintenance_preventive', -- เชิงป้องกัน (เช็คสภาพตามรอบ)
+        'inspection_test',      -- ทดสอบ/ตรวจเช็คก่อน-หลังใช้งาน
+        'cleaning',             -- ล้าง/ทำความสะอาด/รีเฟรชสภาพ
+
+        'buffer_block',         -- กันเวลาเผื่อระหว่างงาน (กันชน)
+        'internal_use',         -- ใช้ภายในองค์กร (ไม่ผูกกับ event ลูกค้า)
+        'others'
+    ) NOT NULL DEFAULT 'event_use',
+    Status ENUM(
+        'planned',              -- ร่าง / วางแผน / ยังไม่คอนเฟิร์ม
+        'confirmed',            -- ได้รับการยืนยันแล้ว
+        'in_progress',          -- กำลังอยู่ในช่วงเวลานั้น (ใช้งาน / ขนส่ง / ซ่อม)
+        'completed',            -- จบช่วงเวลาเรียบร้อยแล้ว
+        'cancelled'             -- ยกเลิกการจองช่วงเวลานี้
+    ) NOT NULL DEFAULT 'planned'
 );
 
 

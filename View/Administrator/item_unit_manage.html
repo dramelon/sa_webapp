@@ -143,6 +143,43 @@
                 </div>
             </form>
         </section>
+
+        <section class="detail-card" id="itemUnitSchedule">
+            <header class="detail-card-head schedule-head">
+                <div>
+                    <h3>ตารางการใช้งาน</h3>
+                    <p class="detail-card-sub">ดูช่วงเวลาที่หน่วยสินค้าถูกจองหรือใช้งาน</p>
+                </div>
+                <div class="schedule-controls" aria-live="polite">
+                    <button class="btn btn-ghost btn-icon" type="button" id="schedulePrev" aria-label="เดือนก่อนหน้า">
+                        <span class="i chevron-left"></span>
+                    </button>
+                    <p class="schedule-month" id="scheduleMonthLabel">—</p>
+                    <button class="btn btn-ghost btn-icon" type="button" id="scheduleNext" aria-label="เดือนถัดไป">
+                        <span class="i chevron-right"></span>
+                    </button>
+                </div>
+            </header>
+            <div class="schedule-card" aria-live="polite">
+                <p class="schedule-status" id="scheduleStatus">บันทึกหน่วยสินค้าก่อนเพื่อดูตาราง</p>
+                <div class="schedule-table-wrapper">
+                    <table class="schedule-table" aria-describedby="scheduleStatus">
+                        <thead>
+                            <tr>
+                                <th scope="col">Sun</th>
+                                <th scope="col">Mon</th>
+                                <th scope="col">Tue</th>
+                                <th scope="col">Wed</th>
+                                <th scope="col">Thu</th>
+                                <th scope="col">Fri</th>
+                                <th scope="col">Sat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleGridBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
     </main>
 
     <div id="unsavedBanner" class="unsaved-banner" role="status" hidden>
@@ -162,6 +199,32 @@
                 <button type="button" class="unsaved-btn unsaved-btn-danger" id="btnModalDiscard">ละทิ้งการแก้ไข</button>
                 <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnModalSave">บันทึกและดำเนินการต่อ</button>
             </div>
+        </div>
+    </div>
+
+    <div class="modal" id="bookingModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true" aria-labelledby="bookingModalTitle">
+            <header class="modal-head">
+                <div>
+                    <p class="modal-kicker">รายละเอียดกำหนดการ</p>
+                    <h3 id="bookingModalTitle">รายละเอียดกำหนดการ</h3>
+                </div>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i close"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <p class="modal-description" id="bookingModalRange">—</p>
+                <div class="booking-meta-row">
+                    <span class="booking-status-pill" id="bookingModalStatus">—</span>
+                </div>
+                <p class="booking-note" id="bookingModalNote">ไม่มีบันทึกเพิ่มเติม</p>
+            </div>
+            <footer class="modal-actions">
+                <a class="btn btn-ghost" id="bookingModalAction" href="#">ไปยังรายการหลัก</a>
+                <button type="button" class="btn btn-primary" data-modal-dismiss>ปิด</button>
+            </footer>
         </div>
     </div>
 

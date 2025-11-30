@@ -589,6 +589,10 @@ body {
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='%23333' fill='none' viewBox='0 0 24 24' stroke-width='2'><path d='m6 6 12 12'/><path d='m18 6-12 12'/></svg>");
 }
 
+.i.close {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='%23333' fill='none' viewBox='0 0 24 24' stroke-width='2'><path d='m6 6 12 12'/><path d='m18 6-12 12'/></svg>");
+}
+
 .i.trash {
     --_icon-url: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='%23c62828' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 6h18'/><path d='M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/><path d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6'/><path d='M10 11v6'/><path d='M14 11v6'/></svg>");
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='%23c62828' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 6h18'/><path d='M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/><path d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6'/><path d='M10 11v6'/><path d='M14 11v6'/></svg>");
@@ -597,6 +601,14 @@ body {
 .i.refresh {
     --_icon-url: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='%23333' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M23 4v6h-6'/><path d='M1 20v-6h6'/><path d='M3.51 9a9 9 0 0 1 14.85-3.36L23 10'/><path d='M20.49 15a9 9 0 0 1-14.85 3.36L1 14'/></svg>");
     background-image: var(--_icon-url);
+}
+
+.i.chevron-left {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='%23333' fill='none' viewBox='0 0 24 24' stroke-width='2'><path d='m15 18-6-6 6-6'/></svg>");
+}
+
+.i.chevron-right {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='%23333' fill='none' viewBox='0 0 24 24' stroke-width='2'><path d='m9 18 6-6-6-6'/></svg>");
 }
 
 /* Event list layout */
@@ -2908,6 +2920,203 @@ body.modal-open {
 
 .unsaved-modal-actions .unsaved-btn {
     min-width: 140px;
+}
+
+.schedule-head {
+    align-items: center;
+    gap: 1rem;
+}
+
+.schedule-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.schedule-controls .btn-icon {
+    padding: 0.4rem 0.5rem;
+    min-width: 2.25rem;
+}
+
+.schedule-month {
+    font-weight: 600;
+    margin: 0;
+    min-width: 9rem;
+    text-align: center;
+}
+
+.schedule-card {
+    margin-top: 1rem;
+}
+
+.schedule-status {
+    margin: 0 0 0.75rem;
+    color: #60646c;
+}
+
+.schedule-status.is-info {
+    color: #0f766e;
+}
+
+.schedule-status.is-error {
+    color: #b91c1c;
+}
+
+.schedule-table-wrapper {
+    overflow: hidden;
+}
+
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.schedule-table th,
+.schedule-table td {
+    border: 1px solid #c2d0e1;
+    padding: 0.75rem;
+    position: relative;
+    height: 80px;
+    overflow-y: auto;
+}
+
+.schedule-table th {
+    background: #e1e5ed;
+    color: #3c3f44;
+    font-weight: 600;
+    text-align: center;
+}
+
+.schedule-cell {
+    background: #fff;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.schedule-cell .schedule-date {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #60646c;
+}
+
+.schedule-cell.is-outside {
+    background: #eee;
+    color: #9aa0a6;
+}
+
+.schedule-cell.has-booking {
+    background: #fff6d6;
+    border-color: #f0d88a;
+    box-shadow: inset 0 0 0 1px #f6e3a3;
+}
+
+.schedule-cell.has-booking .schedule-date {
+    color: #8a5a00;
+}
+
+.schedule-chips {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 1.4rem;
+}
+
+.booking-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    border: 1px solid #f0d88a;
+    background: linear-gradient(180deg, #fff8df 0%, #ffeeb6 100%);
+    color: #6b4a00;
+    border-radius: 999px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+    box-shadow: 0 4px 10px rgba(240, 186, 46, 0.22);
+}
+
+.booking-chip::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: currentColor;
+    flex-shrink: 0;
+}
+
+.booking-chip:hover,
+.booking-chip:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(240, 186, 46, 0.28);
+    outline: none;
+    border-color: #e4ba2c;
+}
+
+.booking-chip:active {
+    transform: translateY(0);
+}
+
+.booking-modal-card .modal-actions {
+    padding: 0 28px 28px;
+}
+
+.booking-modal-card .modal-actions .btn {
+    width: auto;
+    min-width: 120px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 24px;
+}
+
+.booking-modal-card .modal-body {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.booking-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+}
+
+.booking-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: #fff6d6;
+    color: #8a5a00;
+    font-weight: 600;
+    border: 1px solid #f0d88a;
+}
+
+.booking-note {
+    margin: 0;
+    color: #44484f;
+    line-height: 1.5;
+    background: #fffdf4;
+    border: 1px solid #f0e7c7;
+    border-radius: 12px;
+    padding: 0.75rem 0.85rem;
+}
+
+.modal-actions .is-disabled {
+    pointer-events: none;
+    opacity: 0.6;
 }
 
 @media (max-width: 640px) {

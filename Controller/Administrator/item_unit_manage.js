@@ -77,6 +77,19 @@
         returnAt: document.getElementById('fieldReturnAt'),
     };
 
+    const scheduleSection = document.getElementById('itemUnitSchedule');
+    const scheduleBody = document.getElementById('scheduleGridBody');
+    const scheduleMonthLabel = document.getElementById('scheduleMonthLabel');
+    const scheduleStatus = document.getElementById('scheduleStatus');
+    const schedulePrevBtn = document.getElementById('schedulePrev');
+    const scheduleNextBtn = document.getElementById('scheduleNext');
+    const bookingModal = document.getElementById('bookingModal');
+    const bookingModalTitle = document.getElementById('bookingModalTitle');
+    const bookingModalRange = document.getElementById('bookingModalRange');
+    const bookingModalStatus = document.getElementById('bookingModalStatus');
+    const bookingModalNote = document.getElementById('bookingModalNote');
+    const bookingModalAction = document.getElementById('bookingModalAction');
+
     const params = new URLSearchParams(window.location.search);
     const unitIdParam = params.get('item_unit_id');
     const isCreateRequested = params.get('mode') === 'create';
@@ -93,6 +106,9 @@
     let initialLookupState = { itemLabel: '', warehouseLabel: '' };
     let activeModal = null;
     let pendingLookupFocus = null;
+    let scheduleMonth = getStartOfMonth(new Date());
+    let scheduleBookings = [];
+    let isLoadingSchedule = false;
 
     if (unsavedModal) {
         unsavedModal.setAttribute('aria-hidden', unsavedModal.hidden ? 'true' : 'false');
@@ -244,6 +260,286 @@
         }
     }
 
+    function updateScheduleStatus(message, variant = 'muted') {
+        if (!scheduleStatus) return;
+        const classes = ['schedule-status'];
+        if (variant) {
+            classes.push(`is-${variant}`);
+        }
+        scheduleStatus.className = classes.join(' ');
+        scheduleStatus.textContent = message || '';
+    }
+
+    function buildBookingDayMap(bookings) {
+        const map = new Map();
+        (bookings || []).forEach((booking) => {
+            const start = parseDateTime(booking.start_time || booking.StartTime);
+            const end = parseDateTime(booking.end_time || booking.EndTime);
+            if (!start || !end) return;
+            const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+            while (cursor <= endDate) {
+                const key = formatDateKey(cursor);
+                if (!map.has(key)) {
+                    map.set(key, []);
+                }
+                map.get(key).push(booking);
+                cursor.setDate(cursor.getDate() + 1);
+            }
+        });
+        return map;
+    }
+
+    function formatScheduleStatusLabel(status) {
+        if (!status) return '';
+        switch (status) {
+            case 'event_use':
+                return 'ใช้งานในงานอีเวนต์';
+            case 'event_setup':
+                return 'ตั้งงาน / เตรียมอุปกรณ์';
+            case 'event_teardown':
+                return 'เก็บงาน / รื้ออุปกรณ์';
+            case 'delivery_to_event':
+                return 'ขนส่งออกไปหน้างาน';
+            case 'delivery_return':
+                return 'ขนส่งกลับจากหน้างาน';
+            case 'internal_transfer':
+                return 'ย้ายระหว่างคลังภายใน';
+            case 'maintenance_repair':
+                return 'ส่งซ่อม / ซ่อมอุปกรณ์';
+            case 'maintenance_preventive':
+                return 'บำรุงรักษาเชิงป้องกัน';
+            case 'inspection_test':
+                return 'ตรวจเช็ค / ทดสอบ';
+            case 'cleaning':
+                return 'ล้าง / ทำความสะอาด';
+            case 'buffer_block':
+                return 'ช่วงกันชน / กันเวลา';
+            case 'internal_use':
+                return 'ใช้งานภายในองค์กร';
+            case 'others':
+                return 'อื่น ๆ';
+            default:
+                return status;
+        }
+    }
+
+    function formatBookingStatusLabel(status) {
+        if (!status) return '—';
+        switch (status) {
+            case 'planned':
+                return 'ร่าง / วางแผน';
+            case 'confirmed':
+                return 'ยืนยันแล้ว';
+            case 'in_progress':
+                return 'กำลังดำเนินการ';
+            case 'completed':
+                return 'เสร็จสิ้น';
+            case 'cancelled':
+                return 'ยกเลิกแล้ว';
+            // legacy fallbacks
+            case 'reserved':
+                return 'ถูกจอง';
+            case 'checked_out':
+                return 'กำลังนำออก';
+            case 'in_use':
+                return 'กำลังใช้งาน';
+            case 'returned':
+                return 'ส่งคืนแล้ว';
+            case 'expired':
+                return 'หมดอายุ';
+            default:
+                return status;
+        }
+    }
+
+    function formatBookingChipLabel(booking) {
+        const rawNote = booking?.note || booking?.Note || '';
+        const note = rawNote.trim();
+        const scheduleLabel = formatScheduleStatusLabel(
+            booking?.schedule_status || booking?.ScheduleStatus || '',
+        );
+        const label = note || scheduleLabel || formatBookingStatusLabel(
+            booking?.status || booking?.Status || 'กำหนดการ',
+        );
+        if (label.length > 32) {
+            return `${label.slice(0, 29)}...`;
+        }
+        return label;
+    }
+
+    function formatBookingRange(start, end) {
+        const startDate = parseDateTime(start);
+        const endDate = parseDateTime(end);
+        if (!startDate || !endDate) {
+            return 'ไม่สามารถแสดงช่วงเวลาได้';
+        }
+        const options = { dateStyle: 'medium', timeStyle: 'short' };
+        const locale = 'th-TH';
+        return `${startDate.toLocaleString(locale, options)} - ${endDate.toLocaleString(locale, options)}`;
+    }
+
+    function openBookingModal(booking) {
+        if (!bookingModal) return;
+        const status = booking?.status || booking?.Status || '';
+        const scheduleStatus = booking?.schedule_status || booking?.ScheduleStatus || '';
+        if (bookingModalTitle) {
+            const scheduleLabel = formatScheduleStatusLabel(scheduleStatus);
+            bookingModalTitle.textContent =
+                booking?.note?.trim() || scheduleLabel || 'รายละเอียดกำหนดการ';
+        }
+        if (bookingModalRange) {
+            bookingModalRange.textContent = formatBookingRange(
+                booking?.start_time || booking?.StartTime,
+                booking?.end_time || booking?.EndTime,
+            );
+        }
+        if (bookingModalStatus) {
+            const scheduleLabel = formatScheduleStatusLabel(scheduleStatus);
+            const statusLabel = formatBookingStatusLabel(status);
+            bookingModalStatus.textContent = scheduleLabel && statusLabel
+                ? `${scheduleLabel} · ${statusLabel}`
+                : scheduleLabel || statusLabel || '—';
+            bookingModalStatus.dataset.status = status || '';
+        }
+        if (bookingModalNote) {
+            const note = booking?.note || booking?.Note || '';
+            bookingModalNote.textContent = note.trim() || 'ไม่มีบันทึกเพิ่มเติม';
+        }
+        if (bookingModalAction) {
+            const href = booking?.request_allocation_id
+                ? `./request_review_fulfillment.html?request_allocation_id=${encodeURIComponent(
+                      booking.request_allocation_id,
+                  )}`
+                : '';
+            if (href) {
+                bookingModalAction.href = href;
+                bookingModalAction.classList.remove('is-disabled');
+                bookingModalAction.setAttribute('aria-disabled', 'false');
+            } else {
+                bookingModalAction.href = '#';
+                bookingModalAction.classList.add('is-disabled');
+                bookingModalAction.setAttribute('aria-disabled', 'true');
+            }
+        }
+        openModal(bookingModal);
+    }
+
+    function renderScheduleGrid() {
+        if (scheduleMonthLabel) {
+            scheduleMonthLabel.textContent = formatMonthLabel(scheduleMonth);
+        }
+        if (!scheduleBody) return;
+        scheduleBody.innerHTML = '';
+        const start = getStartOfWeekSunday(scheduleMonth);
+        const bookingDayMap = buildBookingDayMap(scheduleBookings);
+        for (let week = 0; week < 6; week += 1) {
+            const row = document.createElement('tr');
+            for (let day = 0; day < 7; day += 1) {
+                const current = new Date(start);
+                current.setDate(start.getDate() + week * 7 + day);
+                const cell = document.createElement('td');
+                cell.className = 'schedule-cell';
+                const label = document.createElement('span');
+                label.className = 'schedule-date';
+                label.textContent = current.getDate();
+                cell.append(label);
+                const chipList = document.createElement('div');
+                chipList.className = 'schedule-chips';
+                if (current.getMonth() !== scheduleMonth.getMonth()) {
+                    cell.classList.add('is-outside');
+                }
+                const dayKey = formatDateKey(current);
+                const dayBookings = bookingDayMap.get(dayKey) || [];
+                if (dayBookings.length > 0) {
+                    cell.classList.add('has-booking');
+                    dayBookings.forEach((booking) => {
+                        const chip = document.createElement('button');
+                        chip.type = 'button';
+                        chip.className = 'booking-chip';
+                        chip.textContent = formatBookingChipLabel(booking);
+                        chip.title = formatBookingRange(
+                            booking.start_time || booking.StartTime,
+                            booking.end_time || booking.EndTime,
+                        );
+                        chip.addEventListener('click', () => openBookingModal(booking));
+                        chipList.append(chip);
+                    });
+                    cell.append(chipList);
+                }
+                row.append(cell);
+            }
+            scheduleBody.append(row);
+        }
+    }
+
+    function resetSchedule() {
+        scheduleBookings = [];
+        scheduleMonth = getStartOfMonth(new Date());
+        updateScheduleStatus('บันทึกหน่วยสินค้าก่อนเพื่อดูตาราง', 'muted');
+        renderScheduleGrid();
+    }
+
+    function translateScheduleError(error) {
+        if (error instanceof RequestError) {
+            switch (error.code) {
+                case 'booking_table_missing':
+                    return 'ไม่พบตาราง booking กรุณาตรวจสอบการตั้งค่า';
+                case 'invalid_id':
+                case 'invalid_item_unit_id':
+                case 'not_found':
+                    return 'ไม่พบข้อมูลหน่วยสินค้าที่ต้องการดูตาราง';
+                case 'unauthorized':
+                    return 'สิทธิ์หมดอายุ กรุณาเข้าสู่ระบบใหม่';
+                default:
+                    return 'ไม่สามารถโหลดตารางการจองได้';
+            }
+        }
+        if (error instanceof TypeError) {
+            return 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ โปรดลองใหม่';
+        }
+        return 'ไม่สามารถโหลดตารางการจองได้';
+    }
+
+    async function loadSchedule() {
+        renderScheduleGrid();
+        if (!scheduleSection) return;
+        if (!currentUnitId) {
+            resetSchedule();
+            return;
+        }
+        isLoadingSchedule = true;
+        if (schedulePrevBtn) schedulePrevBtn.disabled = true;
+        if (scheduleNextBtn) scheduleNextBtn.disabled = true;
+        updateScheduleStatus('กำลังโหลดตารางการใช้งาน...', 'info');
+        try {
+            const data = await fetchItemUnitBookings(currentUnitId, scheduleMonth);
+            scheduleBookings = data.bookings || [];
+            if (scheduleBookings.length > 0) {
+                updateScheduleStatus('แตะป้ายสีเหลืองเพื่อดูรายละเอียดกำหนดการ', 'muted');
+            } else {
+                updateScheduleStatus('ยังไม่มีการจองในเดือนนี้', 'muted');
+            }
+        } catch (error) {
+            scheduleBookings = [];
+            updateScheduleStatus(translateScheduleError(error), 'error');
+        } finally {
+            isLoadingSchedule = false;
+            if (schedulePrevBtn) schedulePrevBtn.disabled = false;
+            if (scheduleNextBtn) scheduleNextBtn.disabled = false;
+            renderScheduleGrid();
+        }
+    }
+
+    function changeScheduleMonth(delta) {
+        scheduleMonth = shiftMonth(scheduleMonth, delta);
+        if (currentUnitId) {
+            loadSchedule();
+        } else {
+            renderScheduleGrid();
+        }
+    }
+
     function populateForm(data) {
         const snapshot = {
             item_id: data?.item_id != null ? String(data.item_id) : '',
@@ -277,6 +573,7 @@
         updateMeta(data);
         syncMetaFromForm();
         recordInitialState();
+        loadSchedule();
     }
 
     function restoreSnapshot(snapshot, lookupState = initialLookupState) {
@@ -318,6 +615,7 @@
         updateOwnershipDependentFields();
         updateMeta({});
         syncMetaFromForm();
+        resetSchedule();
         recordInitialState();
         showMessage('');
     }
@@ -442,6 +740,26 @@
         return payload.data || payload;
     }
 
+    async function fetchItemUnitBookings(unitId, monthDate) {
+        const params = new URLSearchParams();
+        params.set('item_unit_id', unitId);
+        if (monthDate instanceof Date) {
+            const year = monthDate.getFullYear();
+            const month = String(monthDate.getMonth() + 1).padStart(2, '0');
+            params.set('month', `${year}-${month}`);
+        }
+        const response = await fetch(`${modelRoot}/item_unit_bookings.php?${params.toString()}`, {
+            credentials: 'same-origin',
+        });
+        const payload = await safeJson(response);
+        const hasError = !response.ok || !payload || payload.error;
+        if (hasError) {
+            const code = payload?.error || mapStatusToError(response.status);
+            throw new RequestError(code);
+        }
+        return payload.data || payload;
+    }
+
     async function handleSubmit(event) {
         event.preventDefault();
         if (!form || isSaving) return;
@@ -549,6 +867,47 @@
         } catch (err) {
             return null;
         }
+    }
+
+    function getStartOfMonth(date) {
+        const base = date instanceof Date ? new Date(date) : new Date();
+        base.setDate(1);
+        base.setHours(0, 0, 0, 0);
+        return base;
+    }
+
+    function getStartOfWeekSunday(date) {
+        const base = date instanceof Date ? new Date(date) : new Date();
+        const day = base.getDay();
+        base.setDate(base.getDate() - day);
+        base.setHours(0, 0, 0, 0);
+        return base;
+    }
+
+    function shiftMonth(date, delta) {
+        const base = date instanceof Date ? new Date(date) : new Date();
+        base.setMonth(base.getMonth() + delta, 1);
+        base.setHours(0, 0, 0, 0);
+        return base;
+    }
+
+    function formatMonthLabel(date) {
+        const locale = 'th-TH';
+        return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+    }
+
+    function formatDateKey(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function parseDateTime(input) {
+        if (!input) return null;
+        const normalized = typeof input === 'string' ? input.replace(' ', 'T') : input;
+        const parsed = new Date(normalized);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
     }
 
     function updateOwnershipDependentFields() {
@@ -1313,6 +1672,14 @@
         });
     }
 
+    if (schedulePrevBtn) {
+        schedulePrevBtn.addEventListener('click', () => changeScheduleMonth(-1));
+    }
+
+    if (scheduleNextBtn) {
+        scheduleNextBtn.addEventListener('click', () => changeScheduleMonth(1));
+    }
+
     if (btnBack) {
         btnBack.addEventListener('click', () => {
             requestNavigation(() => {
@@ -1361,6 +1728,7 @@
         setInterval(updateThaiDate, 1000);
         initLookupFields();
         attachFieldListeners();
+        renderScheduleGrid();
         if (isCreateMode) {
             prepareCreateMode();
             return;
