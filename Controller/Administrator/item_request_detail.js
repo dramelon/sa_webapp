@@ -25,6 +25,7 @@
     const resetDraftButton = document.getElementById('resetDraftButton');
     const cancelRequestButton = document.getElementById('cancelRequestButton');
     const reviewRequestButton = document.getElementById('reviewRequestButton');
+    const approveRequestButton = document.getElementById('approveRequestButton');
     const requestStatusDescription = document.getElementById('requestStatusDescription');
     const requestFormMessage = document.getElementById('requestFormMessage');
     const requestInfoMessage = document.getElementById('requestInfoMessage');
@@ -40,6 +41,14 @@
     const requestAuditList = document.getElementById('requestAuditList');
     const requestAuditEmpty = document.getElementById('requestAuditEmpty');
     const requestAuditLink = document.getElementById('requestAuditLink');
+    const approveConfirmModal = document.getElementById('approveConfirmModal');
+    const approveConfirmButton = document.getElementById('approveConfirmButton');
+    const overfillWarningModal = document.getElementById('overfillWarningModal');
+    const overfillProceedButton = document.getElementById('overfillProceedButton');
+    const incompleteWarningModal = document.getElementById('incompleteWarningModal');
+    const incompleteCancelButton = document.getElementById('incompleteCancelButton');
+    const incompleteEditButton = document.getElementById('incompleteEditButton');
+    const incompleteMakeRfqButton = document.getElementById('incompleteMakeRfqButton');
 
     let modelRoot = '';
     let eventId = initialEventId ? String(initialEventId) : '';
@@ -519,6 +528,7 @@
         const isDraft = normalized === 'draft';
         const isSubmitted = normalized === 'submitted';
         const isPending = normalized === 'pending';
+        const isReviewable = isSubmitted || isPending;
         if (submitRequestButton) {
             submitRequestButton.hidden = !isDraft;
         }
@@ -527,6 +537,9 @@
         }
         if (reviewRequestButton) {
             reviewRequestButton.hidden = !isSubmitted;
+        }
+        if (approveRequestButton) {
+            approveRequestButton.hidden = !isReviewable;
         }
         if (cancelRequestButton) {
             cancelRequestButton.hidden = !(isDraft || isSubmitted || isPending);
@@ -1462,6 +1475,164 @@
         window.location.href = `./request_review.html?${params.toString()}`;
     }
 
+    function getFulfilledCountFromLine(line) {
+        const candidates = [
+            line?.fulfillment_line_count,
+            line?.fulfilled_quantity,
+            line?.quantity_fulfilled,
+            line?.fulfillment?.quantity_fulfilled,
+        ];
+        for (const candidate of candidates) {
+            const num = Number(candidate);
+            if (Number.isFinite(num) && num > 0) {
+                return num;
+            }
+        }
+        return 0;
+    }
+
+    function getRequestedQuantityFromLine(line) {
+        const quantity = Number(line?.quantity);
+        return Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
+    }
+
+    function summarizeFulfillment() {
+        const lines = Array.isArray(requestInfo?.lines) ? requestInfo.lines : [];
+        const summary = { total: lines.length, incomplete: [], overfilled: [], cancelled: [] };
+        lines.forEach((line) => {
+            const status = typeof line?.fulfillment_status === 'string' ? line.fulfillment_status.toLowerCase() : '';
+            const requested = getRequestedQuantityFromLine(line);
+            const fulfilled = getFulfilledCountFromLine(line);
+            const overfilled = requested > 0 && fulfilled > requested;
+            const fulfilledEnough = status === 'fulfilled' || requested === 0 || fulfilled >= requested;
+            const cancelled = status === 'cancelled';
+
+            if (overfilled) {
+                summary.overfilled.push(line);
+            }
+            if (cancelled) {
+                summary.cancelled.push(line);
+                return;
+            }
+            if (!fulfilledEnough) {
+                summary.incomplete.push(line);
+            }
+        });
+        return summary;
+    }
+
+    function openModal(modal) {
+        if (!modal) {
+            return;
+        }
+        modal.hidden = false;
+        modal.setAttribute('aria-hidden', 'false');
+        requestAnimationFrame(() => {
+            modal.classList.add('is-active');
+        });
+    }
+
+    function closeModal(modal) {
+        if (!modal) {
+            return;
+        }
+        modal.classList.remove('is-active');
+        modal.setAttribute('aria-hidden', 'true');
+        const handleTransitionEnd = (event) => {
+            if (event.propertyName === 'opacity' || event.propertyName === 'transform') {
+                modal.hidden = true;
+                modal.removeEventListener('transitionend', handleTransitionEnd);
+            }
+        };
+        modal.addEventListener('transitionend', handleTransitionEnd);
+        modal.hidden = true;
+    }
+
+    function bindModalDismissTriggers() {
+        document.querySelectorAll('[data-modal-dismiss]').forEach((element) => {
+            element.addEventListener('click', () => {
+                const modal = element.closest('.modal');
+                closeModal(modal);
+            });
+        });
+    }
+
+    function promptModal(modal, actions = []) {
+        return new Promise((resolve) => {
+            if (!modal) {
+                resolve(null);
+                return;
+            }
+
+            const cleanups = [];
+
+            const handleChoice = (value) => {
+                cleanups.forEach((cleanup) => cleanup());
+                closeModal(modal);
+                resolve(value);
+            };
+
+            actions.forEach(({ element, value }) => {
+                if (!element) {
+                    return;
+                }
+                const listener = () => handleChoice(value);
+                cleanups.push(() => element.removeEventListener('click', listener));
+                element.addEventListener('click', listener);
+            });
+
+            openModal(modal);
+        });
+    }
+
+    async function handleApproveRequest() {
+        const fulfillmentSummary = summarizeFulfillment();
+
+        const approveChoice = await promptModal(approveConfirmModal, [
+            { element: approveConfirmButton, value: 'confirm' },
+        ]);
+
+        if (approveChoice !== 'confirm') {
+            return;
+        }
+
+        if (fulfillmentSummary.overfilled.length > 0) {
+            const overfillChoice = await promptModal(overfillWarningModal, [
+                { element: overfillProceedButton, value: 'proceed' },
+            ]);
+
+            if (overfillChoice !== 'proceed') {
+                return;
+            }
+        }
+
+        if (fulfillmentSummary.incomplete.length > 0 || fulfillmentSummary.cancelled.length > 0) {
+            const incompleteChoice = await promptModal(incompleteWarningModal, [
+                { element: incompleteCancelButton, value: 'cancel' },
+                { element: incompleteEditButton, value: 'edit' },
+                { element: incompleteMakeRfqButton, value: 'make-rfq' },
+            ]);
+
+            if (incompleteChoice === 'make-rfq') {
+                const params = new URLSearchParams();
+                if (requestId) {
+                    params.set('request_id', requestId);
+                }
+                if (eventId) {
+                    params.set('event_id', eventId);
+                }
+                const targetUrl = `./RFQ_detail.html?${params.toString()}`;
+                window.location.href = targetUrl;
+            }
+
+            return;
+        }
+
+        syncStatusUI('approved');
+        markDirty();
+        await handleSave();
+    }
+
     function applyEventInfo(info) {
         eventInfo = info || null;
         if (eventInfo?.event_id) {
@@ -1661,6 +1832,11 @@
                 moveToReviewPage();
             });
         }
+        if (approveRequestButton) {
+            approveRequestButton.addEventListener('click', () => {
+                handleApproveRequest();
+            });
+        }
         if (addRequestLineButton) {
             addRequestLineButton.addEventListener('click', () => {
                 addRequestLine();
@@ -1697,6 +1873,7 @@
             });
         }
         window.addEventListener('beforeunload', handleBeforeUnload);
+        bindModalDismissTriggers();
     }
 
     function boot({ root }) {

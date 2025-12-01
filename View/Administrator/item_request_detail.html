@@ -118,6 +118,10 @@
                             <span class="i progress"></span>
                             ตรวจสอบคำขอ
                         </button>
+                        <button class="btn btn-primary" type="button" id="approveRequestButton">
+                            <span class="i check"></span>
+                            ยืนยันอนุมัติ
+                        </button>
                         <button class="btn btn-ghost status-danger" type="button" id="cancelRequestButton">
                             <span class="i trash"></span>
                             ยกเลิกคำขอ
@@ -174,6 +178,73 @@
             </section>
         </form>
     </main>
+
+    <div class="modal" id="approveConfirmModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true" aria-labelledby="approveConfirmModalTitle">
+            <header class="modal-head">
+                <div>
+                    <p class="modal-kicker">ยืนยันการอนุมัติ</p>
+                    <h3 id="approveConfirmModalTitle">ต้องการอนุมัติคำขอนี้หรือไม่?</h3>
+                </div>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i close"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <p class="modal-description">ระบบจะบันทึกคำขอนี้เป็นสถานะ &ldquo;อนุมัติแล้ว&rdquo; และบันทึกการเปลี่ยนแปลง</p>
+            </div>
+            <footer class="modal-actions">
+                <button class="btn btn-ghost" type="button" data-modal-dismiss>ยกเลิก</button>
+                <button class="btn btn-primary" type="button" id="approveConfirmButton">ยืนยันอนุมัติ</button>
+            </footer>
+        </div>
+    </div>
+
+    <div class="modal" id="overfillWarningModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true" aria-labelledby="overfillWarningModalTitle">
+            <header class="modal-head">
+                <div>
+                    <p class="modal-kicker">คำเตือน: จ่ายเกินจำนวน</p>
+                    <h3 id="overfillWarningModalTitle">พบการจ่ายเกินกว่าที่ร้องขอ</h3>
+                </div>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i close"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <p class="modal-description">บางรายการมีการมอบจ่ายมากกว่าจำนวนที่ขอ ตรวจสอบให้แน่ใจว่าต้องการอนุมัติคำขอนี้ต่อ</p>
+            </div>
+            <footer class="modal-actions">
+                <button class="btn btn-ghost" type="button" data-modal-dismiss>กลับไปตรวจสอบ</button>
+                <button class="btn btn-primary" type="button" id="overfillProceedButton">อนุมัติต่อไป</button>
+            </footer>
+        </div>
+    </div>
+
+    <div class="modal" id="incompleteWarningModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true" aria-labelledby="incompleteWarningModalTitle">
+            <header class="modal-head">
+                <div>
+                    <p class="modal-kicker">รายการยังไม่ครบ</p>
+                    <h3 id="incompleteWarningModalTitle">มีรายการที่จ่ายไม่ครบหรือถูกยกเลิก</h3>
+                </div>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i close"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <p class="modal-description">เลือกดำเนินการต่อ: ยกเลิกการอนุมัติชั่วคราว กลับไปแก้ไขการจ่าย หรือสร้าง RFQ ต่อไป</p>
+            </div>
+            <footer class="modal-actions">
+                <button class="btn btn-ghost" type="button" id="incompleteCancelButton">ยกเลิก</button>
+                <button class="btn btn-secondary" type="button" id="incompleteEditButton">แก้ไขการจ่ายต่อ</button>
+                <button class="btn btn-primary" type="button" id="incompleteMakeRfqButton">สร้าง RFQ ต่อไป</button>
+            </footer>
+        </div>
+    </div>
 
     <div id="unsavedBanner" class="unsaved-banner request-unsaved" role="status" hidden>
         <span class="unsaved-text">ยังมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</span>

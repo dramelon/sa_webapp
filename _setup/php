@@ -299,3 +299,45 @@ CREATE TABLE request_fulfillment_line (
     ReturnCustomerFlag       BOOLEAN NOT NULL DEFAULT FALSE,
     PaidExcludedFlag         BOOLEAN NOT NULL DEFAULT FALSE
 );
+
+
+
+
+-- SUPPLIER_RFQ v1
+CREATE TABLE supplier_rfq (
+    SupplierRFQID       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    RefSupplierRFQID    VARCHAR(30) UNIQUE DEFAULT NULL,
+    EventID             BIGINT UNSIGNED NOT NULL,
+    StaffID             BIGINT UNSIGNED NOT NULL,
+    ContactPerson       BIGINT UNSIGNED NOT NULL,
+    Title               VARCHAR(255) NOT NULL,
+    BidValidityDays     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    DueDate             DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    RequestDate         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    OrderDate           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    OrderDeadline       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ExpectedArrival     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PaymentTerm         VARCHAR(30) NOT NULL DEFAULT '30D',
+    PaymentMethod       ENUM('bank','credit','cash','others') NOT NULL DEFAULT 'bank',
+    DeliverTo           BIGINT UNSIGNED NOT NULL,
+    RefVendorID         VARCHAR(30) DEFAULT NULL,
+    Note                TEXT DEFAULT NULL,
+    Status              ENUM('draft','completed','cancelled') NOT NULL DEFAULT 'draft'
+);
+
+-- SUPPLIER_RFQ_LINE v1
+CREATE TABLE supplier_rfq_line (
+    SupplierRFQLineID     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    SupplierRFQID         BIGINT UNSIGNED NOT NULL,
+    ItemID                BIGINT UNSIGNED NOT NULL,
+    ItemDesc              TEXT NOT NULL,
+    UOM                   VARCHAR(30) NOT NULL,
+    QuantityRequested     INT UNSIGNED NOT NULL,
+    Note                  TEXT DEFAULT NULL
+);
+
+-- SUPPLER_RFQ_LOG v1
+CREATE TABLE supplier_rfq_log (
+    SupplierRFQID         BIGINT UNSIGNED NOT NULL,
+    SupplierID            BIGINT UNSIGNED NOT NULL
+);

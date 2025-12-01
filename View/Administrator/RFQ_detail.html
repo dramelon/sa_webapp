@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="th" data-root="../.." data-allowed="Administrator">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>รายละเอียด RFQ</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body data-app-shell="admin" data-page="events" data-shell-title="ระบบจัดการวัสดุอุปกรณ์ - คำขอใบเสนอราคา">
+    <main class="page detail-page request-page">
+        <section class="page-head">
+            <div>
+                <p class="breadcrumb"><a id="rfqBackLink" href="./event_document_manage.html">← กลับไปหน้ารายการเอกสาร</a></p>
+                <h2 id="rfqTitle">กำลังโหลดคำขอใบเสนอราคา...</h2>
+                <p class="date" id="rfqPageDate">วัน...</p>
+            </div>
+            <div class="head-actions">
+                <button class="btn btn-ghost" type="button" id="rfqBtnBack">
+                    <span class="i back"></span>
+                    กลับไปหน้าเอกสาร
+                </button>
+                <button class="btn btn-primary" type="button" id="rfqBtnSave">
+                    <span class="i check"></span>
+                    บันทึก RFQ
+                </button>
+            </div>
+        </section>
+
+        <div class="form-alert" id="rfqGlobalMessage" role="alert" hidden></div>
+
+        <section class="detail-meta request-meta" aria-live="polite">
+            <div class="meta-primary">
+                <p class="meta-label">อีเว้น</p>
+                <h3 id="rfqEventName">—</h3>
+                <p class="meta-sub" id="rfqEventCode">รหัสอีเว้น: —</p>
+                <p class="meta-sub" id="rfqEventDate">ช่วงเวลา: —</p>
+            </div>
+            <div class="meta-secondary">
+                <span class="status-chip" id="rfqStatusBadge" aria-live="polite" data-status="draft">
+                    <span class="dot"></span>
+                    <span id="rfqStatusText">สถานะ: Draft</span>
+                </span>
+                <div class="meta-group">
+                    <p class="meta-updated" id="rfqUpdatedAt">อัปเดตล่าสุด: —</p>
+                    <p class="meta-created" id="rfqRequestReferenceMeta">อ้างอิงคำขอ: —</p>
+                </div>
+            </div>
+        </section>
+
+        <form id="rfqForm" class="request-detail-form" autocomplete="off">
+            <section class="detail-card request-info-card">
+                <header class="detail-card-head">
+                    <div>
+                        <h3>รายละเอียด RFQ</h3>
+                        <p>กำหนดข้อมูลเบื้องต้นของคำขอใบเสนอราคา</p>
+                    </div>
+                    <p class="request-reference" aria-live="polite" id="rfqRequestReference">อ้างอิงคำขอ: —</p>
+                </header>
+                <div class="detail-card-body request-info-grid">
+                    <label class="field-block">
+                        <span class="field-label">หัวข้อ RFQ</span>
+                        <input type="text" id="rfqTitleInput" placeholder="เช่น ขอใบเสนอราคาอุปกรณ์เพิ่มเติม" />
+                        <span class="field-helper">ตั้งชื่อเพื่อระบุ RFQ นี้ได้ชัดเจน</span>
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">วันครบกำหนดเสนอราคา</span>
+                        <input type="date" id="rfqDueDateInput" />
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">กำหนดส่งมอบที่คาดหวัง</span>
+                        <input type="date" id="rfqExpectedArrivalInput" />
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">เงื่อนไขการชำระเงิน</span>
+                        <select id="rfqPaymentTermSelect">
+                            <option value="30D">30 วัน</option>
+                            <option value="45D">45 วัน</option>
+                            <option value="60D">60 วัน</option>
+                        </select>
+                    </label>
+                    <label class="field-block">
+                        <span class="field-label">วิธีการชำระเงิน</span>
+                        <select id="rfqPaymentMethodSelect">
+                            <option value="bank">โอนธนาคาร</option>
+                            <option value="credit">บัตรเครดิต</option>
+                            <option value="cash">เงินสด</option>
+                            <option value="others">อื่น ๆ</option>
+                        </select>
+                    </label>
+                    <label class="field-block field-span-2">
+                        <span class="field-label">หมายเหตุ</span>
+                        <textarea id="rfqNoteInput" rows="3" placeholder="รายละเอียดเพิ่มเติมสำหรับ RFQ"></textarea>
+                    </label>
+                </div>
+            </section>
+
+            <section class="detail-card request-lines-card">
+                <header class="request-lines-head">
+                    <div>
+                        <h3>รายการที่ยังต้องหาเพิ่มเติม</h3>
+                        <p class="request-lines-sub">ยอดคงเหลือจากคำขอเบิกที่ต้องสร้าง RFQ</p>
+                    </div>
+                </header>
+                <div class="form-alert" id="rfqLinesMessage" role="alert" hidden></div>
+                <div class="table-wrap">
+                    <table class="event-table request-lines-table" aria-label="รายการสินค้าที่ต้องขอใบเสนอราคา">
+                        <thead>
+                            <tr>
+                                <th scope="col">รหัสสินค้า</th>
+                                <th scope="col">รายการ</th>
+                                <th scope="col">หน่วย</th>
+                                <th scope="col">จำนวนที่ขอ</th>
+                                <th scope="col">จ่ายแล้ว</th>
+                                <th scope="col">จำนวนที่ต้องหา</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rfqMissingLinesBody">
+                            <tr class="empty-row">
+                                <td colspan="6">กำลังโหลดข้อมูล...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="empty-state" id="rfqMissingLinesEmpty" hidden>
+                        <span class="i inbox"></span>
+                        <p>ไม่พบรายการที่ต้องจัดหาเพิ่ม</p>
+                    </div>
+                </div>
+            </section>
+        </form>
+    </main>
+
+    <script src="../../Controller/common/admin_shell.js" defer></script>
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Administrator/rfq_detail.js" defer></script>
+</body>
+
+</html>
