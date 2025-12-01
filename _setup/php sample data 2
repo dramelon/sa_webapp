@@ -1,0 +1,345 @@
+-- 30 logical items
+INSERT INTO items (
+    ItemID, RefItemID, ItemName, ItemType,
+    ItemCategoryID, Brand, Model, UOM,
+    Rate, Period, Note, Status
+)
+VALUES
+(1, 'ITM-001', 'LED Par Light 18x10W RGBW', 'อุปกร',
+NULL, 'BeamLite', 'BL-PAR1810', 'ตัว',
+800.00, 'ต่อวัน', 'ไฟพาร์ LED สำหรับส่องพื้นและฉาก', 'active'),
+
+(2, 'ITM-002', 'Moving Head Spot 200W', 'อุปกร',
+NULL, 'BeamLite', 'MV-200S', 'ตัว',
+2500.00, 'ต่อวัน', 'หัวไฟ moving head สำหรับงานเวที', 'active'),
+
+(3, 'ITM-003', 'Line Array Speaker 12" 1000W', 'อุปกร',
+NULL, 'SoundPro', 'LA-12', 'ใบ',
+3000.00, 'ต่อวัน', 'ลำโพง Line Array สำหรับแขวนเวที', 'active'),
+
+(4, 'ITM-004', 'Subwoofer 18" 1500W', 'อุปกร',
+NULL, 'SoundPro', 'SUB-18', 'ใบ',
+2800.00, 'ต่อวัน', 'ซับวูฟเฟอร์ 18 นิ้ว', 'active'),
+
+(5, 'ITM-005', 'Wireless Microphone Handheld', 'อุปกร',
+NULL, 'ToneMax', 'WM-HH', 'ชุด',
+900.00, 'ต่อวัน', 'ไมค์ไร้สายแบบมือถือ 1 ตัว + รีซีฟเวอร์', 'active'),
+
+(6, 'ITM-006', 'Digital Mixer 32 Channel', 'อุปกร',
+NULL, 'ToneMax', 'DMX-32', 'ตัว',
+4500.00, 'ต่อวัน', 'มิกเซอร์ดิจิทัล 32 แชนแนล', 'active'),
+
+(7, 'ITM-007', 'Lighting Console 2 Universe', 'อุปกร',
+NULL, 'BeamLite', 'LC-2U', 'ตัว',
+3200.00, 'ต่อวัน', 'คอนโซลควบคุมไฟ DMX', 'active'),
+
+(8, 'ITM-008', 'Smoke / Haze Machine 1500W', 'อุปกร',
+NULL, 'FXLab', 'HZ-1500', 'ตัว',
+1200.00, 'ต่อวัน', 'เครื่องทำควัน / หมอก', 'active'),
+
+(9, 'ITM-009', 'Stage Deck 1x2m Black', 'อุปกร',
+NULL, 'StagePro', 'ST-1x2', 'แผ่น',
+700.00, 'ต่อวัน', 'เวทีสำเร็จรูปขนาด 1x2 เมตร', 'active'),
+
+(10, 'ITM-010', 'Aluminum Truss 3m Straight', 'อุปกร',
+NULL, 'StagePro', 'TR-3M', 'ท่อน',
+650.00, 'ต่อวัน', 'โครงทรัสอลูมิเนียม ขนาด 3 เมตร', 'active'),
+
+(11, 'ITM-011', 'LED Screen Panel 500x500mm', 'อุปกร',
+NULL, 'VisionX', 'LED-500', 'แผง',
+1500.00, 'ต่อวัน', 'จอ LED P3 ขนาด 500x500 มม.', 'active'),
+
+(12, 'ITM-012', 'Projector 7000 ANSI', 'อุปกร',
+NULL, 'ViewMax', 'PJ-7000', 'ตัว',
+3800.00, 'ต่อวัน', 'โปรเจ็กเตอร์ความสว่างสูง', 'active'),
+
+(13, 'ITM-013', 'Projection Screen 150" 16:9', 'อุปกร',
+NULL, 'ViewMax', 'SC-150', 'ผืน',
+900.00, 'ต่อวัน', 'จอโปรเจกเตอร์ 150 นิ้ว', 'active'),
+
+(14, 'ITM-014', 'DJ Monitor Speaker 10"', 'อุปกร',
+NULL, 'SoundPro', 'DJ-10', 'ใบ',
+900.00, 'ต่อวัน', 'ลำโพงมอนิเตอร์สำหรับ DJ', 'active'),
+
+(15, 'ITM-015', 'Stage Ramp 1x2m', 'อุปกร',
+NULL, 'StagePro', 'RMP-1x2', 'แผ่น',
+800.00, 'ต่อวัน', 'ทางลาดขึ้นเวที', 'active'),
+
+(16, 'ITM-016', 'Event Power Cable 32A 20m', 'อุปกร',
+NULL, 'CablePro', 'PW-32A-20', 'เส้น',
+300.00, 'ต่อวัน', 'สายไฟ 32A ยาว 20 เมตร', 'active'),
+
+(17, 'ITM-017', 'DMX Signal Cable 3-pin 10m', 'อุปกร',
+NULL, 'CablePro', 'DMX-3P-10', 'เส้น',
+80.00, 'ต่อวัน', 'สายสัญญาณ DMX 3 พิน', 'active'),
+
+(18, 'ITM-018', 'XLR Audio Cable 10m', 'อุปกร',
+NULL, 'CablePro', 'XLR-10', 'เส้น',
+60.00, 'ต่อวัน', 'สายสัญญาณเสียง XLR 10 เมตร', 'active'),
+
+(19, 'ITM-019', 'Gaffer Tape 48mm x 25m (Black)', 'วัสดุ',
+NULL, 'TapeMax', 'GT-4825-BK', 'ม้วน',
+250.00, 'ต่ออีเว้น', 'เทปผ้าดำสำหรับงานเวทีและเดินสาย', 'active'),
+
+(20, 'ITM-020', 'Cable Tie 200mm Black (Pack 100)', 'วัสดุ',
+NULL, 'FixPro', 'CT-200-BK', 'แพ็ค',
+120.00, 'ต่ออีเว้น', 'สายรัดเคเบิลสีดำ แพ็ค 100 เส้น', 'active'),
+
+(21, 'ITM-021', 'Batteries AA (Pack 24)', 'วัสดุ',
+NULL, 'PowerCell', 'AA-24', 'แพ็ค',
+180.00, 'ต่ออีเว้น', 'ถ่าน AA สำหรับอุปกรณ์ไร้สาย', 'active'),
+
+(22, 'ITM-022', 'Event Setup Crew', 'บริการ',
+NULL, 'CrewPlus', 'SET-TEAM', 'คน',
+900.00, 'ต่อวัน', 'ทีมงานเซ็ตอุปกรณ์หน้างาน (ต่อคนต่อวัน)', 'active'),
+
+(23, 'ITM-023', 'Event Teardown Crew', 'บริการ',
+NULL, 'CrewPlus', 'TD-TEAM', 'คน',
+900.00, 'ต่อวัน', 'ทีมงานรื้อถอนอุปกรณ์ (ต่อคนต่อวัน)', 'active'),
+
+(24, 'ITM-024', 'Sound Engineer', 'บริการ',
+NULL, 'CrewPlus', 'SE-01', 'คน',
+3500.00, 'ต่อวัน', 'วิศวกรเสียงประจำงาน', 'active'),
+
+(25, 'ITM-025', 'Lighting Designer / Operator', 'บริการ',
+NULL, 'CrewPlus', 'LD-OP', 'คน',
+3500.00, 'ต่อวัน', 'ผู้ออกแบบและควบคุมไฟ', 'active'),
+
+(26, 'ITM-026', 'Video Technician', 'บริการ',
+NULL, 'CrewPlus', 'VT-01', 'คน',
+2800.00, 'ต่อวัน', 'ช่างเทคนิคระบบภาพ', 'active'),
+
+(27, 'ITM-027', 'Event Power Distribution Box 63A', 'อุปกร',
+NULL, 'PowerMax', 'PDB-63', 'ใบ',
+2200.00, 'ต่อวัน', 'ตู้จ่ายไฟ 63A สำหรับงานอีเวนต์', 'active'),
+
+(28, 'ITM-028', 'Crowd Control Barrier 2m', 'อุปกร',
+NULL, 'SecureLine', 'CCB-2M', 'แผง',
+350.00, 'ต่อวัน', 'แผงรั้วกั้นฝูงชน ยาว 2 เมตร', 'active'),
+
+(29, 'ITM-029', 'Queue Stand with Rope', 'อุปกร',
+NULL, 'SecureLine', 'QS-ROPE', 'ชุด',
+250.00, 'ต่อวัน', 'เสากั้นแถวพร้อมเชือกกำมะหยี่', 'active'),
+
+(30, 'ITM-030', 'Plastic Stackable Chair (Black)', 'อุปกร',
+NULL, 'SeatPro', 'CH-BK', 'ตัว',
+30.00, 'ต่อวัน', 'เก้าอี้พลาสติกสีดำสำหรับงานอีเวนต์', 'active');
+
+-- ItemID 15–30, 2 units each (รวม 16 ไอเท็ม × 2 = 32 ชิ้น)
+
+INSERT INTO item_units (
+    ItemUnitID, SerialNumber, ItemID,
+    WarehouseID, SupplierID,
+    OwnerShip, ConditionIn, ConditionOut,
+    ExpectedReturnAt, ReturnAt,
+    Note, Status
+)
+VALUES
+-- ItemID 15 (Stage Ramp 1x2m)
+(NULL, 'ITM15-SN001', 15, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+(NULL, 'ITM15-SN002', 15, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+
+-- ItemID 16 (Event Power Cable 32A 20m)
+(NULL, 'ITM16-SN001', 16, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+(NULL, 'ITM16-SN002', 16, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+
+-- ItemID 17 (DMX Signal Cable 3-pin 10m)
+(NULL, 'ITM17-SN001', 17, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+(NULL, 'ITM17-SN002', 17, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+
+-- ItemID 18 (XLR Audio Cable 10m)
+(NULL, 'ITM18-SN001', 18, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+(NULL, 'ITM18-SN002', 18, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+
+-- ItemID 19 (Gaffer Tape)
+(NULL, 'ITM19-SN001', 19, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+(NULL, 'ITM19-SN002', 19, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+
+-- ItemID 20 (Cable Tie Pack)
+(NULL, 'ITM20-SN001', 20, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+(NULL, 'ITM20-SN002', 20, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+
+-- ItemID 21 (Batteries AA Pack)
+(NULL, 'ITM21-SN001', 21, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+(NULL, 'ITM21-SN002', 21, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+
+-- ItemID 22 (Event Setup Crew — service, but sample kept for uniformity)
+(NULL, 'ITM22-SN001', 22, NULL, NULL, 'company', 'good', 'good', NULL, NULL, 'service unit', 'useable'),
+(NULL, 'ITM22-SN002', 22, NULL, NULL, 'company', 'good', 'good', NULL, NULL, 'service unit', 'useable'),
+
+-- ItemID 23 (Event Teardown Crew)
+(NULL, 'ITM23-SN001', 23, NULL, NULL, 'company', 'good', 'good', NULL, NULL, 'service unit', 'useable'),
+(NULL, 'ITM23-SN002', 23, NULL, NULL, 'company', 'good', 'good', NULL, NULL, 'service unit', 'useable'),
+
+-- ItemID 24 (Sound Engineer)
+(NULL, 'ITM24-SN001', 24, NULL, NULL, 'company', 'good', 'good', NULL, NULL, 'service unit', 'useable'),
+(NULL, 'ITM24-SN002', 24, NULL, NULL, 'company', 'good', 'good', NULL, NULL, 'service unit', 'useable'),
+
+-- ItemID 25 (Lighting Designer)
+(NULL, 'ITM25-SN001', 25, NULL, NULL, 'company', 'good', 'good', NULL, NULL, 'service unit', 'useable'),
+(NULL, 'ITM25-SN002', 25, NULL, NULL, 'company', 'good', 'good', NULL, NULL, 'service unit', 'useable'),
+
+-- ItemID 26 (Video Technician)
+(NULL, 'ITM26-SN001', 26, NULL, NULL, 'company', 'good', 'good', NULL, NULL, 'service unit', 'useable'),
+(NULL, 'ITM26-SN002', 26, NULL, NULL, 'company', 'good', 'good', NULL, NULL, 'service unit', 'useable'),
+
+-- ItemID 27 (Power Distribution Box 63A)
+(NULL, 'ITM27-SN001', 27, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+(NULL, 'ITM27-SN002', 27, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+
+-- ItemID 28 (Crowd Control Barrier 2m)
+(NULL, 'ITM28-SN001', 28, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+(NULL, 'ITM28-SN002', 28, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+
+-- ItemID 29 (Queue Stand)
+(NULL, 'ITM29-SN001', 29, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+(NULL, 'ITM29-SN002', 29, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+
+-- ItemID 30 (Plastic Stackable Chair)
+(NULL, 'ITM30-SN001', 30, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable'),
+(NULL, 'ITM30-SN002', 30, NULL, NULL, 'company', 'good', 'good', NULL, NULL, NULL, 'useable');
+
+
+INSERT INTO booking (
+    BookingID,
+    RequestAllocationID,
+    ItemUnitID,
+    StartTime,
+    EndTime,
+    ExpireAt,
+    CancelReason,
+    Note,
+    ScheduleStatus,
+    Status
+) VALUES
+(7, 302, 23, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(8, 302, 24, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(9, 302, 25, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(10, 301, 11, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(11, 301, 13, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(12, 301, 14, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(13, 301, 15, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(14, 301, 16, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(15, 301, 17, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(16, 300, 1, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(17, 300, 2, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(18, 320, 1, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(19, 320, 2, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(20, 320, 3, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(21, 320, 4, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(22, 321, 12, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(23, 321, 13, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(24, 321, 14, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(25, 321, 15, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(26, 321, 16, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(27, 321, 17, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(28, 322, 21, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(29, 322, 22, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(30, 322, 23, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(31, 322, 24, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(32, 322, 25, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(33, 322, 26, '2025-11-15 00:00:00', '2025-11-15 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(34, 329, 1, '2025-11-23 00:00:00', '2025-11-29 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(35, 329, 2, '2025-11-23 00:00:00', '2025-11-29 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(36, 329, 3, '2025-11-23 00:00:00', '2025-11-29 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(37, 329, 4, '2025-11-23 00:00:00', '2025-11-29 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(38, 329, 5, '2025-11-23 00:00:00', '2025-11-29 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(39, 330, 11, '2025-11-23 00:00:00', '2025-11-29 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed'),
+(40, 330, 12, '2025-11-23 00:00:00', '2025-11-29 23:59:00', NULL, NULL,
+ 'Generated from fulfillment save', 'event_use', 'confirmed');
+
+
+INSERT INTO `booking`
+(`BookingID`, `RequestAllocationID`, `ItemUnitID`,
+ `StartTime`, `EndTime`, `ExpireAt`, `CancelReason`,
+ `Note`, `ScheduleStatus`, `Status`)
+VALUES
+(NULL, 0, 1, '2025-10-02 00:00:00', '2025-10-05 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 1, '2025-10-08 00:00:00', '2025-10-10 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 2, '2025-10-01 00:00:00', '2025-10-03 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 2, '2025-10-05 00:00:00', '2025-10-07 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 2, '2025-10-10 00:00:00', '2025-10-12 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 3, '2025-10-04 00:00:00', '2025-10-06 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 3, '2025-10-09 00:00:00', '2025-10-11 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 3, '2025-10-20 00:00:00', '2025-10-22 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 4, '2025-10-01 00:00:00', '2025-10-02 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 4, '2025-10-04 00:00:00', '2025-10-05 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 4, '2025-10-15 00:00:00', '2025-10-18 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 5, '2025-10-07 00:00:00', '2025-10-09 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 5, '2025-10-12 00:00:00', '2025-10-14 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 6, '2025-10-03 00:00:00', '2025-10-04 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 6, '2025-10-06 00:00:00', '2025-10-08 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 6, '2025-10-25 00:00:00', '2025-10-27 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 7, '2025-10-16 00:00:00', '2025-10-18 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 7, '2025-10-21 00:00:00', '2025-10-23 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 8, '2025-10-05 00:00:00', '2025-10-06 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 8, '2025-10-09 00:00:00', '2025-10-10 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 8, '2025-10-13 00:00:00', '2025-10-15 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 9, '2025-10-02 00:00:00', '2025-10-03 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 9, '2025-10-11 00:00:00', '2025-10-13 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 10, '2025-10-19 00:00:00', '2025-10-21 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(NULL, 0, 10, '2025-10-24 00:00:00', '2025-10-26 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed');
+
+
+INSERT INTO booking
+(RequestAllocationID, ItemUnitID, StartTime, EndTime,
+ ExpireAt, CancelReason, Note, ScheduleStatus, Status)
+VALUES
+(0, 211, '2025-11-01 00:00:00', '2025-11-02 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(0, 212, '2025-11-01 00:00:00', '2025-11-03 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(0, 213, '2025-11-02 00:00:00', '2025-11-04 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(0, 214, '2025-11-03 00:00:00', '2025-11-05 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(0, 215, '2025-11-04 00:00:00', '2025-11-06 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(0, 216, '2025-11-05 00:00:00', '2025-11-07 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(0, 217, '2025-11-06 00:00:00', '2025-11-08 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(0, 218, '2025-11-07 00:00:00', '2025-11-09 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(0, 219, '2025-11-08 00:00:00', '2025-11-10 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(0, 220, '2025-11-09 00:00:00', '2025-11-11 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(0, 221, '2025-11-10 00:00:00', '2025-11-12 23:59:00', NULL, NULL, 'Test', 'event_use', 'confirmed'),
+(0, 211, '2025-11-15 00:00:00', '2025-11-16 23:59:00', NULL, NULL, 'Second event', 'event_use', 'confirmed'),
+(0, 212, '2025-11-17 00:00:00', '2025-11-18 23:59:00', NULL, NULL, 'Second event', 'event_use', 'confirmed'),
+(0, 213, '2025-11-20 00:00:00', '2025-11-21 23:59:00', NULL, NULL, 'Second event', 'event_use', 'confirmed'),
+(0, 214, '2025-11-22 00:00:00', '2025-11-23 23:59:00', NULL, NULL, 'Second event', 'event_use', 'confirmed'),
+(0, 215, '2025-11-25 00:00:00', '2025-11-26 23:59:00', NULL, NULL, 'Repair', 'maintenance_repair', 'confirmed'),
+(0, 216, '2025-11-26 00:00:00', '2025-11-27 23:59:00', NULL, NULL, 'Repair', 'maintenance_repair', 'confirmed'),
+(0, 217, '2025-11-27 00:00:00', '2025-11-28 23:59:00', NULL, NULL, 'Repair', 'maintenance_repair', 'confirmed'),
+(0, 218, '2025-11-28 00:00:00', '2025-11-29 23:59:00', NULL, NULL, 'Repair', 'maintenance_repair', 'confirmed'),
+(0, 219, '2025-11-29 00:00:00', '2025-11-30 23:59:00', NULL, NULL, 'Repair', 'maintenance_repair', 'confirmed'),
+(0, 220, '2025-11-12 00:00:00', '2025-11-13 23:59:00', NULL, NULL, 'Repair', 'maintenance_repair', 'confirmed'),
+(0, 221, '2025-11-14 00:00:00', '2025-11-15 23:59:00', NULL, NULL, 'Repair', 'maintenance_repair', 'confirmed'),
+(0, 211, '2025-11-18 00:00:00', '2025-11-19 23:59:00', NULL, NULL, 'Repair', 'maintenance_repair', 'confirmed'),
+(0, 212, '2025-11-19 00:00:00', '2025-11-20 23:59:00', NULL, NULL, 'Repair', 'maintenance_repair', 'confirmed'),
+(0, 213, '2025-11-23 00:00:00', '2025-11-24 23:59:00', NULL, NULL, 'Repair', 'maintenance_repair', 'confirmed');

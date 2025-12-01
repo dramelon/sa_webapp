@@ -1719,8 +1719,13 @@
     if (btnBack) {
         btnBack.addEventListener('click', () => {
             requestNavigation(() => {
-                if (window.history.length > 1) {
-                    window.history.back();
+                const returnTo = params.get('return_to');
+                if (returnTo) {
+                    try {
+                        window.location.href = decodeURIComponent(returnTo);
+                    } catch (e) {
+                        window.location.href = './item_units.html';
+                    }
                 } else {
                     window.location.href = './item_units.html';
                 }

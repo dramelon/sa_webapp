@@ -3119,6 +3119,130 @@ body.modal-open {
     opacity: 0.6;
 }
 
+.status-chart-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.chart-legend {
+    display: grid;
+    grid-template-columns: repeat(6, max-content);
+    align-items: center;
+    gap: 8px 16px;
+    color: #4b5563;
+    font-size: 14px;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    display: inline-block;
+}
+
+.legend-dot.available {
+    background: #10b981;
+}
+
+.legend-dot.in-use {
+    background: #3b82f6;
+}
+
+.legend-dot.maintenance {
+    background: #f59e0b;
+}
+
+.chart-wrapper {
+    position: relative;
+    min-height: 260px;
+    background: radial-gradient(circle at top left, #f9fafb, #fff);
+    border: 1px dashed #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+#itemStatusChart {
+    width: 100%;
+    height: 360px;
+}
+
+.chart-grid-line {
+    stroke: #e5e7eb;
+    stroke-width: 1;
+}
+
+.chart-axes line {
+    stroke: #d1d5db;
+    stroke-width: 1.25;
+}
+
+.chart-day-label {
+    fill: #294e98;
+    font-size: 11px;
+}
+
+.chart-y-axis-label {
+    fill: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.line {
+    fill: none;
+    stroke-width: 2.5;
+}
+
+.line.available {
+    stroke: #10b981;
+}
+
+.line.in-use {
+    stroke: #3b82f6;
+}
+
+.line.maintenance {
+    stroke: #f59e0b;
+}
+
+.chart-markers circle {
+    stroke: #fff;
+    stroke-width: 1.5;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.05));
+}
+
+.marker.available {
+    fill: #10b981;
+}
+
+.marker.in-use {
+    fill: #3b82f6;
+}
+
+.marker.maintenance {
+    fill: #f59e0b;
+}
+
+.chart-empty {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    color: #6b7280;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.95));
+    font-size: 14px;
+    padding: 12px;
+}
+
+.chart-empty[hidden] {
+    display: none;
+}
+
 @media (max-width: 640px) {
     .unsaved-banner {
         flex-direction: column;

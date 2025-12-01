@@ -119,6 +119,124 @@
                 </div>
             </form>
         </section>
+
+        <section class="detail-card" id="itemStatusTimeseries">
+            <header class="detail-card-head schedule-head">
+                <div>
+                    <h3>สถานะสินค้า</h3>
+                    <p class="detail-card-sub">จำนวนหน่วยสินค้าพร้อมใช้งาน การใช้งาน และการซ่อมบำรุงรายวัน</p>
+                </div>
+                <div class="schedule-controls" aria-live="polite">
+                    <button class="btn btn-ghost btn-icon" type="button" id="statusPrevMonth" aria-label="เดือนก่อนหน้า">
+                        <span class="i chevron-left"></span>
+                    </button>
+                    <p class="schedule-month" id="statusMonthLabel">—</p>
+                    <button class="btn btn-ghost" type="button" id="statusCurrentMonth">เดือนปัจจุบัน</button>
+                    <button class="btn btn-ghost btn-icon" type="button" id="statusNextMonth" aria-label="เดือนถัดไป">
+                        <span class="i chevron-right"></span>
+                    </button>
+                </div>
+            </header>
+            <div class="status-chart-card" aria-live="polite">
+                <div class="chart-legend" aria-hidden="true">
+                    <span class="legend-dot available"></span>
+                    <p>พร้อมใช้งาน</p>
+                    <span class="legend-dot in-use"></span>
+                    <p>กำลังใช้งาน</p>
+                    <span class="legend-dot maintenance"></span>
+                    <p>ซ่อมบำรุง/ไม่พร้อมใช้งาน</p>
+                </div>
+                <div class="chart-wrapper" role="img" aria-label="กราฟสถานะสินค้ารายวัน">
+                    <svg id="itemStatusChart" viewBox="0 0 860 360" preserveAspectRatio="none"></svg>
+                    <p class="chart-empty" id="statusChartMessage">กำลังโหลดข้อมูลกราฟ...</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="list-panel" id="item-unit-panel">
+            <header class="list-toolbar">
+                <div class="toolbar-group">
+                    <label class="field search">
+                        <span class="i search"></span>
+                        <input type="search" id="searchInput"
+                            placeholder="ค้นหาด้วยรหัสหน่วยสินค้า หรือหมายเลขซีเรียล..." />
+                    </label>
+                    <label class="field select">
+                        <span class="i filter"></span>
+                        <select id="statusFilter" aria-label="กรองตามสถานะ">
+                            <option value="all">สถานะทั้งหมด</option>
+                            <option value="useable">พร้อมใช้งาน</option>
+                            <option value="in use">กำลังใช้งาน</option>
+                            <option value="pending booking">รอการจอง</option>
+                            <option value="booked">ถูกจอง</option>
+                            <option value="damaged">ชำรุด</option>
+                            <option value="reparing">กำลังซ่อม</option>
+                            <option value="delivering">กำลังขนส่ง</option>
+                            <option value="returned">ส่งคืนแล้ว</option>
+                            <option value="depreciated">เก็บถาวร</option>
+                        </select>
+                    </label>
+                    <label class="field select">
+                        <span class="i filter"></span>
+                        <select id="ownershipFilter" aria-label="กรองตามความเป็นเจ้าของ">
+                            <option value="all">เจ้าของทั้งหมด</option>
+                            <option value="company">ของบริษัท</option>
+                            <option value="rented">เช่า</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="toolbar-group">
+                    <button class="ghost" id="btnClearFilters">ล้างตัวกรอง</button>
+                </div>
+            </header>
+
+            <div class="table-wrap" role="region" aria-live="polite">
+                <table class="event-table item-unit-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" data-sort-key="item_unit_id" aria-sort="descending">
+                                <button type="button" class="sort-button" data-sort-key="item_unit_id" data-label="รหัสหน่วย">
+                                    รหัสหน่วย / ซีเรียล
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="ownership" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="ownership" data-label="ความเป็นเจ้าของ">
+                                    ความเป็นเจ้าของ
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="status" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="status" data-label="สถานะ" aria-sort="none">
+                                    สถานะ
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" data-sort-key="expected_return_at" aria-sort="none">
+                                <button type="button" class="sort-button" data-sort-key="expected_return_at"
+                                    data-label="กำหนดส่งคืน">
+                                    กำหนดส่งคืน
+                                    <span class="sort-indicator" aria-hidden="true"></span>
+                                </button>
+                            </th>
+                            <th scope="col" class="col-actions">การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemUnitTableBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+                <div class="empty-state" id="emptyState" aria-hidden="true">
+                    <span class="i inbox"></span>
+                    <p>ไม่พบหน่วยสินค้าตามตัวกรองที่เลือก</p>
+                </div>
+            </div>
+            <div class="table-pagination" id="paginationControls" aria-live="polite">
+                <button class="btn btn-ghost" id="prevPage" type="button">ก่อนหน้า</button>
+                <span class="page-indicator" id="pageIndicator">หน้า 1</span>
+                <button class="btn btn-secondary" id="nextPage" type="button">หน้าถัดไป</button>
+            </div>
+        </section>
     </main>
 
     <div id="unsavedBanner" class="unsaved-banner" role="status" hidden>

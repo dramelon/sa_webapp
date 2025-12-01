@@ -30,6 +30,22 @@
     const categoryModalName = document.getElementById('categoryModalName');
     const categoryModalNote = document.getElementById('categoryModalNote');
     const categoryModalSave = document.getElementById('categoryModalSave');
+    const unitSearchInput = document.getElementById('searchInput');
+    const unitStatusFilter = document.getElementById('statusFilter');
+    const unitOwnershipFilter = document.getElementById('ownershipFilter');
+    const unitClearFiltersBtn = document.getElementById('btnClearFilters');
+    const unitTableBody = document.getElementById('itemUnitTableBody');
+    const unitEmptyState = document.getElementById('emptyState');
+    const unitPrevPageBtn = document.getElementById('prevPage');
+    const unitNextPageBtn = document.getElementById('nextPage');
+    const unitPageIndicator = document.getElementById('pageIndicator');
+    const unitSortButtons = document.querySelectorAll('#item-unit-panel .sort-button');
+    const statusChart = document.getElementById('itemStatusChart');
+    const statusChartMessage = document.getElementById('statusChartMessage');
+    const statusMonthLabel = document.getElementById('statusMonthLabel');
+    const statusPrevMonth = document.getElementById('statusPrevMonth');
+    const statusNextMonth = document.getElementById('statusNextMonth');
+    const statusCurrentMonth = document.getElementById('statusCurrentMonth');
 
     const fieldRefs = {
         code: document.getElementById('itemCode'),
@@ -59,6 +75,33 @@
     let isPopulating = false;
     let categoryTypeahead = null;
     let snapshotCategoryLabel = '';
+    let itemUnits = [];
+    let filteredUnits = [];
+    let unitPage = 1;
+    let unitSortKey = 'item_unit_id';
+    let unitSortDirection = 'desc';
+    let statusMonth = new Date();
+    statusMonth.setDate(1);
+
+    const maintenanceScheduleTypes = new Set([
+        'maintenance_repair',
+        'maintenance_preventive',
+        'inspection_test',
+        'cleaning',
+    ]);
+
+    const detailStatusLabels = {
+        useable: 'พร้อมใช้งาน',
+        'in use': 'กำลังใช้งาน',
+        booked: 'ถูกจอง',
+        'pending booking': 'รอการจอง',
+        returned: 'ส่งคืนแล้ว',
+        delivering: 'กำลังขนส่ง',
+        reparing: 'กำลังซ่อม',
+        damaged: 'ชำรุด',
+        depreciated: 'เก็บถาวร',
+        archived: 'เก็บถาวร',
+    };
 
     if (unsavedModal) {
         unsavedModal.setAttribute('aria-hidden', unsavedModal.hidden ? 'true' : 'false');
@@ -676,6 +719,9 @@
         initialSnapshot = serializeForm();
         setDirtyState(false);
         showMessage('');
+        resetUnitPanelState('บันทึกสินค้าเพื่อดูหน่วยสินค้า');
+        showStatusChartMessage('บันทึกสินค้าก่อนเพื่อดูกราฟสถานะ');
+        setStatusControlsEnabled(false);
     }
 
     function formatType(type) {
@@ -699,6 +745,442 @@
             return String(value);
         }
         return date.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function formatStatus(status) {
+        if (!status) return '—';
+        return detailStatusLabels[status] || status;
+    }
+
+    function formatOwnership(value) {
+        if (!value) return '—';
+        switch (value) {
+            case 'company':
+                return 'ของบริษัท';
+            case 'rented':
+                return 'เช่า';
+            default:
+                return value;
+        }
+    }
+
+    function formatUnitIdentifier(serial, fallback) {
+        if (serial) {
+            return `${String(serial)} (#${fallback})`;
+        }
+        return `#${fallback}`;
+    }
+
+    function updateUnitEmptyState(show) {
+        if (!unitEmptyState) return;
+        unitEmptyState.classList.toggle('show', show);
+        unitEmptyState.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
+
+    function renderUnitTable(rows) {
+        if (!unitTableBody) return;
+        unitTableBody.innerHTML = '';
+        if (!rows.length) {
+            updateUnitEmptyState(true);
+            return;
+        }
+        updateUnitEmptyState(false);
+        const fragment = document.createDocumentFragment();
+        for (const row of rows) {
+            const returnToUrl = encodeURIComponent(`${window.location.pathname}${window.location.search}`);
+            const manageUrl = `./item_unit_manage.html?item_unit_id=${encodeURIComponent(row.item_unit_id)}&return_to=${returnToUrl}`;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${formatUnitIdentifier(row.serial_number, row.item_unit_id)}</td>
+                <td>${formatOwnership(row.ownership)}</td>
+                <td>${formatStatus(row.status)}</td>
+                <td>${formatDateTime(row.expected_return_at)}</td>
+                <td class="col-actions">
+                    <a class="action-btn" href="${manageUrl}" aria-label="เปิดหน่วยสินค้า ${row.item_unit_id}">
+                    <span class="i pencil"></span>จัดการ
+                    </a>
+                </td>
+            `;
+            fragment.append(tr);
+        }
+        unitTableBody.append(fragment);
+    }
+
+    function updateUnitPagination() {
+        if (!unitPageIndicator) return;
+        const totalPages = Math.max(1, Math.ceil(filteredUnits.length / 10));
+        if (unitPage > totalPages) unitPage = totalPages;
+        unitPageIndicator.textContent = `หน้า ${unitPage} / ${totalPages}`;
+        if (unitPrevPageBtn) {
+            unitPrevPageBtn.disabled = unitPage <= 1;
+        }
+        if (unitNextPageBtn) {
+            unitNextPageBtn.disabled = unitPage >= totalPages;
+        }
+    }
+
+    function applyUnitFilters() {
+        const term = unitSearchInput?.value.trim().toLowerCase() || '';
+        const statusValue = unitStatusFilter?.value || 'all';
+        const ownershipValue = unitOwnershipFilter?.value || 'all';
+
+        filteredUnits = itemUnits.filter((row) => {
+            const matchesSearch = term
+                ? (`${row.item_unit_id}`.toLowerCase().includes(term)
+                    || `${row.serial_number || ''}`.toLowerCase().includes(term))
+                : true;
+            const matchesStatus = statusValue === 'all' ? true : row.status === statusValue;
+            const matchesOwnership = ownershipValue === 'all' ? true : row.ownership === ownershipValue;
+            return matchesSearch && matchesStatus && matchesOwnership;
+        });
+        sortUnitRows();
+        unitPage = 1;
+        renderUnitPage();
+    }
+
+    function sortUnitRows() {
+        const direction = unitSortDirection === 'asc' ? 1 : -1;
+        filteredUnits.sort((a, b) => {
+            const aVal = a[unitSortKey];
+            const bVal = b[unitSortKey];
+            if (aVal === bVal) return 0;
+            if (aVal === undefined || aVal === null) return 1;
+            if (bVal === undefined || bVal === null) return -1;
+            if (typeof aVal === 'number' && typeof bVal === 'number') {
+                return (aVal - bVal) * direction;
+            }
+            return String(aVal).localeCompare(String(bVal)) * direction;
+        });
+    }
+
+    function renderUnitPage() {
+        const start = (unitPage - 1) * 10;
+        const pageRows = filteredUnits.slice(start, start + 10);
+        renderUnitTable(pageRows);
+        updateUnitPagination();
+    }
+
+    function updateUnitSortIndicators() {
+        unitSortButtons?.forEach((button) => {
+            const key = button.dataset.sortKey;
+            const isActive = key === unitSortKey;
+            button.parentElement?.setAttribute('aria-sort', isActive ? (unitSortDirection === 'asc' ? 'ascending' : 'descending') : 'none');
+            button.classList.toggle('active', isActive);
+            button.querySelector('.sort-indicator')?.classList.toggle('asc', isActive && unitSortDirection === 'asc');
+            button.querySelector('.sort-indicator')?.classList.toggle('desc', isActive && unitSortDirection === 'desc');
+        });
+    }
+
+    function resetUnitPanelState(message) {
+        if (unitSearchInput) unitSearchInput.disabled = true;
+        if (unitStatusFilter) unitStatusFilter.disabled = true;
+        if (unitOwnershipFilter) unitOwnershipFilter.disabled = true;
+        if (unitClearFiltersBtn) unitClearFiltersBtn.disabled = true;
+        if (unitPrevPageBtn) unitPrevPageBtn.disabled = true;
+        if (unitNextPageBtn) unitNextPageBtn.disabled = true;
+        if (unitPageIndicator) unitPageIndicator.textContent = '—';
+        if (unitTableBody) {
+            unitTableBody.innerHTML = `<tr><td colspan="7" class="loading">${message}</td></tr>`;
+        }
+        updateUnitEmptyState(false);
+    }
+
+    function enableUnitPanel() {
+        if (unitSearchInput) unitSearchInput.disabled = false;
+        if (unitStatusFilter) unitStatusFilter.disabled = false;
+        if (unitOwnershipFilter) unitOwnershipFilter.disabled = false;
+        if (unitClearFiltersBtn) unitClearFiltersBtn.disabled = false;
+    }
+
+    function attachUnitPanelEvents() {
+        unitSearchInput?.addEventListener('input', () => {
+            applyUnitFilters();
+        });
+        unitStatusFilter?.addEventListener('change', () => {
+            applyUnitFilters();
+        });
+        unitOwnershipFilter?.addEventListener('change', () => {
+            applyUnitFilters();
+        });
+        unitClearFiltersBtn?.addEventListener('click', () => {
+            if (unitSearchInput) unitSearchInput.value = '';
+            if (unitStatusFilter) unitStatusFilter.value = 'all';
+            if (unitOwnershipFilter) unitOwnershipFilter.value = 'all';
+            applyUnitFilters();
+        });
+        unitPrevPageBtn?.addEventListener('click', () => {
+            if (unitPage > 1) {
+                unitPage -= 1;
+                renderUnitPage();
+            }
+        });
+        unitNextPageBtn?.addEventListener('click', () => {
+            const totalPages = Math.max(1, Math.ceil(filteredUnits.length / 10));
+            if (unitPage < totalPages) {
+                unitPage += 1;
+                renderUnitPage();
+            }
+        });
+        unitSortButtons?.forEach((button) => {
+            button.addEventListener('click', () => {
+                const key = button.dataset.sortKey || 'item_unit_id';
+                if (unitSortKey === key) {
+                    unitSortDirection = unitSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    unitSortKey = key;
+                    unitSortDirection = 'asc';
+                }
+                sortUnitRows();
+                updateUnitSortIndicators();
+                renderUnitPage();
+            });
+        });
+    }
+
+    function mapItemUnitPayload(row) {
+        return {
+            item_unit_id: Number(row.item_unit_id) || 0,
+            item_id: Number(row.item_id) || 0,
+            item_name: row.item_name || '',
+            serial_number: row.serial_number || '',
+            status: row.status || '',
+            ownership: row.ownership || '',
+            expected_return_at: row.expected_return_at || '',
+            return_at: row.return_at || '',
+        };
+    }
+
+    async function fetchItemUnitsForItem(itemId) {
+        const response = await fetch(
+            `${modelRoot}/item_units_by_item.php?item_id=${encodeURIComponent(itemId)}&statuses=${encodeURIComponent('useable,returned,pending booking,booked,in use,delivering,reparing,damaged,depreciated')}`,
+            { credentials: 'same-origin' }
+        );
+        if (!response.ok) {
+            throw new Error('load_failed');
+        }
+        const payload = await response.json();
+        return Array.isArray(payload.data) ? payload.data.map(mapItemUnitPayload) : [];
+    }
+
+    async function loadItemUnitsSection(itemId) {
+        if (!unitTableBody) return;
+        resetUnitPanelState('กำลังโหลดหน่วยสินค้า...');
+        try {
+            itemUnits = await fetchItemUnitsForItem(itemId);
+            enableUnitPanel();
+            applyUnitFilters();
+            updateUnitSortIndicators();
+        } catch (err) {
+            resetUnitPanelState('ไม่สามารถโหลดหน่วยสินค้านี้ได้');
+        }
+    }
+
+    function showStatusChartMessage(message) {
+        if (statusChart) {
+            statusChart.innerHTML = '';
+        }
+        if (statusChartMessage) {
+            statusChartMessage.hidden = !message;
+            statusChartMessage.textContent = message || '';
+        }
+    }
+
+    function showStatusChartProgress(current, total, totalUnits) {
+        if (!statusChartMessage) return;
+        const totalLabel = total ? `${current}/${total} วัน` : '';
+        const unitLabel = Number.isFinite(totalUnits) ? ` • ${totalUnits} หน่วย` : '';
+        statusChartMessage.hidden = false;
+        statusChartMessage.textContent = `กำลังประมวลผลกราฟ... ${totalLabel}${unitLabel}`.trim();
+    }
+
+    function hideStatusChartMessage() {
+        if (!statusChartMessage) return;
+        statusChartMessage.hidden = true;
+        statusChartMessage.textContent = '';
+    }
+
+    function setStatusControlsEnabled(enabled) {
+        [statusPrevMonth, statusNextMonth, statusCurrentMonth].forEach((btn) => {
+            if (btn) {
+                btn.disabled = !enabled;
+            }
+        });
+    }
+
+    function formatThaiMonth(date) {
+        const months = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        return `${months[date.getMonth()]} ${date.getFullYear() + 543}`;
+    }
+
+    function updateStatusMonthLabel() {
+        if (!statusMonthLabel) return;
+        statusMonthLabel.textContent = formatThaiMonth(statusMonth);
+    }
+
+    function buildLinePath(points, className) {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute(
+            'd',
+            points
+                .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+                .join(' ')
+        );
+        path.setAttribute('class', className);
+        return path;
+    }
+
+    function buildMarkers(points, className) {
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('class', 'chart-markers');
+        points.forEach((point) => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', point.x.toFixed(2));
+            circle.setAttribute('cy', point.y.toFixed(2));
+            circle.setAttribute('r', '3.5');
+            circle.setAttribute('class', className);
+            group.append(circle);
+        });
+        return group;
+    }
+
+    function renderStatusChart(data) {
+        if (!statusChart) return;
+        statusChart.innerHTML = '';
+        if (!data || !Array.isArray(data.days) || !data.days.length) {
+            showStatusChartMessage('ไม่มีข้อมูลแสดงผลในเดือนนี้');
+            return;
+        }
+
+        const width = 860;
+        const height = 360;
+        const padding = { top: 28, right: 22, bottom: 38, left: 52 };
+        const plotWidth = width - padding.left - padding.right;
+        const plotHeight = height - padding.top - padding.bottom;
+        const days = data.days;
+        const maxDataValue = Math.max(...days.map((d) => Number(d.total) || 0));
+        const yAxisCeiling = maxDataValue > 0 ? Math.ceil(maxDataValue / 5) * 5 : 5;
+        const totalUnits = Number(days[0]?.total) || 0;
+        const step = days.length > 1 ? plotWidth / (days.length - 1) : plotWidth;
+
+        const grid = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        grid.setAttribute('class', 'chart-grid-lines');
+        const numGridLines = 5;
+        for (let i = 1; i <= numGridLines; i += 1) {
+            const y = padding.top + plotHeight * (1 - i / numGridLines);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', padding.left.toString());
+            line.setAttribute('x2', (width - padding.right).toString());
+            line.setAttribute('y1', y.toString());
+            line.setAttribute('y2', y.toString());
+            line.setAttribute('class', 'chart-grid-line');
+
+            const labelValue = (yAxisCeiling / numGridLines) * i;
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', (padding.left - 8).toString());
+            label.setAttribute('y', y.toString());
+            label.setAttribute('dy', '0.35em');
+            label.setAttribute('text-anchor', 'end');
+            label.setAttribute('class', 'chart-y-axis-label');
+            label.textContent = labelValue.toString();
+
+            grid.append(line);
+            grid.append(label);
+        }
+        const zeroLine = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        zeroLine.setAttribute('x', (padding.left - 8).toString());
+        zeroLine.setAttribute('y', (height - padding.bottom).toString());
+        zeroLine.setAttribute('dy', '0.35em');
+        zeroLine.setAttribute('text-anchor', 'end');
+        zeroLine.setAttribute('class', 'chart-y-axis-label');
+        zeroLine.textContent = '0';
+        grid.append(zeroLine);
+        statusChart.append(grid);
+
+        const axisGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        axisGroup.setAttribute('class', 'chart-axes');
+        const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        xAxis.setAttribute('x1', padding.left.toString());
+        xAxis.setAttribute('x2', (width - padding.right).toString());
+        xAxis.setAttribute('y1', (height - padding.bottom).toString());
+        xAxis.setAttribute('y2', (height - padding.bottom).toString());
+        axisGroup.append(xAxis);
+
+        const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        yAxis.setAttribute('x1', padding.left.toString());
+        yAxis.setAttribute('x2', padding.left.toString());
+        yAxis.setAttribute('y1', padding.top.toString());
+        yAxis.setAttribute('y2', (height - padding.bottom).toString());
+        axisGroup.append(yAxis);
+        statusChart.append(axisGroup);
+
+        const pointsAvailable = [];
+        const pointsInUse = [];
+        const pointsMaintenance = [];
+
+        showStatusChartProgress(0, days.length, totalUnits);
+
+        days.forEach((day, index) => {
+            const available = Math.max(0, Number(day.available) || 0);
+            const inUse = Math.max(0, Number(day.in_use) || 0);
+            const maintenance = Math.max(0, Number(day.maintenance) || 0);
+            const x = padding.left + (step * index);
+            const yAvailable = padding.top + (1 - available / yAxisCeiling) * plotHeight;
+            const yInUse = padding.top + (1 - inUse / yAxisCeiling) * plotHeight;
+            const yMaintenance = padding.top + (1 - maintenance / yAxisCeiling) * plotHeight;
+
+            pointsAvailable.push({ x, y: yAvailable });
+            pointsInUse.push({ x, y: yInUse });
+            pointsMaintenance.push({ x, y: yMaintenance });
+
+            const dayLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            dayLabel.setAttribute('x', x.toString());
+            dayLabel.setAttribute('y', (height - padding.bottom + 18).toString());
+            dayLabel.setAttribute('text-anchor', 'middle');
+            dayLabel.setAttribute('class', 'chart-day-label');
+            dayLabel.textContent = String(new Date(day.date).getDate());
+            statusChart.append(dayLabel);
+
+            showStatusChartProgress(index + 1, days.length, totalUnits);
+        });
+
+        const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        linesGroup.append(buildLinePath(pointsAvailable, 'line available'));
+        linesGroup.append(buildLinePath(pointsInUse, 'line in-use'));
+        linesGroup.append(buildLinePath(pointsMaintenance, 'line maintenance'));
+        linesGroup.append(buildMarkers(pointsAvailable, 'marker available'));
+        linesGroup.append(buildMarkers(pointsInUse, 'marker in-use'));
+        linesGroup.append(buildMarkers(pointsMaintenance, 'marker maintenance'));
+        statusChart.append(linesGroup);
+
+        hideStatusChartMessage();
+    }
+
+    async function fetchStatusTimeseries(itemId, monthDate) {
+        const monthParam = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`;
+        const response = await fetch(
+            `${modelRoot}/item_status_timeseries.php?item_id=${encodeURIComponent(itemId)}&month=${encodeURIComponent(monthParam)}`,
+            { credentials: 'same-origin' }
+        );
+        if (!response.ok) {
+            throw new Error('load_failed');
+        }
+        const payload = await response.json();
+        return payload.data;
+    }
+
+    async function loadStatusChart(itemId) {
+        setStatusControlsEnabled(false);
+        showStatusChartMessage('กำลังโหลดกราฟ...');
+        updateStatusMonthLabel();
+        try {
+            const data = await fetchStatusTimeseries(itemId, statusMonth);
+            setStatusControlsEnabled(true);
+            renderStatusChart(data);
+        } catch (err) {
+            showStatusChartMessage('ไม่สามารถโหลดข้อมูลกราฟได้');
+            setStatusControlsEnabled(true);
+        }
     }
 
     async function fetchItemDetail(itemId) {
@@ -933,6 +1415,36 @@
         });
     }
 
+    attachUnitPanelEvents();
+
+    if (statusPrevMonth) {
+        statusPrevMonth.addEventListener('click', () => {
+            statusMonth = new Date(statusMonth.getFullYear(), statusMonth.getMonth() - 1, 1);
+            if (!isCreateMode && currentItemId) {
+                loadStatusChart(currentItemId);
+            }
+        });
+    }
+
+    if (statusNextMonth) {
+        statusNextMonth.addEventListener('click', () => {
+            statusMonth = new Date(statusMonth.getFullYear(), statusMonth.getMonth() + 1, 1);
+            if (!isCreateMode && currentItemId) {
+                loadStatusChart(currentItemId);
+            }
+        });
+    }
+
+    if (statusCurrentMonth) {
+        statusCurrentMonth.addEventListener('click', () => {
+            statusMonth = new Date();
+            statusMonth.setDate(1);
+            if (!isCreateMode && currentItemId) {
+                loadStatusChart(currentItemId);
+            }
+        });
+    }
+
     if (btnDiscardChanges) {
         btnDiscardChanges.addEventListener('click', () => {
             pendingNavigationAction = null;
@@ -1011,6 +1523,9 @@
                 itemHeading.textContent = detail.item_name ? `แก้ไขสินค้า: ${detail.item_name}` : 'แก้ไขสินค้า';
             }
             populateForm(detail);
+            loadItemUnitsSection(currentItemId);
+            setStatusControlsEnabled(true);
+            loadStatusChart(currentItemId);
         } catch (err) {
             prepareCreateMode();
             const message = err instanceof RequestError && err.code === 'unauthorized'

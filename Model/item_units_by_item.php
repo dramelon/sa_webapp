@@ -20,7 +20,18 @@ if ($itemId <= 0) {
 $defaultStatuses = ['useable', 'returned'];
 $statusesParam = isset($_GET['statuses']) ? trim((string) $_GET['statuses']) : '';
 $requestedStatuses = array_filter(array_map('trim', explode(',', $statusesParam)));
-$allowedStatuses = ['useable', 'returned', 'pending booking', 'booked'];
+$allowedStatuses = [
+    'useable',
+    'returned',
+    'pending booking',
+    'booked',
+    'in use',
+    'delivering',
+    'reparing',
+    'damaged',
+    'archived',
+    'depreciated',
+];
 $statuses = [];
 
 foreach ($requestedStatuses as $status) {
