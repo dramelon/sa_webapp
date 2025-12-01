@@ -16,6 +16,44 @@ function tableExists(PDO $db, string $tableName): bool
     return (bool) $stmt->fetchColumn();
 }
 
+function deleteRemovedFulfillmentUnits(PDO $db, int $fulfillmentId, int $requestLineId, array $existingByUnit, array $removedUnitIds): void
+{
+    if (empty($removedUnitIds)) {
+        return;
+    }
+
+    $lineIdsToDelete = [];
+    foreach ($removedUnitIds as $unitId) {
+        if (isset($existingByUnit[$unitId])) {
+            $lineIdsToDelete[] = $existingByUnit[$unitId];
+        }
+    }
+
+    if (!empty($lineIdsToDelete)) {
+        $placeholders = implode(', ', array_fill(0, count($lineIdsToDelete), '?'));
+        $deleteStmt = $db->prepare(
+            "DELETE FROM request_fulfillment_line WHERE RequestFulfillmentID = ? AND RequestFulfillmentLineID IN ($placeholders)"
+        );
+        $deleteStmt->bindValue(1, $fulfillmentId, PDO::PARAM_INT);
+        foreach (array_values($lineIdsToDelete) as $idx => $lineIdToDelete) {
+            $deleteStmt->bindValue($idx + 2, $lineIdToDelete, PDO::PARAM_INT);
+        }
+        $deleteStmt->execute();
+    }
+
+    $unitIdsToDelete = array_values(array_intersect(array_keys($existingByUnit), $removedUnitIds));
+    if (!empty($unitIdsToDelete)) {
+        $unitPlaceholders = implode(', ', array_fill(0, count($unitIdsToDelete), '?'));
+        $deleteBookingSql = "DELETE FROM booking WHERE RequestAllocationID = ? AND ItemUnitID IN ($unitPlaceholders)";
+        $deleteBookingStmt = $db->prepare($deleteBookingSql);
+        $deleteBookingStmt->bindValue(1, $requestLineId, PDO::PARAM_INT);
+        foreach ($unitIdsToDelete as $idx => $unitId) {
+            $deleteBookingStmt->bindValue($idx + 2, $unitId, PDO::PARAM_INT);
+        }
+        $deleteBookingStmt->execute();
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'method_not_allowed']);
@@ -174,15 +212,8 @@ try {
     }
 
     $selectedUnitIds = array_keys($cleanLines);
-    $linesToDelete = array_diff(array_keys($existingByUnit), $selectedUnitIds);
-    if ($linesToDelete) {
-        $placeholders = implode(', ', array_fill(0, count($linesToDelete), '?'));
-        $deleteStmt = $db->prepare("DELETE FROM request_fulfillment_line WHERE RequestFulfillmentLineID IN ($placeholders)");
-        foreach (array_values($linesToDelete) as $idx => $lineIdToDelete) {
-            $deleteStmt->bindValue($idx + 1, $lineIdToDelete, PDO::PARAM_INT);
-        }
-        $deleteStmt->execute();
-    }
+    $removedUnitIds = array_values(array_diff(array_keys($existingByUnit), $selectedUnitIds));
+    deleteRemovedFulfillmentUnits($db, (int) $fulfillmentId, $requestLineId, $existingByUnit, $removedUnitIds);
 
     foreach ($cleanLines as $itemUnitId => $line) {
         if (isset($existingByUnit[$itemUnitId])) {

@@ -33,6 +33,7 @@
     const DEFAULT_STATUS_OPTIONS = [
         { id: 'draft', label: 'ร่าง' },
         { id: 'submitted', label: 'ส่งคำขอ' },
+        { id: 'pending', label: 'รออนุมัติ' },
         { id: 'approved', label: 'อนุมัติแล้ว' },
         { id: 'closed', label: 'ปิดคำขอ' },
         { id: 'cancelled', label: 'ยกเลิก' },

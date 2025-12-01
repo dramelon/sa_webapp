@@ -177,6 +177,13 @@
         button.textContent = selected ? 'เลือกแล้ว' : 'เพิ่ม';
     }
 
+    function removeSelectedUnit(itemUnitId) {
+        selectedUnits = selectedUnits.filter((selected) => selected.item_unit_id !== itemUnitId);
+        updateAvailableButtonState(itemUnitId, false);
+        renderSelectedUnits();
+        setDirty(true);
+    }
+
     function renderSelectedUnits() {
         if (!selectedList || !selectedTemplate || !selectedEmpty) {
             return;
@@ -228,10 +235,7 @@
             const removeBtn = row.querySelector('.remove-selected');
             if (removeBtn) {
                 removeBtn.addEventListener('click', () => {
-                    selectedUnits = selectedUnits.filter((selected) => selected.item_unit_id !== unit.item_unit_id);
-                    updateAvailableButtonState(unit.item_unit_id, false);
-                    renderSelectedUnits();
-                    setDirty(true);
+                    removeSelectedUnit(unit.item_unit_id);
                 });
             }
 
