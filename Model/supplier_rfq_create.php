@@ -114,7 +114,7 @@ try {
             :deliver_to,
             NULL,
             :note,
-            'draft'
+            :status
         )
     ');
 
@@ -133,6 +133,7 @@ try {
     $insertRfq->bindValue(':payment_method', $paymentMethod, PDO::PARAM_STR);
     $insertRfq->bindValue(':deliver_to', $deliverTo > 0 ? $deliverTo : $eventId, PDO::PARAM_INT);
     bindNullableString($insertRfq, ':note', appendRequestToNote($note, $requestId));
+    $insertRfq->bindValue(':status', 'draft', PDO::PARAM_STR);
 
     $insertRfq->execute();
 

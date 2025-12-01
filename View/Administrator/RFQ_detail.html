@@ -21,7 +21,7 @@
                     <span class="i back"></span>
                     กลับไปหน้าเอกสาร
                 </button>
-                <button class="btn btn-primary" type="button" id="rfqBtnSave">
+                <button class="btn btn-secondary" type="button" id="rfqBtnSave">
                     <span class="i check"></span>
                     บันทึก RFQ
                 </button>
@@ -54,45 +54,84 @@
                 <header class="detail-card-head">
                     <div>
                         <h3>รายละเอียด RFQ</h3>
-                        <p>กำหนดข้อมูลเบื้องต้นของคำขอใบเสนอราคา</p>
+                        <p>กำหนดข้อมูลของคำขอใบเสนอราคา</p>
                     </div>
-                    <p class="request-reference" aria-live="polite" id="rfqRequestReference">อ้างอิงคำขอ: —</p>
+                    <p class="request-reference" aria-live="polite" id="rfqReference">อ้างอิงคำขอ: —</p>
                 </header>
-                <div class="detail-card-body request-info-grid">
-                    <label class="field-block">
-                        <span class="field-label">หัวข้อ RFQ</span>
-                        <input type="text" id="rfqTitleInput" placeholder="เช่น ขอใบเสนอราคาอุปกรณ์เพิ่มเติม" />
-                        <span class="field-helper">ตั้งชื่อเพื่อระบุ RFQ นี้ได้ชัดเจน</span>
-                    </label>
-                    <label class="field-block">
-                        <span class="field-label">วันครบกำหนดเสนอราคา</span>
-                        <input type="date" id="rfqDueDateInput" />
-                    </label>
-                    <label class="field-block">
-                        <span class="field-label">กำหนดส่งมอบที่คาดหวัง</span>
-                        <input type="date" id="rfqExpectedArrivalInput" />
-                    </label>
-                    <label class="field-block">
-                        <span class="field-label">เงื่อนไขการชำระเงิน</span>
-                        <select id="rfqPaymentTermSelect">
-                            <option value="30D">30 วัน</option>
-                            <option value="45D">45 วัน</option>
-                            <option value="60D">60 วัน</option>
-                        </select>
-                    </label>
-                    <label class="field-block">
-                        <span class="field-label">วิธีการชำระเงิน</span>
-                        <select id="rfqPaymentMethodSelect">
-                            <option value="bank">โอนธนาคาร</option>
-                            <option value="credit">บัตรเครดิต</option>
-                            <option value="cash">เงินสด</option>
-                            <option value="others">อื่น ๆ</option>
-                        </select>
-                    </label>
-                    <label class="field-block field-span-2">
-                        <span class="field-label">หมายเหตุ</span>
-                        <textarea id="rfqNoteInput" rows="3" placeholder="รายละเอียดเพิ่มเติมสำหรับ RFQ"></textarea>
-                    </label>
+                <div class="detail-card-body">
+                    <div class="detail-form-columns">
+                        <div class="detail-column">
+                            <label class="field-block">
+                                <span class="field-label">รหัส RFQ</span>
+                                <input type="text" id="rfqSupplierRfqId" readonly value="ใหม่" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">รหัสอ้างอิง RFQ</span>
+                                <input type="text" id="rfqRefSupplierRfqId" name="RefSupplierRFQID" placeholder="รหัสอ้างอิง (ถ้ามี)" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">เจ้าหน้าที่</span>
+                                <input type="text" id="rfqStaffId" name="StaffID" placeholder="รหัสเจ้าหน้าที่" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">ผู้ติดต่อ</span>
+                                <input type="text" id="rfqContactPerson" name="ContactPerson" placeholder="รหัสผู้ติดต่อ" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">จัดส่งไปที่</span>
+                                <input type="text" id="rfqDeliverTo" name="DeliverTo" placeholder="รหัสสถานที่จัดส่ง" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">หมายเหตุ</span>
+                                <textarea id="rfqNote" name="Note" rows="3" placeholder="รายละเอียดเพิ่มเติมสำหรับ RFQ"></textarea>
+                            </label>
+                        </div>
+                        <div class="detail-column">
+                            <label class="field-block">
+                                <span class="field-label">เงื่อนไขการชำระเงิน</span>
+                                <select id="rfqPaymentTerm" name="PaymentTerm">
+                                    <option value="30D">30 วัน</option>
+                                    <option value="45D">45 วัน</option>
+                                    <option value="60D">60 วัน</option>
+                                </select>
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วิธีการชำระเงิน</span>
+                                <select id="rfqPaymentMethod" name="PaymentMethod">
+                                    <option value="bank">โอนธนาคาร</option>
+                                    <option value="credit">บัตรเครดิต</option>
+                                    <option value="cash">เงินสด</option>
+                                    <option value="others">อื่น ๆ</option>
+                                </select>
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันที่สร้างใบขอราคา</span>
+                                <input type="datetime-local" id="rfqRequestDate" name="RequestDate" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">จำนวนวันความน่าเชื่อถือของราคา (ราคามีผลภายในกี่วันหลังการเสนอ)</span>
+                                <input type="number" id="rfqValidityDays" name="RequestDate" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันที่ครบกำหนดรับใบเสนอราคา</span>
+                                <input type="datetime-local" id="rfqDueDate" name="DueDate" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันที่สั่งซื้อวัสดุจริง</span>
+                                <input type="datetime-local" id="orderDate" name="OrderDate" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันที่คาดว่าจะได้รับวัสดุจริง</span>
+                                <input type="datetime-local" id="orderExpectedArrival" name="ExpectedArrival" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันที่ครบกำหนดส่งวัสดุจริง</span>
+                                <input type="datetime-local" id="orderDeadline" name="OrderDeadline" />
+                            </label>
+                            
+                            
+                        </div>
+                    </div>
                 </div>
             </section>
 
