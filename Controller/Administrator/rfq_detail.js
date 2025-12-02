@@ -17,6 +17,9 @@
     const statusBadge = document.getElementById('rfqStatusBadge');
     const statusText = document.getElementById('rfqStatusText');
     const updatedAtDisplay = document.getElementById('rfqUpdatedAt');
+    const updatedByDisplay = document.getElementById('rfqUpdatedBy');
+    const createdAtDisplay = document.getElementById('rfqCreatedAt');
+    const createdByDisplay = document.getElementById('rfqCreatedBy');
     const missingLinesBody = document.getElementById('rfqMissingLinesBody');
     const titleInput = document.getElementById('rfqTitleInput');
     const dueDateInput = document.getElementById('rfqDueDateInput');
@@ -32,13 +35,36 @@
     const staffIdInput = document.getElementById('rfqStaffId');
     const contactPersonInput = document.getElementById('rfqContactPerson');
     const deliverToInput = document.getElementById('rfqDeliverTo');
+    const rfqIdInput = document.getElementById('rfqSupplierRfqId');
+    const rfqAuditList = document.getElementById('rfqAuditList');
+    const rfqAuditEmpty = document.getElementById('rfqAuditEmpty');
+    const rfqAuditLink = document.getElementById('rfqAuditLink');
+
+    const unsavedBanner = document.getElementById('unsavedBanner');
+    const unsavedModal = document.getElementById('unsavedModal');
+    const btnDiscardChanges = document.getElementById('btnDiscardChanges');
+    const btnSaveInline = document.getElementById('btnSaveInline');
+    const btnModalStay = document.getElementById('btnModalStay');
+    const btnModalDiscard = document.getElementById('btnModalDiscard');
+    const btnModalSave = document.getElementById('btnModalSave');
 
     let modelRoot = '';
     let requestId = initialRequestId ? String(initialRequestId) : '';
     let eventId = initialEventId ? String(initialEventId) : '';
+    let rfqId = params.get('rfq_id') ? String(params.get('rfq_id')) : '';
     let requestInfo = null;
+    let rfqInfo = null;
     let eventInfo = null;
     let staffInfo = null;
+    let isHydrating = false;
+    let isDirty = false;
+    let isSaving = false;
+    let initialSnapshot = null;
+    let pendingNavigationAction = null;
+
+    if (unsavedModal) {
+        unsavedModal.setAttribute('aria-hidden', unsavedModal.hidden ? 'true' : 'false');
+    }
 
     function formatDate(dateLike) {
         if (!dateLike) {
@@ -101,6 +127,59 @@
         globalMessage.className = `form-alert ${tone}`;
     }
 
+    function updateSaveButtonState() {
+        const disable = isSaving || !isDirty;
+        if (saveButton) {
+            saveButton.disabled = disable;
+        }
+        if (btnSaveInline) {
+            btnSaveInline.disabled = disable;
+        }
+    }
+
+    function setDirty(next) {
+        const nextState = Boolean(next);
+        if (isDirty === nextState) {
+            updateSaveButtonState();
+            return;
+        }
+        isDirty = nextState;
+        if (unsavedBanner) {
+            if (isDirty) {
+                unsavedBanner.hidden = false;
+                requestAnimationFrame(() => {
+                    unsavedBanner.classList.add('is-active');
+                });
+            } else {
+                if (!unsavedBanner.classList.contains('is-active')) {
+                    unsavedBanner.hidden = true;
+                } else {
+                    unsavedBanner.classList.remove('is-active');
+                    const handleTransitionEnd = (event) => {
+                        if (event.propertyName === 'transform') {
+                            unsavedBanner.hidden = true;
+                            unsavedBanner.removeEventListener('transitionend', handleTransitionEnd);
+                        }
+                    };
+                    unsavedBanner.addEventListener('transitionend', handleTransitionEnd);
+                }
+            }
+        }
+        updateSaveButtonState();
+    }
+
+    function openUnsavedModal() {
+        if (!unsavedModal) return;
+        unsavedModal.hidden = false;
+        unsavedModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeUnsavedModal() {
+        if (!unsavedModal) return;
+        unsavedModal.hidden = true;
+        unsavedModal.setAttribute('aria-hidden', 'true');
+    }
+
     function updateBackLink() {
         if (!backLink) return;
         // Always point to event_document_manage.html.
@@ -129,6 +208,65 @@
         });
     }
 
+    function captureFormSnapshot() {
+        return {
+            title: (titleInput?.value || '').trim(),
+            ref_id: (refIdInput?.value || '').trim(),
+            staff_id: staffIdInput?.value || '',
+            contact_person: contactPersonInput?.value || '',
+            deliver_to: deliverToInput?.value || '',
+            request_date: requestDateInput?.value || '',
+            validity_days: validityDaysInput?.value || '',
+            due_date: dueDateInput?.value || '',
+            order_date: orderDateInput?.value || '',
+            order_deadline: orderDeadlineInput?.value || '',
+            expected_arrival: expectedArrivalInput?.value || '',
+            payment_term: paymentTermSelect?.value || '',
+            payment_method: paymentMethodSelect?.value || '',
+            note: (noteInput?.value || '').trim(),
+        };
+    }
+
+    function restoreSnapshot(snapshot) {
+        if (!snapshot) return;
+        isHydrating = true;
+        if (titleInput) titleInput.value = snapshot.title || '';
+        if (refIdInput) refIdInput.value = snapshot.ref_id || '';
+        if (staffIdInput) staffIdInput.value = snapshot.staff_id || '';
+        if (contactPersonInput) contactPersonInput.value = snapshot.contact_person || '';
+        if (deliverToInput) deliverToInput.value = snapshot.deliver_to || '';
+        if (requestDateInput) requestDateInput.value = snapshot.request_date || '';
+        if (validityDaysInput) validityDaysInput.value = snapshot.validity_days || '';
+        if (dueDateInput) dueDateInput.value = snapshot.due_date || '';
+        if (orderDateInput) orderDateInput.value = snapshot.order_date || '';
+        if (orderDeadlineInput) orderDeadlineInput.value = snapshot.order_deadline || '';
+        if (expectedArrivalInput) expectedArrivalInput.value = snapshot.expected_arrival || '';
+        if (paymentTermSelect) paymentTermSelect.value = snapshot.payment_term || '30D';
+        if (paymentMethodSelect) paymentMethodSelect.value = snapshot.payment_method || 'bank';
+        if (noteInput) noteInput.value = snapshot.note || '';
+        isHydrating = false;
+        setDirty(false);
+    }
+
+    function refreshSnapshot() {
+        initialSnapshot = captureFormSnapshot();
+        setDirty(false);
+    }
+
+    function markDirtyIfReady() {
+        if (isHydrating) return;
+        setDirty(true);
+    }
+
+    function requestNavigation(action) {
+        if (!isDirty) {
+            action();
+            return;
+        }
+        pendingNavigationAction = action;
+        openUnsavedModal();
+    }
+
     function getFulfilledCountFromLine(line) {
         const candidates = [
             line?.fulfillment_line_count,
@@ -151,6 +289,21 @@
     }
 
     function buildMissingLines() {
+        const linesFromRfq = Array.isArray(rfqInfo?.lines)
+            ? rfqInfo.lines.map((line) => ({
+                  item_id: line.item_id ?? line.rfq_line_id ?? null,
+                  item_name: line.item_name || line.item_desc || '',
+                  item_reference: line.item_reference || line.item_desc || '',
+                  item_uom: line.uom || '',
+                  requested_quantity: line.quantity_requested ?? line.quantity ?? 0,
+                  fulfilled_quantity: 0,
+                  missing_quantity: line.quantity_requested ?? line.quantity ?? 0,
+              }))
+            : [];
+        if (linesFromRfq.length > 0) {
+            return linesFromRfq;
+        }
+
         const lines = Array.isArray(requestInfo?.lines) ? requestInfo.lines : [];
         const missing = [];
         lines.forEach((line) => {
@@ -217,6 +370,98 @@
         });
     }
 
+    function formatAuditAction(action) {
+        const normalized = typeof action === 'string' ? action.trim().toUpperCase() : '';
+        const mapping = {
+            CREATE: 'สร้าง RFQ',
+            UPDATE: 'ปรับปรุง RFQ',
+            ARCHIVE: 'เก็บเอกสาร',
+            UNARCHIVED: 'นำกลับมาใช้',
+            DELETE: 'ลบเอกสาร',
+        };
+        return mapping[normalized] || normalized || 'ไม่ระบุการทำรายการ';
+    }
+
+    function resolveAuditActorLabel(log) {
+        if (log?.action_by_label && typeof log.action_by_label === 'string' && log.action_by_label.trim()) {
+            return log.action_by_label.trim();
+        }
+        if (log?.action_by_name && typeof log.action_by_name === 'string' && log.action_by_name.trim()) {
+            return log.action_by_name.trim();
+        }
+        if (log?.action_by_id !== undefined && log.action_by_id !== null) {
+            const id = Number.parseInt(log.action_by_id, 10);
+            if (Number.isFinite(id)) {
+                return `Staff#${id}`;
+            }
+        }
+        return 'ไม่ระบุผู้ปฏิบัติ';
+    }
+
+    function sortAuditLogs(logs = []) {
+        return logs
+            .filter((log) => log && typeof log === 'object')
+            .slice()
+            .sort((a, b) => {
+                const dateA = new Date(a?.action_at || 0).getTime();
+                const dateB = new Date(b?.action_at || 0).getTime();
+                if (Number.isNaN(dateA) && Number.isNaN(dateB)) return 0;
+                if (Number.isNaN(dateA)) return 1;
+                if (Number.isNaN(dateB)) return -1;
+                return dateB - dateA;
+            });
+    }
+
+    function formatAuditSummary(log) {
+        const parts = [];
+        parts.push(formatAuditAction(log?.action));
+        parts.push(resolveAuditActorLabel(log));
+        const timestamp = formatDateTime(log?.action_at);
+        if (timestamp && timestamp !== '—') {
+            parts.push(timestamp);
+        }
+        if (log?.reason) {
+            parts.push(log.reason);
+        }
+        return parts.join(' • ');
+    }
+
+    function renderAuditLogs(logs) {
+        if (!rfqAuditList || !rfqAuditEmpty) return;
+        rfqAuditList.innerHTML = '';
+        const [latest] = sortAuditLogs(Array.isArray(logs) ? logs : []);
+        const hasEntry = Boolean(latest);
+        rfqAuditList.hidden = !hasEntry;
+        rfqAuditEmpty.hidden = hasEntry;
+        if (!hasEntry) return;
+        const entry = document.createElement('p');
+        entry.className = 'request-audit-entry';
+        entry.textContent = formatAuditSummary(latest);
+        rfqAuditList.appendChild(entry);
+    }
+
+    function updateAuditLink() {
+        if (!rfqAuditLink) return;
+        if (!rfqId) {
+            rfqAuditLink.hidden = true;
+            rfqAuditLink.setAttribute('aria-hidden', 'true');
+            rfqAuditLink.removeAttribute('href');
+            return;
+        }
+        const url = new URL('./audit_log.html', window.location.href);
+        url.searchParams.set('entity_type', 'rfq');
+        url.searchParams.set('entity_id', rfqId);
+        if (eventId) {
+            url.searchParams.set('event_id', eventId);
+        }
+        const returnUrl = new URL(window.location.href);
+        url.searchParams.set('return_to', `${returnUrl.pathname}${returnUrl.search}`);
+
+        rfqAuditLink.hidden = false;
+        rfqAuditLink.removeAttribute('aria-hidden');
+        rfqAuditLink.href = `${url.pathname}${url.search}`;
+    }
+
     function applyEventInfo(info) {
         eventInfo = info || null;
         if (!eventInfo) return;
@@ -245,11 +490,82 @@
         updateBackLink();
     }
 
+    function applyAuditInfo(info) {
+        if (!info) return;
+        if (createdAtDisplay) {
+            createdAtDisplay.textContent = formatDateTime(info.created_at);
+        }
+        if (updatedAtDisplay) {
+            updatedAtDisplay.textContent = formatDateTime(info.updated_at || info.created_at);
+        }
+        if (createdByDisplay) {
+            createdByDisplay.textContent = info.created_by_label || '—';
+        }
+        if (updatedByDisplay) {
+            updatedByDisplay.textContent = info.updated_by_label || '—';
+        }
+    }
+
+    function applyRfqInfo(payload) {
+        rfqInfo = payload || null;
+        if (!rfqInfo) return;
+        isHydrating = true;
+        if (rfqInfo.supplier_rfq_id) {
+            rfqId = String(rfqInfo.supplier_rfq_id);
+            if (rfqIdInput) {
+                rfqIdInput.value = rfqId;
+            }
+        }
+        if (refIdInput && rfqInfo.ref_supplier_rfq_id) {
+            refIdInput.value = rfqInfo.ref_supplier_rfq_id;
+        }
+        setStatusChip(rfqInfo.status || 'draft');
+        setPageTitle(rfqInfo.title || rfqInfo.event?.event_name);
+        if (titleInput && rfqInfo.title) {
+            titleInput.value = rfqInfo.title;
+        }
+        if (staffIdInput && rfqInfo.staff_id) {
+            staffIdInput.value = String(rfqInfo.staff_id);
+        }
+        if (contactPersonInput && rfqInfo.contact_person) {
+            contactPersonInput.value = String(rfqInfo.contact_person);
+        }
+        if (deliverToInput && rfqInfo.deliver_to) {
+            deliverToInput.value = String(rfqInfo.deliver_to);
+        }
+        if (noteInput && rfqInfo.note) {
+            noteInput.value = rfqInfo.note;
+        }
+        if (paymentTermSelect && rfqInfo.payment_term) {
+            paymentTermSelect.value = rfqInfo.payment_term;
+        }
+        if (paymentMethodSelect && rfqInfo.payment_method) {
+            paymentMethodSelect.value = rfqInfo.payment_method;
+        }
+        setDateTimeInputValue(requestDateInput, rfqInfo.rfq_request_date);
+        setDateTimeInputValue(dueDateInput, rfqInfo.rfq_due_date);
+        setDateTimeInputValue(orderDateInput, rfqInfo.order_date);
+        setDateTimeInputValue(orderDeadlineInput, rfqInfo.order_deadline);
+        setDateTimeInputValue(expectedArrivalInput, rfqInfo.order_expected_arrival);
+        if (validityDaysInput && Number.isFinite(Number(rfqInfo.rfq_validity_days))) {
+            validityDaysInput.value = String(rfqInfo.rfq_validity_days);
+        }
+        isHydrating = false;
+        applyAuditInfo(rfqInfo);
+        applyEventInfo(rfqInfo.event);
+        setRequestReference(rfqInfo.ref_supplier_rfq_id || rfqInfo.request_reference || '—');
+        renderMissingLines();
+        renderAuditLogs(rfqInfo.audit_logs || []);
+        updateAuditLink();
+        refreshSnapshot();
+    }
+
     function applyRequestInfo(payload) {
         requestInfo = payload || null;
         if (!requestInfo) {
             return;
         }
+        isHydrating = true;
         if (requestInfo.request_id) {
             requestId = String(requestInfo.request_id);
         }
@@ -257,9 +573,11 @@
         if (titleInput && !titleInput.value && requestInfo.request_name) {
             titleInput.value = `RFQ สำหรับ ${requestInfo.request_name}`;
         }
+        isHydrating = false;
         setRequestReference(requestInfo.reference);
         applyEventInfo(requestInfo.event);
         renderMissingLines();
+        refreshSnapshot();
         updateBackLink();
     }
 
@@ -305,9 +623,26 @@
         }
     }
 
+    async function loadRfqDetail() {
+        if (!rfqId) return;
+        try {
+            const response = await fetch(`${modelRoot}/supplier_rfq_detail.php?rfq_id=${encodeURIComponent(rfqId)}`, {
+                credentials: 'same-origin',
+            });
+            if (!response.ok) {
+                throw new Error('ไม่สามารถโหลดข้อมูล RFQ ได้');
+            }
+            const data = await response.json();
+            applyRfqInfo(data?.data);
+        } catch (error) {
+            setGlobalMessage('โหลดข้อมูล RFQ ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+        }
+    }
+
     function buildSavePayload() {
         const missing = buildMissingLines();
         return {
+            supplier_rfq_id: rfqId ? Number(rfqId) : null,
             request_id: requestId ? Number(requestId) : null,
             event_id: eventId ? Number(eventId) : requestInfo?.event_id ?? null,
             title: (titleInput?.value || '').trim(),
@@ -338,8 +673,12 @@
     }
 
     function validatePayload(payload) {
-        if (!payload.request_id || !payload.event_id) {
-            setGlobalMessage('ไม่พบข้อมูลอ้างอิงอีเว้นหรือคำขอ', 'error');
+        if (!payload.event_id) {
+            setGlobalMessage('ไม่พบข้อมูลอ้างอิงอีเว้น', 'error');
+            return false;
+        }
+        if (!rfqId && !payload.request_id) {
+            setGlobalMessage('ไม่พบข้อมูลคำขอที่เกี่ยวข้อง', 'error');
             return false;
         }
         if (!payload.title || payload.title.trim() === '') {
@@ -376,10 +715,13 @@
             payload.title = `RFQ สำหรับ ${requestInfo.request_name}`;
         }
         if (!validatePayload(payload)) {
-            return;
+            return false;
         }
+        isSaving = true;
+        updateSaveButtonState();
         try {
-            const response = await fetch(`${modelRoot}/supplier_rfq_create.php`, {
+            const endpoint = rfqId ? 'supplier_rfq_update.php' : 'supplier_rfq_create.php';
+            const response = await fetch(`${modelRoot}/${endpoint}`, {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
@@ -392,12 +734,25 @@
             }
             const data = await response.json();
             if (data?.data?.supplier_rfq_id) {
+                rfqId = String(data.data.supplier_rfq_id);
+                if (rfqIdInput) {
+                    rfqIdInput.value = rfqId;
+                }
                 setStatusChip('draft');
-                updatedAtDisplay.textContent = formatDateTime(new Date());
+                if (updatedAtDisplay) {
+                    updatedAtDisplay.textContent = formatDateTime(new Date());
+                }
+                updateAuditLink();
             }
             setGlobalMessage('บันทึกคำขอใบเสนอราคาเรียบร้อย', 'success');
+            refreshSnapshot();
+            return true;
         } catch (error) {
             setGlobalMessage('บันทึก RFQ ไม่สำเร็จ กรุณาลองใหม่', 'error');
+            return false;
+        } finally {
+            isSaving = false;
+            updateSaveButtonState();
         }
     }
 
@@ -411,17 +766,78 @@
                 if (requestId) {
                     url.searchParams.set('request_id', requestId);
                 }
-                window.location.href = `${url.pathname}${url.search}`;
+                requestNavigation(() => {
+                    window.location.href = `${url.pathname}${url.search}`;
+                });
+            });
+        }
+        if (backLink) {
+            backLink.addEventListener('click', (event) => {
+                const targetHref = backLink.getAttribute('href');
+                if (!targetHref || !isDirty) return;
+                event.preventDefault();
+                requestNavigation(() => {
+                    window.location.href = targetHref;
+                });
             });
         }
         if (saveButton) {
-            saveButton.addEventListener('click', () => {
-                handleSave();
+            saveButton.addEventListener('click', async () => {
+                await handleSave();
             });
         }
+        if (btnSaveInline) {
+            btnSaveInline.addEventListener('click', async () => {
+                await handleSave();
+            });
+        }
+        if (btnDiscardChanges) {
+            btnDiscardChanges.addEventListener('click', () => {
+                restoreSnapshot(initialSnapshot);
+            });
+        }
+        if (btnModalStay) {
+            btnModalStay.addEventListener('click', () => {
+                pendingNavigationAction = null;
+                closeUnsavedModal();
+            });
+        }
+        if (btnModalDiscard) {
+            btnModalDiscard.addEventListener('click', () => {
+                restoreSnapshot(initialSnapshot);
+                closeUnsavedModal();
+                const action = pendingNavigationAction;
+                pendingNavigationAction = null;
+                if (action) action();
+            });
+        }
+        if (btnModalSave) {
+            btnModalSave.addEventListener('click', async () => {
+                const saved = await handleSave();
+                if (!saved) return;
+                closeUnsavedModal();
+                const action = pendingNavigationAction;
+                pendingNavigationAction = null;
+                if (action) action();
+            });
+        }
+        const form = document.getElementById('rfqForm');
+        if (form) {
+            const controls = form.querySelectorAll('input, select, textarea');
+            controls.forEach((control) => {
+                control.addEventListener('input', markDirtyIfReady);
+                control.addEventListener('change', markDirtyIfReady);
+            });
+        }
+        window.addEventListener('beforeunload', (event) => {
+            if (!isDirty) return;
+            event.preventDefault();
+            event.returnValue = '';
+        });
     }
 
     function initializeStaticFields() {
+        isHydrating = true;
         const now = new Date();
         if (requestDateInput && !requestDateInput.value) {
             setDateTimeInputValue(requestDateInput, now);
@@ -429,18 +845,25 @@
         if (validityDaysInput && !validityDaysInput.value) {
             validityDaysInput.value = '30';
         }
+        isHydrating = false;
+        refreshSnapshot();
     }
 
     async function boot({ root }) {
         modelRoot = `${root}/Model`;
         setStatusChip('draft');
+        updateSaveButtonState();
         updateBackLink();
         tickClock();
         setInterval(tickClock, 1000);
         bindEvents();
         initializeStaticFields();
         await fetchSessionUser();
-        await loadRequestDetail();
+        if (rfqId) {
+            await loadRfqDetail();
+        } else {
+            await loadRequestDetail();
+        }
     }
 
     if (typeof window.onAppReady === 'function') {
