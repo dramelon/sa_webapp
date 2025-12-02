@@ -26,8 +26,12 @@ if (!is_array($input)) {
 $eventId = (int) ($input['event_id'] ?? 0);
 $requestId = (int) ($input['request_id'] ?? 0);
 $title = trim((string) ($input['title'] ?? ''));
-$dueDate = normalizeDateTime($input['due_date'] ?? null);
-$expectedArrival = normalizeDateTime($input['expected_arrival'] ?? null);
+$rfqRequestDate = normalizeDateTime($input['rfq_request_date'] ?? null);
+$rfqValidityDays = (int) ($input['rfq_validity_days'] ?? 0);
+$rfqDueDate = normalizeDateTime($input['rfq_due_date'] ?? $input['due_date'] ?? null);
+$orderDate = normalizeDateTime($input['order_date'] ?? null);
+$orderDeadline = normalizeDateTime($input['order_deadline'] ?? null);
+$orderExpectedArrival = normalizeDateTime($input['order_expected_arrival'] ?? $input['expected_arrival'] ?? null);
 $paymentTerm = strtoupper(trim((string) ($input['payment_term'] ?? '30D')));
 $paymentMethod = strtolower(trim((string) ($input['payment_method'] ?? 'bank')));
 $note = trimNullable($input['note'] ?? null);
@@ -74,9 +78,12 @@ try {
     $db->beginTransaction();
 
     $now = date('Y-m-d H:i:s');
-    $bidValidity = $dueDate ?? $now;
-    $orderDeadline = $dueDate ?? $now;
-    $expectedArrivalValue = $expectedArrival ?? $dueDate ?? $now;
+    $rfqValidityDays = $rfqValidityDays > 0 ? $rfqValidityDays : 30;
+    $rfqRequestDate = $rfqRequestDate ?? $now;
+    $rfqDueDate = $rfqDueDate ?? $rfqRequestDate;
+    $orderDate = $orderDate ?? $now;
+    $orderDeadline = $orderDeadline ?? $rfqDueDate;
+    $orderExpectedArrival = $orderExpectedArrival ?? $orderDeadline;
 
     $insertRfq = $db->prepare('
         INSERT INTO supplier_rfq (
@@ -85,16 +92,15 @@ try {
             StaffID,
             ContactPerson,
             Title,
-            BidValidityDays,
-            DueDate,
-            RequestDate,
+            RFQValidityDays,
+            RFQDueDate,
+            RFQRequestDate,
             OrderDate,
             OrderDeadline,
-            ExpectedArrival,
+            OrderExpectedArrival,
             PaymentTerm,
             PaymentMethod,
             DeliverTo,
-            RefVendorID,
             Note,
             Status
         ) VALUES (
@@ -103,16 +109,15 @@ try {
             :staff_id,
             :contact_person,
             :title,
-            :bid_validity,
-            :due_date,
-            :request_date,
+            :rfq_validity_days,
+            :rfq_due_date,
+            :rfq_request_date,
             :order_date,
             :order_deadline,
-            :expected_arrival,
+            :order_expected_arrival,
             :payment_term,
             :payment_method,
             :deliver_to,
-            NULL,
             :note,
             :status
         )
@@ -123,12 +128,12 @@ try {
     $insertRfq->bindValue(':staff_id', $staffId, PDO::PARAM_INT);
     $insertRfq->bindValue(':contact_person', $contactPerson, PDO::PARAM_INT);
     $insertRfq->bindValue(':title', $title, PDO::PARAM_STR);
-    $insertRfq->bindValue(':bid_validity', $bidValidity, PDO::PARAM_STR);
-    $insertRfq->bindValue(':due_date', $dueDate ?? $now, PDO::PARAM_STR);
-    $insertRfq->bindValue(':request_date', $now, PDO::PARAM_STR);
-    $insertRfq->bindValue(':order_date', $now, PDO::PARAM_STR);
+    $insertRfq->bindValue(':rfq_validity_days', $rfqValidityDays, PDO::PARAM_INT);
+    $insertRfq->bindValue(':rfq_due_date', $rfqDueDate, PDO::PARAM_STR);
+    $insertRfq->bindValue(':rfq_request_date', $rfqRequestDate, PDO::PARAM_STR);
+    $insertRfq->bindValue(':order_date', $orderDate, PDO::PARAM_STR);
     $insertRfq->bindValue(':order_deadline', $orderDeadline, PDO::PARAM_STR);
-    $insertRfq->bindValue(':expected_arrival', $expectedArrivalValue, PDO::PARAM_STR);
+    $insertRfq->bindValue(':order_expected_arrival', $orderExpectedArrival, PDO::PARAM_STR);
     $insertRfq->bindValue(':payment_term', $paymentTerm, PDO::PARAM_STR);
     $insertRfq->bindValue(':payment_method', $paymentMethod, PDO::PARAM_STR);
     $insertRfq->bindValue(':deliver_to', $deliverTo > 0 ? $deliverTo : $eventId, PDO::PARAM_INT);

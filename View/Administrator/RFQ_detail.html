@@ -60,11 +60,15 @@
                         <h3>รายละเอียด RFQ</h3>
                         <p>กำหนดข้อมูลของคำขอใบเสนอราคา</p>
                     </div>
-                    <p class="request-reference" aria-live="polite" id="rfqReference">อ้างอิงคำขอ: —</p>
+                    <p class="request-reference" aria-live="polite" id="rfqRequestReferenceMeta">อ้างอิงคำขอ: —</p>
                 </header>
                 <div class="detail-card-body">
                     <div class="detail-form-columns">
                         <div class="detail-column">
+                            <label class="field-block">
+                                <span class="field-label">หัวข้อ RFQ</span>
+                                <input type="text" id="rfqTitleInput" name="Title" placeholder="หัวข้อของใบขอราคา" />
+                            </label>
                             <label class="field-block">
                                 <span class="field-label">รหัส RFQ</span>
                                 <input type="text" id="rfqSupplierRfqId" readonly value="ใหม่" />
@@ -72,6 +76,10 @@
                             <label class="field-block">
                                 <span class="field-label">รหัสอ้างอิง RFQ</span>
                                 <input type="text" id="rfqRefSupplierRfqId" name="RefSupplierRFQID" placeholder="รหัสอ้างอิง (ถ้ามี)" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">คำขอที่เกี่ยวข้อง</span>
+                                <input type="text" id="rfqRequestReference" readonly value="—" />
                             </label>
                             <label class="field-block">
                                 <span class="field-label">เจ้าหน้าที่</span>
@@ -87,13 +95,13 @@
                             </label>
                             <label class="field-block">
                                 <span class="field-label">หมายเหตุ</span>
-                                <textarea id="rfqNote" name="Note" rows="3" placeholder="รายละเอียดเพิ่มเติมสำหรับ RFQ"></textarea>
+                                <textarea id="rfqNoteInput" name="Note" rows="3" placeholder="รายละเอียดเพิ่มเติมสำหรับ RFQ"></textarea>
                             </label>
                         </div>
                         <div class="detail-column">
                             <label class="field-block">
                                 <span class="field-label">เงื่อนไขการชำระเงิน</span>
-                                <select id="rfqPaymentTerm" name="PaymentTerm">
+                                <select id="rfqPaymentTermSelect" name="PaymentTerm">
                                     <option value="30D">30 วัน</option>
                                     <option value="45D">45 วัน</option>
                                     <option value="60D">60 วัน</option>
@@ -101,7 +109,7 @@
                             </label>
                             <label class="field-block">
                                 <span class="field-label">วิธีการชำระเงิน</span>
-                                <select id="rfqPaymentMethod" name="PaymentMethod">
+                                <select id="rfqPaymentMethodSelect" name="PaymentMethod">
                                     <option value="bank">โอนธนาคาร</option>
                                     <option value="credit">บัตรเครดิต</option>
                                     <option value="cash">เงินสด</option>
@@ -110,30 +118,30 @@
                             </label>
                             <label class="field-block">
                                 <span class="field-label">วันที่สร้างใบขอราคา</span>
-                                <input type="datetime-local" id="rfqRequestDate" name="RequestDate" />
+                                <input type="datetime-local" id="rfqRequestDateInput" name="RequestDate" />
                             </label>
                             <label class="field-block">
                                 <span class="field-label">จำนวนวันความน่าเชื่อถือของราคา (ราคามีผลภายในกี่วันหลังการเสนอ)</span>
-                                <input type="number" id="rfqValidityDays" name="RequestDate" />
+                                <input type="number" id="rfqValidityDaysInput" name="BidValidityDays" />
                             </label>
                             <label class="field-block">
                                 <span class="field-label">วันที่ครบกำหนดรับใบเสนอราคา</span>
-                                <input type="datetime-local" id="rfqDueDate" name="DueDate" />
+                                <input type="datetime-local" id="rfqDueDateInput" name="DueDate" />
                             </label>
                             <label class="field-block">
                                 <span class="field-label">วันที่สั่งซื้อวัสดุจริง</span>
-                                <input type="datetime-local" id="orderDate" name="OrderDate" />
+                                <input type="datetime-local" id="rfqOrderDateInput" name="OrderDate" />
                             </label>
                             <label class="field-block">
                                 <span class="field-label">วันที่คาดว่าจะได้รับวัสดุจริง</span>
-                                <input type="datetime-local" id="orderExpectedArrival" name="ExpectedArrival" />
+                                <input type="datetime-local" id="rfqExpectedArrivalInput" name="ExpectedArrival" />
                             </label>
                             <label class="field-block">
                                 <span class="field-label">วันที่ครบกำหนดส่งวัสดุจริง</span>
-                                <input type="datetime-local" id="orderDeadline" name="OrderDeadline" />
+                                <input type="datetime-local" id="rfqOrderDeadlineInput" name="OrderDeadline" />
                             </label>
-                            
-                            
+
+
                         </div>
                     </div>
                 </div>

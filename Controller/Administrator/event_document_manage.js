@@ -686,10 +686,16 @@
             return;
         }
         const params = new URLSearchParams();
-        params.set('request_id', doc.document_id);
         if (eventId) {
             params.set('event_id', eventId);
         }
+        const docType = (doc.type || doc.category || '').toLowerCase();
+        if (docType === 'rfq') {
+            params.set('rfq_id', doc.document_id);
+            window.location.href = `./RFQ_detail.html?${params.toString()}`;
+            return;
+        }
+        params.set('request_id', doc.document_id);
         window.location.href = `./item_request_detail.html?${params.toString()}`;
     }
 

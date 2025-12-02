@@ -64,6 +64,7 @@
     let isPopulating = false;
     let lastSnapshot = { request_name: '', status: 'draft', lines: [] };
     let hasValidationError = false;
+    let isFormLocked = false;
 
     const allowedStatuses = ['draft', 'submitted', 'pending', 'approved', 'closed', 'cancelled'];
 
@@ -523,6 +524,45 @@
         requestStatusDescription.textContent = descriptions[normalized] || 'กำหนดสถานะคำขอเพื่อดำเนินการต่อ';
     }
 
+    function setStatusActionsDisabled(disabled) {
+        [submitRequestButton, resetDraftButton, reviewRequestButton, approveRequestButton, cancelRequestButton].forEach(
+            (button) => {
+                if (button) {
+                    button.disabled = disabled;
+                }
+            },
+        );
+    }
+
+    function setRequestLinesEditable(enabled, disableSearch = false) {
+        const rows = Array.from(requestLinesBody?.querySelectorAll('.request-line-row') || []);
+        rows.forEach((row) => {
+            row.querySelectorAll('.request-line-input, .request-line-quantity, .request-line-note').forEach((input) => {
+                input.disabled = !enabled;
+                if (input.tagName === 'INPUT' && input.type !== 'hidden') {
+                    input.readOnly = !enabled;
+                }
+            });
+            const removeButton = row.querySelector('.request-line-remove');
+            if (removeButton) {
+                removeButton.disabled = !enabled;
+            }
+        });
+        if (addRequestLineButton) {
+            addRequestLineButton.disabled = !enabled;
+        }
+        if (requestLinesSearch) {
+            requestLinesSearch.disabled = disableSearch && !enabled;
+        }
+    }
+
+    function setRequestInfoEditable(enabled) {
+        if (requestNameInput) {
+            requestNameInput.disabled = !enabled;
+            requestNameInput.readOnly = !enabled;
+        }
+    }
+
     function updateStatusActions(status) {
         const normalized = normalizeStatus(status);
         const isDraft = normalized === 'draft';
@@ -546,6 +586,19 @@
         }
     }
 
+    function updateInteractivity(status) {
+        const normalized = normalizeStatus(status);
+        const shouldLockForm = isFormLocked || normalized === 'approved';
+        const shouldLockLines = shouldLockForm || normalized === 'submitted' || normalized === 'pending';
+
+        setRequestInfoEditable(!shouldLockForm);
+        setRequestLinesEditable(!shouldLockLines, shouldLockForm);
+        setStatusActionsDisabled(shouldLockForm);
+        if (requestStatusSelect) {
+            requestStatusSelect.disabled = false;
+        }
+    }
+
     function syncStatusUI(status) {
         const normalized = normalizeStatus(status);
         if (requestStatusSelect) {
@@ -554,6 +607,7 @@
         updateStatusBadge(normalized);
         updateStatusDescription(normalized);
         updateStatusActions(normalized);
+        updateInteractivity(normalized);
     }
 
     function formatItemDisplay(item) {
@@ -1235,6 +1289,8 @@
             markDirty();
         }
 
+        updateInteractivity(requestStatusSelect ? requestStatusSelect.value : 'draft');
+
         return row;
     }
 
@@ -1257,6 +1313,7 @@
         } finally {
             isPopulating = prev;
             updateValidationState();
+            updateInteractivity(requestStatusSelect ? requestStatusSelect.value : 'draft');
         }
     }
 
@@ -1614,6 +1671,18 @@
             ]);
 
             if (incompleteChoice === 'make-rfq') {
+                const previousStatus = normalizeStatus(requestStatusSelect ? requestStatusSelect.value : 'draft');
+                syncStatusUI('approved');
+                markDirty();
+                const saved = await handleSave();
+                if (!saved) {
+                    syncStatusUI(previousStatus);
+                    return;
+                }
+                if (saved) {
+                    isFormLocked = true;
+                }
+                updateInteractivity('approved');
                 const params = new URLSearchParams();
                 if (requestId) {
                     params.set('request_id', requestId);
@@ -1622,7 +1691,9 @@
                     params.set('event_id', eventId);
                 }
                 const targetUrl = `./RFQ_detail.html?${params.toString()}`;
-                window.location.href = targetUrl;
+                if (saved) {
+                    window.location.href = targetUrl;
+                }
             }
 
             return;
@@ -1810,9 +1881,19 @@
             });
         }
         if (submitRequestButton) {
-            submitRequestButton.addEventListener('click', () => {
+            submitRequestButton.addEventListener('click', async () => {
+                const currentStatus = normalizeStatus(requestStatusSelect ? requestStatusSelect.value : 'draft');
+                if (currentStatus === 'draft' && isDirty) {
+                    const confirmChoice = await promptModal(approveConfirmModal, [
+                        { element: approveConfirmButton, value: 'confirm' },
+                    ]);
+                    if (confirmChoice !== 'confirm') {
+                        return;
+                    }
+                }
                 syncStatusUI('submitted');
                 markDirty();
+                await handleSave();
             });
         }
         if (resetDraftButton) {

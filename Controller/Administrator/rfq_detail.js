@@ -24,6 +24,14 @@
     const paymentTermSelect = document.getElementById('rfqPaymentTermSelect');
     const paymentMethodSelect = document.getElementById('rfqPaymentMethodSelect');
     const noteInput = document.getElementById('rfqNoteInput');
+    const requestDateInput = document.getElementById('rfqRequestDateInput');
+    const validityDaysInput = document.getElementById('rfqValidityDaysInput');
+    const orderDateInput = document.getElementById('rfqOrderDateInput');
+    const orderDeadlineInput = document.getElementById('rfqOrderDeadlineInput');
+    const refIdInput = document.getElementById('rfqRefSupplierRfqId');
+    const staffIdInput = document.getElementById('rfqStaffId');
+    const contactPersonInput = document.getElementById('rfqContactPerson');
+    const deliverToInput = document.getElementById('rfqDeliverTo');
 
     let modelRoot = '';
     let requestId = initialRequestId ? String(initialRequestId) : '';
@@ -64,6 +72,23 @@
         });
     }
 
+    function toLocalInputDateTime(dateLike) {
+        if (!dateLike) return '';
+        const date = new Date(dateLike);
+        if (Number.isNaN(date.getTime())) return '';
+        const offsetMs = date.getTimezoneOffset() * 60000;
+        const local = new Date(date.getTime() - offsetMs);
+        return local.toISOString().slice(0, 16);
+    }
+
+    function setDateTimeInputValue(input, dateLike) {
+        if (!input) return;
+        const value = toLocalInputDateTime(dateLike);
+        if (value) {
+            input.value = value;
+        }
+    }
+
     function setGlobalMessage(text, tone = 'info') {
         if (!globalMessage) return;
         if (!text) {
@@ -78,12 +103,10 @@
 
     function updateBackLink() {
         if (!backLink) return;
-        const url = new URL(backLink.getAttribute('href'), window.location.origin);
+        // Always point to event_document_manage.html.
+        const url = new URL('./event_document_manage.html', window.location.href);
         if (eventId) {
             url.searchParams.set('event_id', eventId);
-        }
-        if (requestId) {
-            url.searchParams.set('request_id', requestId);
         }
         backLink.href = `${url.pathname}${url.search}`;
     }
@@ -146,6 +169,20 @@
         return missing;
     }
 
+    function setRequestReference(value) {
+        const text = value || '—';
+        if (requestReferenceDisplay) {
+            if (requestReferenceDisplay.tagName === 'INPUT') {
+                requestReferenceDisplay.value = text;
+            } else {
+                requestReferenceDisplay.textContent = text;
+            }
+        }
+        if (requestReferenceMeta) {
+            requestReferenceMeta.textContent = `อ้างอิงคำขอ: ${text}`;
+        }
+    }
+
     function renderMissingLines() {
         if (!missingLinesBody) return;
         const missing = buildMissingLines();
@@ -197,16 +234,13 @@
             eventDateDisplay.textContent = `ช่วงเวลา: ${formatDate(eventInfo.start_date)} - ${formatDate(eventInfo.end_date)}`;
         }
         if (dueDateInput && !dueDateInput.value && eventInfo.end_date) {
-            const datePart = new Date(eventInfo.end_date);
-            if (!Number.isNaN(datePart.getTime())) {
-                dueDateInput.valueAsDate = datePart;
-            }
+            setDateTimeInputValue(dueDateInput, eventInfo.end_date);
         }
         if (expectedArrivalInput && !expectedArrivalInput.value && eventInfo.end_date) {
-            const datePart = new Date(eventInfo.end_date);
-            if (!Number.isNaN(datePart.getTime())) {
-                expectedArrivalInput.valueAsDate = datePart;
-            }
+            setDateTimeInputValue(expectedArrivalInput, eventInfo.end_date);
+        }
+        if (deliverToInput && !deliverToInput.value && eventInfo.event_id) {
+            deliverToInput.value = String(eventInfo.event_id);
         }
         updateBackLink();
     }
@@ -220,10 +254,24 @@
             requestId = String(requestInfo.request_id);
         }
         setPageTitle(requestInfo.request_name);
+        if (titleInput && !titleInput.value && requestInfo.request_name) {
+            titleInput.value = `RFQ สำหรับ ${requestInfo.request_name}`;
+        }
         setRequestReference(requestInfo.reference);
         applyEventInfo(requestInfo.event);
         renderMissingLines();
         updateBackLink();
+    }
+
+    function applyStaffInfo(info) {
+        if (!info) return;
+        const staffIdValue = info.staff_id ? String(info.staff_id) : '';
+        if (staffIdInput && !staffIdInput.value) {
+            staffIdInput.value = staffIdValue;
+        }
+        if (contactPersonInput && !contactPersonInput.value) {
+            contactPersonInput.value = staffIdValue;
+        }
     }
 
     async function fetchSessionUser() {
@@ -232,6 +280,7 @@
             if (!response.ok) return;
             const data = await response.json();
             staffInfo = data || null;
+            applyStaffInfo(staffInfo);
         } catch (error) {
             // ignore
         }
@@ -262,11 +311,22 @@
             request_id: requestId ? Number(requestId) : null,
             event_id: eventId ? Number(eventId) : requestInfo?.event_id ?? null,
             title: (titleInput?.value || '').trim(),
-            due_date: (dueDateInput?.value || '').trim() || null,
-            expected_arrival: (expectedArrivalInput?.value || '').trim() || null,
+            rfq_request_date: (requestDateInput?.value || '').trim() || null,
+            rfq_validity_days: Number.isFinite(Number(validityDaysInput?.value))
+                ? Number(validityDaysInput.value)
+                : null,
+            rfq_due_date: (dueDateInput?.value || '').trim() || null,
+            order_date: (orderDateInput?.value || '').trim() || null,
+            order_deadline: (orderDeadlineInput?.value || '').trim() || null,
+            order_expected_arrival: (expectedArrivalInput?.value || '').trim() || null,
             payment_term: paymentTermSelect?.value || '30D',
             payment_method: paymentMethodSelect?.value || 'bank',
             note: (noteInput?.value || '').trim() || null,
+            ref_supplier_rfq_id: (refIdInput?.value || '').trim() || null,
+            contact_person: Number.isFinite(Number(contactPersonInput?.value))
+                ? Number(contactPersonInput.value)
+                : null,
+            deliver_to: Number.isFinite(Number(deliverToInput?.value)) ? Number(deliverToInput.value) : null,
             missing_lines: missing.map((line) => ({
                 item_id: line.item_id ?? line.id ?? null,
                 item_desc: line.item_name || '',
@@ -309,16 +369,6 @@
         }
     }
 
-    function setRequestReference(value) {
-        const text = value || '—';
-        if (requestReferenceDisplay) {
-            requestReferenceDisplay.textContent = text;
-        }
-        if (requestReferenceMeta) {
-            requestReferenceMeta.textContent = `อ้างอิงคำขอ: ${text}`;
-        }
-    }
-
     async function handleSave() {
         setGlobalMessage('');
         const payload = buildSavePayload();
@@ -354,10 +404,6 @@
     function bindEvents() {
         if (backButton) {
             backButton.addEventListener('click', () => {
-                if (document.referrer) {
-                    window.history.back();
-                    return;
-                }
                 const url = new URL('./event_document_manage.html', window.location.origin);
                 if (eventId) {
                     url.searchParams.set('event_id', eventId);
@@ -375,12 +421,24 @@
         }
     }
 
+    function initializeStaticFields() {
+        const now = new Date();
+        if (requestDateInput && !requestDateInput.value) {
+            setDateTimeInputValue(requestDateInput, now);
+        }
+        if (validityDaysInput && !validityDaysInput.value) {
+            validityDaysInput.value = '30';
+        }
+    }
+
     async function boot({ root }) {
         modelRoot = `${root}/Model`;
         setStatusChip('draft');
+        updateBackLink();
         tickClock();
         setInterval(tickClock, 1000);
         bindEvents();
+        initializeStaticFields();
         await fetchSessionUser();
         await loadRequestDetail();
     }

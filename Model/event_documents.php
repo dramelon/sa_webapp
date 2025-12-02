@@ -53,7 +53,7 @@ try {
     $requestStmt->execute([':event_id' => $eventId]);
     $requestRows = $requestStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $lineGroups = [];
+    $requestLineGroups = [];
     $requestIds = [];
     if ($requestRows) {
         foreach ($requestRows as $row) {
@@ -89,10 +89,10 @@ try {
 
         while ($line = $lineStmt->fetch(PDO::FETCH_ASSOC)) {
             $requestId = (int) $line['RequestID'];
-            if (!isset($lineGroups[$requestId])) {
-                $lineGroups[$requestId] = [];
+            if (!isset($requestLineGroups[$requestId])) {
+                $requestLineGroups[$requestId] = [];
             }
-            $lineGroups[$requestId][] = [
+            $requestLineGroups[$requestId][] = [
                 'request_line_id' => (int) $line['RequestLineID'],
                 'line_no' => (int) $line['LineNo'],
                 'item_id' => (int) $line['ItemID'],
@@ -109,7 +109,55 @@ try {
         }
     }
 
-    $auditMeta = fetchAuditMetadataForEntities($db, 'request', $requestIds);
+    $requestAuditMeta = fetchAuditMetadataForEntities($db, 'request', $requestIds);
+
+    $rfqSql = <<<SQL
+        SELECT
+            s.SupplierRFQID,
+            s.RefSupplierRFQID,
+            s.EventID,
+            s.StaffID,
+            s.Title,
+            s.Status
+        FROM supplier_rfq s
+        WHERE s.EventID = :event_id
+        ORDER BY s.SupplierRFQID DESC
+    SQL;
+
+    $rfqStmt = $db->prepare($rfqSql);
+    $rfqStmt->execute([':event_id' => $eventId]);
+    $rfqRows = $rfqStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $rfqIds = [];
+    $rfqLineStats = [];
+    if ($rfqRows) {
+        foreach ($rfqRows as $row) {
+            $rfqIds[] = (int) $row['SupplierRFQID'];
+        }
+        $rfqPlaceholder = implode(',', array_fill(0, count($rfqIds), '?'));
+        $rfqLineSql = <<<SQL
+            SELECT
+                l.SupplierRFQID,
+                COUNT(*) AS line_count,
+                COALESCE(SUM(l.QuantityRequested), 0) AS total_quantity
+            FROM supplier_rfq_line l
+            WHERE l.SupplierRFQID IN ($rfqPlaceholder)
+            GROUP BY l.SupplierRFQID
+        SQL;
+        $rfqLineStmt = $db->prepare($rfqLineSql);
+        foreach ($rfqIds as $index => $rfqId) {
+            $rfqLineStmt->bindValue($index + 1, (int) $rfqId, PDO::PARAM_INT);
+        }
+        $rfqLineStmt->execute();
+        while ($line = $rfqLineStmt->fetch(PDO::FETCH_ASSOC)) {
+            $rfqLineStats[(int) $line['SupplierRFQID']] = [
+                'line_count' => (int) $line['line_count'],
+                'total_quantity' => (int) $line['total_quantity'],
+            ];
+        }
+    }
+
+    $rfqAuditMeta = fetchAuditMetadataForEntities($db, 'supplier_rfq', $rfqIds);
 
     $statusMeta = [
         'draft' => 'ร่าง',
@@ -117,10 +165,15 @@ try {
         'approved' => 'อนุมัติแล้ว',
         'closed' => 'ปิดคำขอ',
         'cancelled' => 'ยกเลิก',
+        'completed' => 'เสร็จสิ้น',
     ];
 
     $documents = [];
     $statusCounts = [];
+    $categoryCounts = [
+        'item-request' => 0,
+        'rfq' => 0,
+    ];
 
     foreach ($requestRows as $row) {
         $requestId = (int) $row['RequestID'];
@@ -132,9 +185,10 @@ try {
             $statusCounts[$statusKey] = 0;
         }
         $statusCounts[$statusKey] += 1;
+        $categoryCounts['item-request'] += 1;
 
-        $audit = $auditMeta[$requestId] ?? buildEmptyAuditMetadata();
-        $lines = $lineGroups[$requestId] ?? [];
+        $audit = $requestAuditMeta[$requestId] ?? buildEmptyAuditMetadata();
+        $lines = $requestLineGroups[$requestId] ?? [];
         $totalQuantity = 0;
         foreach ($lines as $line) {
             if (($line['status'] ?? '') !== 'deleted') {
@@ -166,6 +220,48 @@ try {
         ];
     }
 
+    foreach ($rfqRows as $row) {
+        $rfqId = (int) $row['SupplierRFQID'];
+        $statusKey = strtolower((string) $row['Status']);
+        if (!isset($statusMeta[$statusKey])) {
+            $statusMeta[$statusKey] = $statusKey !== '' ? ucfirst($statusKey) : 'อื่น ๆ';
+        }
+        if (!isset($statusCounts[$statusKey])) {
+            $statusCounts[$statusKey] = 0;
+        }
+        $statusCounts[$statusKey] += 1;
+        $categoryCounts['rfq'] += 1;
+
+        $audit = $rfqAuditMeta[$rfqId] ?? buildEmptyAuditMetadata();
+        $ownerId = $audit['created_by_id'] ?? ($row['StaffID'] ?? null);
+        $ownerName = $audit['created_by_name'] ?? '';
+        $ownerRole = $audit['created_by_role'] ?? '';
+        $lineStat = $rfqLineStats[$rfqId] ?? ['line_count' => 0, 'total_quantity' => 0];
+
+        $documents[] = [
+            'id' => sprintf('rfq:%d', $rfqId),
+            'document_id' => $rfqId,
+            'category' => 'rfq',
+            'type' => 'rfq',
+            'type_label' => 'คำขอใบเสนอราคา',
+            'title' => $row['Title'] ?? sprintf('RFQ #%d', $rfqId),
+            'reference' => $row['RefSupplierRFQID'] ?? sprintf('RFQ#%d', $rfqId),
+            'status' => $statusKey,
+            'status_label' => $statusMeta[$statusKey] ?? $row['Status'],
+            'owner_id' => $ownerId,
+            'owner_name' => $ownerName,
+            'owner_label' => formatStaffLabel($ownerId, $ownerName, $ownerRole),
+            'created_at' => $audit['created_at'],
+            'updated_at' => $audit['updated_at'],
+            'updated_by_id' => $audit['updated_by_id'],
+            'updated_by_name' => $audit['updated_by_name'],
+            'updated_by_label' => formatStaffLabel($audit['updated_by_id'], $audit['updated_by_name'], $audit['updated_by_role']),
+            'line_count' => $lineStat['line_count'],
+            'total_quantity' => $lineStat['total_quantity'],
+            'lines' => [],
+        ];
+    }
+
     ksort($statusMeta);
     ksort($statusCounts);
 
@@ -190,7 +286,13 @@ try {
             'id' => 'item-request',
             'label' => 'คำขอเบิกอุปกรณ์',
             'description' => 'รายการคำขอเบิกอุปกรณ์และวัสดุสำหรับอีเว้นนี้',
-            'total' => count($documents),
+            'total' => $categoryCounts['item-request'],
+        ],
+        [
+            'id' => 'rfq',
+            'label' => 'คำขอใบเสนอราคา (RFQ)',
+            'description' => 'ติดตามคำขอใบเสนอราคาที่ส่งให้ผู้ขาย',
+            'total' => $categoryCounts['rfq'],
         ],
     ];
 
@@ -211,7 +313,8 @@ try {
             'total' => $totalDocuments,
             'by_status' => $statusCounts,
             'by_category' => [
-                'item-request' => count($documents),
+                'item-request' => $categoryCounts['item-request'],
+                'rfq' => $categoryCounts['rfq'],
             ],
         ],
         'documents' => $documents,
