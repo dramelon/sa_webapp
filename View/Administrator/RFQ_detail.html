@@ -30,7 +30,7 @@
 
         <div class="form-alert" id="rfqGlobalMessage" role="alert" hidden></div>
 
-        <section class="detail-meta request-meta" aria-live="polite">
+        <section class="detail-meta" aria-live="polite">
             <div class="meta-primary">
                 <p class="meta-label">อีเว้น</p>
                 <h3 id="rfqEventName">—</h3>
@@ -38,13 +38,17 @@
                 <p class="meta-sub" id="rfqEventDate">ช่วงเวลา: —</p>
             </div>
             <div class="meta-secondary">
-                <span class="status-chip" id="rfqStatusBadge" aria-live="polite" data-status="draft">
+                <span class="status-chip" id="rfqStatusBadge" aria-live="polite">
                     <span class="dot"></span>
-                    <span id="rfqStatusText">สถานะ: Draft</span>
+                    <span id="rfqStatusText">สถานะ: —</span>
                 </span>
                 <div class="meta-group">
                     <p class="meta-updated" id="rfqUpdatedAt">อัปเดตล่าสุด: —</p>
-                    <p class="meta-created" id="rfqRequestReferenceMeta">อ้างอิงคำขอ: —</p>
+                    <p class="meta-updated-by" id="rfqUpdatedBy">ปรับปรุงโดย: —</p>
+                </div>
+                <div class="meta-group">
+                    <p class="meta-created" id="rfqCreatedAt">สร้างเมื่อ: —</p>
+                    <p class="meta-created-by" id="rfqCreatedBy">สร้างโดย: —</p>
                 </div>
             </div>
         </section>
