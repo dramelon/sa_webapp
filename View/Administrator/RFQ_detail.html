@@ -53,6 +53,40 @@
             </div>
         </section>
 
+        <section class="detail-card request-status-card">
+            <header class="detail-card-head">
+                <div>
+                    <h3>สถานะ RFQ</h3>
+                    <p>จัดการขั้นตอนการยืนยันหรือยกเลิกใบขอราคา</p>
+                </div>
+            </header>
+            <div class="request-status-body">
+                <p class="status-helper" id="rfqStatusDescription">ระบุสถานะ RFQ เพื่อดำเนินการต่อ</p>
+                <label class="field-block">
+                    <span class="field-label">สถานะ RFQ *</span>
+                    <select id="rfqStatusSelect" name="status">
+                        <option value="draft">ร่าง</option>
+                        <option value="approved">ยืนยันแล้ว</option>
+                        <option value="cancelled">ยกเลิก</option>
+                    </select>
+                </label>
+                <div class="status-actions" id="rfqStatusActions">
+                    <button class="btn btn-secondary" type="button" id="confirmRfqButton">
+                        <span class="i check"></span>
+                        ยืนยัน RFQ
+                    </button>
+                    <button class="btn btn-ghost" type="button" id="rfqReturnDraftButton">
+                        <span class="i refresh"></span>
+                        กลับเป็นร่าง
+                    </button>
+                    <button class="btn btn-ghost status-danger" type="button" id="cancelRfqButton">
+                        <span class="i trash"></span>
+                        ยกเลิก RFQ
+                    </button>
+                </div>
+            </div>
+        </section>
+
         <form id="rfqForm" class="request-detail-form" autocomplete="off">
             <section class="detail-card request-info-card">
                 <header class="detail-card-head">

@@ -37,6 +37,7 @@ $paymentTerm = strtoupper(trim((string) ($input['payment_term'] ?? '30D')));
 $paymentMethod = strtolower(trim((string) ($input['payment_method'] ?? 'bank')));
 $note = trimNullable($input['note'] ?? null);
 $refRfqId = sanitizeRefId($input['ref_supplier_rfq_id'] ?? null);
+$status = strtolower(trim((string) ($input['status'] ?? 'draft')));
 $deliverTo = (int) ($input['deliver_to'] ?? $eventId);
 $staffId = (int) $_SESSION['staff_id'];
 $contactPerson = (int) ($input['contact_person'] ?? $staffId);
@@ -71,6 +72,11 @@ if (empty($missingLines)) {
 $allowedPaymentMethods = ['bank', 'credit', 'cash', 'others'];
 if (!in_array($paymentMethod, $allowedPaymentMethods, true)) {
     $paymentMethod = 'bank';
+}
+
+$allowedStatuses = ['draft', 'approved', 'cancelled'];
+if (!in_array($status, $allowedStatuses, true)) {
+    $status = 'draft';
 }
 
 try {
@@ -112,7 +118,8 @@ try {
             PaymentTerm = :payment_term,
             PaymentMethod = :payment_method,
             DeliverTo = :deliver_to,
-            Note = :note
+            Note = :note,
+            Status = :status
         WHERE SupplierRFQID = :rfq_id
         LIMIT 1
     ');
@@ -132,6 +139,7 @@ try {
     $update->bindValue(':payment_method', $paymentMethod, PDO::PARAM_STR);
     $update->bindValue(':deliver_to', $deliverTo > 0 ? $deliverTo : $eventId, PDO::PARAM_INT);
     bindNullableString($update, ':note', $note);
+    $update->bindValue(':status', $status, PDO::PARAM_STR);
     $update->bindValue(':rfq_id', $rfqId, PDO::PARAM_INT);
 
     $update->execute();
@@ -146,7 +154,7 @@ try {
             'supplier_rfq_id' => $rfqId,
             'ref_supplier_rfq_id' => $refRfqId,
             'event_id' => $eventId,
-            'status' => 'draft',
+            'status' => $status,
         ],
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {

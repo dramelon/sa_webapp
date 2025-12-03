@@ -16,6 +16,12 @@
     const requestReferenceMeta = document.getElementById('rfqRequestReferenceMeta');
     const statusBadge = document.getElementById('rfqStatusBadge');
     const statusText = document.getElementById('rfqStatusText');
+    const statusDescription = document.getElementById('rfqStatusDescription');
+    const statusSelect = document.getElementById('rfqStatusSelect');
+    const statusActions = document.getElementById('rfqStatusActions');
+    const confirmRfqButton = document.getElementById('confirmRfqButton');
+    const returnDraftButton = document.getElementById('rfqReturnDraftButton');
+    const cancelRfqButton = document.getElementById('cancelRfqButton');
     const updatedAtDisplay = document.getElementById('rfqUpdatedAt');
     const updatedByDisplay = document.getElementById('rfqUpdatedBy');
     const createdAtDisplay = document.getElementById('rfqCreatedAt');
@@ -224,6 +230,7 @@
             payment_term: paymentTermSelect?.value || '',
             payment_method: paymentMethodSelect?.value || '',
             note: (noteInput?.value || '').trim(),
+            status: normalizeStatus(statusSelect?.value),
         };
     }
 
@@ -244,6 +251,7 @@
         if (paymentTermSelect) paymentTermSelect.value = snapshot.payment_term || '30D';
         if (paymentMethodSelect) paymentMethodSelect.value = snapshot.payment_method || 'bank';
         if (noteInput) noteInput.value = snapshot.note || '';
+        setStatusChip(snapshot.status || 'draft');
         isHydrating = false;
         setDirty(false);
     }
@@ -657,6 +665,7 @@
             payment_term: paymentTermSelect?.value || '30D',
             payment_method: paymentMethodSelect?.value || 'bank',
             note: (noteInput?.value || '').trim() || null,
+            status: normalizeStatus(statusSelect?.value),
             ref_supplier_rfq_id: (refIdInput?.value || '').trim() || null,
             contact_person: Number.isFinite(Number(contactPersonInput?.value))
                 ? Number(contactPersonInput.value)
@@ -692,18 +701,60 @@
         return true;
     }
 
-    function setStatusChip(status = 'draft') {
+    function normalizeStatus(status) {
         const normalized = typeof status === 'string' && status.trim() !== '' ? status.trim().toLowerCase() : 'draft';
+        const allowed = ['draft', 'approved', 'cancelled'];
+        return allowed.includes(normalized) ? normalized : 'draft';
+    }
+
+    function updateStatusDescription(status) {
+        if (!statusDescription) return;
+        const normalized = normalizeStatus(status);
+        const message =
+            normalized === 'approved'
+                ? 'RFQ นี้ถูกยืนยันแล้ว สามารถย้อนกลับเป็นร่างหรือยกเลิกได้'
+                : normalized === 'cancelled'
+                ? 'RFQ นี้ถูกยกเลิกแล้ว'
+                : 'ปรับสถานะ RFQ เพื่อดำเนินการต่อ';
+        statusDescription.textContent = message;
+    }
+
+    function updateStatusControls(status = 'draft') {
+        const normalized = normalizeStatus(status);
+        const isDraft = normalized === 'draft';
+        const isApproved = normalized === 'approved';
+        const isCancelled = normalized === 'cancelled';
+
+        if (statusSelect) {
+            statusSelect.value = normalized;
+        }
+        if (statusActions) {
+            statusActions.hidden = isCancelled;
+        }
+        if (confirmRfqButton) {
+            confirmRfqButton.hidden = !isDraft;
+            confirmRfqButton.setAttribute('aria-hidden', confirmRfqButton.hidden ? 'true' : 'false');
+        }
+        if (returnDraftButton) {
+            returnDraftButton.hidden = !isApproved;
+            returnDraftButton.setAttribute('aria-hidden', returnDraftButton.hidden ? 'true' : 'false');
+        }
+        if (cancelRfqButton) {
+            cancelRfqButton.hidden = isCancelled;
+            cancelRfqButton.setAttribute('aria-hidden', cancelRfqButton.hidden ? 'true' : 'false');
+        }
+        updateStatusDescription(normalized);
+    }
+
+    function setStatusChip(status = 'draft') {
+        const normalized = normalizeStatus(status);
+        updateStatusControls(normalized);
         if (statusBadge) {
             statusBadge.dataset.status = normalized;
         }
         if (statusText) {
             const displayLabel =
-                normalized === 'completed'
-                    ? 'เสร็จสิ้น'
-                    : normalized === 'cancelled'
-                    ? 'ยกเลิก'
-                    : 'ร่าง';
+                normalized === 'approved' ? 'อนุมัติแล้ว' : normalized === 'cancelled' ? 'ยกเลิก' : 'ร่าง';
             statusText.textContent = `สถานะ: ${displayLabel}`;
         }
     }
@@ -759,15 +810,9 @@
     function bindEvents() {
         if (backButton) {
             backButton.addEventListener('click', () => {
-                const url = new URL('./event_document_manage.html', window.location.origin);
-                if (eventId) {
-                    url.searchParams.set('event_id', eventId);
-                }
-                if (requestId) {
-                    url.searchParams.set('request_id', requestId);
-                }
                 requestNavigation(() => {
-                    window.location.href = `${url.pathname}${url.search}`;
+                    const targetUrl = backLink?.href || './event_document_manage.html';
+                    window.location.href = targetUrl;
                 });
             });
         }
@@ -779,6 +824,30 @@
                 requestNavigation(() => {
                     window.location.href = targetHref;
                 });
+            });
+        }
+        if (statusSelect) {
+            statusSelect.addEventListener('change', () => {
+                setStatusChip(statusSelect.value);
+                markDirtyIfReady();
+            });
+        }
+        if (confirmRfqButton) {
+            confirmRfqButton.addEventListener('click', () => {
+                setStatusChip('approved');
+                markDirtyIfReady();
+            });
+        }
+        if (returnDraftButton) {
+            returnDraftButton.addEventListener('click', () => {
+                setStatusChip('draft');
+                markDirtyIfReady();
+            });
+        }
+        if (cancelRfqButton) {
+            cancelRfqButton.addEventListener('click', () => {
+                setStatusChip('cancelled');
+                markDirtyIfReady();
             });
         }
         if (saveButton) {
