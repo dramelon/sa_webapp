@@ -41,9 +41,6 @@ $status = strtolower(trim((string) ($input['status'] ?? 'draft')));
 $deliverTo = (int) ($input['deliver_to'] ?? $eventId);
 $staffId = (int) $_SESSION['staff_id'];
 $contactPerson = (int) ($input['contact_person'] ?? $staffId);
-$missingLines = array_filter(is_array($input['missing_lines'] ?? []) ? $input['missing_lines'] : [], function ($line) {
-    return is_array($line);
-});
 
 if ($rfqId <= 0) {
     http_response_code(400);
@@ -63,18 +60,12 @@ if ($title === '') {
     exit;
 }
 
-if (empty($missingLines)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'empty_lines', 'message' => 'ไม่มีรายการสินค้าที่จะบันทึก']);
-    exit;
-}
-
 $allowedPaymentMethods = ['bank', 'credit', 'cash', 'others'];
 if (!in_array($paymentMethod, $allowedPaymentMethods, true)) {
     $paymentMethod = 'bank';
 }
 
-$allowedStatuses = ['draft', 'approved', 'cancelled'];
+$allowedStatuses = ['draft', 'completed', 'cancelled'];
 if (!in_array($status, $allowedStatuses, true)) {
     $status = 'draft';
 }
@@ -82,7 +73,7 @@ if (!in_array($status, $allowedStatuses, true)) {
 try {
     $db = DatabaseConnector::getConnection();
 
-    if (!tableExists($db, 'supplier_rfq') || !tableExists($db, 'supplier_rfq_line')) {
+    if (!tableExists($db, 'supplier_rfq')) {
         http_response_code(500);
         echo json_encode(['error' => 'missing_tables', 'message' => 'ไม่พบตาราง RFQ ในฐานข้อมูล']);
         exit;
@@ -144,6 +135,21 @@ try {
 
     $update->execute();
 
+    if ($update->rowCount() === 0) {
+        $db->rollBack();
+        http_response_code(500);
+        echo json_encode(['error' => 'update_failed', 'message' => 'ไม่สามารถบันทึกสถานะ RFQ ได้']);
+        exit;
+    }
+
+    $statusLookup = $db->prepare('SELECT Status FROM supplier_rfq WHERE SupplierRFQID = :id LIMIT 1');
+    $statusLookup->bindValue(':id', $rfqId, PDO::PARAM_INT);
+    $statusLookup->execute();
+    $persistedStatus = strtolower((string) $statusLookup->fetchColumn());
+    if (!in_array($persistedStatus, $allowedStatuses, true)) {
+        $persistedStatus = $status;
+    }
+
     recordAuditEvent($db, 'rfq', $rfqId, 'UPDATE', $staffId, 'ปรับปรุงรายละเอียด RFQ');
 
     $db->commit();
@@ -154,7 +160,7 @@ try {
             'supplier_rfq_id' => $rfqId,
             'ref_supplier_rfq_id' => $refRfqId,
             'event_id' => $eventId,
-            'status' => $status,
+            'status' => $persistedStatus,
         ],
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {

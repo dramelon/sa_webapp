@@ -703,15 +703,21 @@
 
     function normalizeStatus(status) {
         const normalized = typeof status === 'string' && status.trim() !== '' ? status.trim().toLowerCase() : 'draft';
-        const allowed = ['draft', 'approved', 'cancelled'];
-        return allowed.includes(normalized) ? normalized : 'draft';
+        const synonyms = {
+            approved: 'completed',
+            complete: 'completed',
+            confirmed: 'completed',
+        };
+        const mapped = synonyms[normalized] || normalized;
+        const allowed = ['draft', 'completed', 'cancelled'];
+        return allowed.includes(mapped) ? mapped : 'draft';
     }
 
     function updateStatusDescription(status) {
         if (!statusDescription) return;
         const normalized = normalizeStatus(status);
         const message =
-            normalized === 'approved'
+            normalized === 'completed'
                 ? 'RFQ นี้ถูกยืนยันแล้ว สามารถย้อนกลับเป็นร่างหรือยกเลิกได้'
                 : normalized === 'cancelled'
                 ? 'RFQ นี้ถูกยกเลิกแล้ว'
@@ -722,7 +728,7 @@
     function updateStatusControls(status = 'draft') {
         const normalized = normalizeStatus(status);
         const isDraft = normalized === 'draft';
-        const isApproved = normalized === 'approved';
+        const isCompleted = normalized === 'completed';
         const isCancelled = normalized === 'cancelled';
 
         if (statusSelect) {
@@ -736,7 +742,7 @@
             confirmRfqButton.setAttribute('aria-hidden', confirmRfqButton.hidden ? 'true' : 'false');
         }
         if (returnDraftButton) {
-            returnDraftButton.hidden = !isApproved;
+            returnDraftButton.hidden = !isCompleted;
             returnDraftButton.setAttribute('aria-hidden', returnDraftButton.hidden ? 'true' : 'false');
         }
         if (cancelRfqButton) {
@@ -754,7 +760,7 @@
         }
         if (statusText) {
             const displayLabel =
-                normalized === 'approved' ? 'อนุมัติแล้ว' : normalized === 'cancelled' ? 'ยกเลิก' : 'ร่าง';
+                normalized === 'completed' ? 'ยืนยันแล้ว' : normalized === 'cancelled' ? 'ยกเลิก' : 'ร่าง';
             statusText.textContent = `สถานะ: ${displayLabel}`;
         }
     }
@@ -789,7 +795,8 @@
                 if (rfqIdInput) {
                     rfqIdInput.value = rfqId;
                 }
-                setStatusChip('draft');
+                const savedStatus = normalizeStatus(data?.data?.status || payload.status);
+                setStatusChip(savedStatus);
                 if (updatedAtDisplay) {
                     updatedAtDisplay.textContent = formatDateTime(new Date());
                 }
@@ -834,7 +841,7 @@
         }
         if (confirmRfqButton) {
             confirmRfqButton.addEventListener('click', () => {
-                setStatusChip('approved');
+                setStatusChip('completed');
                 markDirtyIfReady();
             });
         }
