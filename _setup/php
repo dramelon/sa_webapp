@@ -373,7 +373,7 @@ CREATE TABLE supplier_quotation_line (
     SupplierQuotationID        BIGINT UNSIGNED NOT NULL,
     SupplierRFQLineID          BIGINT UNSIGNED DEFAULT NULL,
     ItemID                     BIGINT UNSIGNED NOT NULL,
-    ItemDesc                   TEXT NOT NULL,
+    ItemDesc                   TEXT DEFAULT NULL,
     ItemSpec                   TEXT DEFAULT NULL,
     ItemNote                   TEXT DEFAULT NULL,
     UOM                        VARCHAR(50) NOT NULL DEFAULT 'unit',

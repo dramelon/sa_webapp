@@ -7,7 +7,15 @@
     const backLink = document.getElementById('quotationBackLink');
     const backButton = document.getElementById('quotationBtnBack');
     const saveButton = document.getElementById('quotationBtnSave');
+    const inlineSaveButton = document.getElementById('quotationBtnSaveInline');
+    const discardButton = document.getElementById('quotationBtnDiscard');
+    const unsavedBanner = document.getElementById('unsavedBanner');
     const globalMessage = document.getElementById('quotationGlobalMessage');
+    const statusDescription = document.getElementById('quotationStatusDescription');
+    const statusActions = document.getElementById('quotationStatusActions');
+    const approveButton = document.getElementById('quotationApproveButton');
+    const returnPendingButton = document.getElementById('quotationReturnPendingButton');
+    const cancelButton = document.getElementById('quotationCancelButton');
 
     const meta = {
         eventName: document.getElementById('quotationEventName'),
@@ -47,12 +55,47 @@
     const linesBody = document.getElementById('quotationLinesBody');
     const linesEmpty = document.getElementById('quotationLinesEmpty');
     const addLineButton = document.getElementById('addQuotationLine');
+    const lineModal = document.getElementById('quotationLineModal');
+    const lineForm = document.getElementById('quotationLineForm');
+    const lineModalMessage = document.getElementById('quotationLineModalMessage');
+    const lineSaveButton = document.getElementById('quotationLineSave');
+    const lineFields = {
+        itemName: document.getElementById('lineItemName'),
+        itemId: document.getElementById('lineItemId'),
+        quantity: document.getElementById('lineQuantity'),
+        uom: document.getElementById('lineUom'),
+        unitPrice: document.getElementById('lineUnitPrice'),
+        discountPercent: document.getElementById('lineDiscountPercent'),
+        discountAmount: document.getElementById('lineDiscountAmount'),
+        taxInclude: document.getElementById('lineTaxInclude'),
+        spec: document.getElementById('lineSpec'),
+        itemNote: document.getElementById('lineItemNote'),
+        note: document.getElementById('lineNote'),
+    };
     const referenceMeta = document.getElementById('quotationReferenceMeta');
     const titleDisplay = document.getElementById('quotationTitle');
 
     let modelRoot = '';
     let quotation = null;
     let lines = [];
+    let isDirty = false;
+    let isSaving = false;
+    let isPopulating = false;
+    let isDatasetLoaded = false;
+    let lastSnapshot = null;
+    let activeLine = null;
+    let currentStatus = 'submitted';
+    let isReadOnly = false;
+
+    function runWithPopulation(fn) {
+        const prev = isPopulating;
+        isPopulating = true;
+        try {
+            fn();
+        } finally {
+            isPopulating = prev;
+        }
+    }
 
     function tickClock() {
         const now = new Date();
@@ -96,6 +139,7 @@
 
     function setStatusBadge(status) {
         const normalized = typeof status === 'string' ? status.toLowerCase() : 'submitted';
+        currentStatus = normalized;
         if (meta.statusBadge) {
             meta.statusBadge.dataset.status = normalized;
         }
@@ -114,6 +158,240 @@
         }
     }
 
+    function updateStatusDescription(status) {
+        if (!statusDescription) return;
+        const normalized = typeof status === 'string' ? status.toLowerCase() : 'submitted';
+        let text = 'เลือกสถานะปัจจุบันของใบเสนอราคา';
+        if (normalized === 'approved') {
+            text = 'ใบเสนอราคานี้ได้รับการอนุมัติแล้วและไม่สามารถแก้ไขได้';
+        } else if (normalized === 'pending') {
+            text = 'รอการอนุมัติจากผู้มีสิทธิ์';
+        } else if (normalized === 'closed') {
+            text = 'ใบเสนอราคานี้ถูกปิดและแก้ไขไม่ได้';
+        }
+        statusDescription.textContent = text;
+    }
+
+    function updateStatusActions(status) {
+        if (!statusActions) return;
+        const normalized = typeof status === 'string' ? status.toLowerCase() : 'submitted';
+        const isApproved = normalized === 'approved';
+        const isClosed = normalized === 'closed';
+        if (approveButton) {
+            approveButton.hidden = isApproved || isClosed;
+        }
+        if (returnPendingButton) {
+            returnPendingButton.hidden = !isApproved;
+        }
+        if (cancelButton) {
+            cancelButton.hidden = !isApproved || isClosed;
+        }
+    }
+
+    function setLineFormReadOnly(readOnly) {
+        const inputs = [
+            lineFields.itemName,
+            lineFields.itemId,
+            lineFields.quantity,
+            lineFields.uom,
+            lineFields.unitPrice,
+            lineFields.discountPercent,
+            lineFields.discountAmount,
+            lineFields.taxInclude,
+            lineFields.spec,
+            lineFields.itemNote,
+            lineFields.note,
+        ].filter(Boolean);
+
+        inputs.forEach((input) => {
+            input.disabled = readOnly;
+        });
+
+        if (lineSaveButton) {
+            lineSaveButton.disabled = readOnly;
+        }
+    }
+
+    function setEditingLocked(locked) {
+        isReadOnly = Boolean(locked);
+        const editableFields = [
+            formRefs.title,
+            formRefs.refId,
+            formRefs.staff,
+            formRefs.contactPerson,
+            formRefs.deliverTo,
+            formRefs.note,
+            formRefs.paymentTerm,
+            formRefs.paymentMethod,
+            formRefs.bidValidity,
+            formRefs.quotationDate,
+            formRefs.orderDate,
+            formRefs.orderDeadline,
+            formRefs.expectedArrival,
+            formRefs.refVendorId,
+        ].filter(Boolean);
+
+        editableFields.forEach((field) => {
+            field.disabled = isReadOnly;
+        });
+
+        if (addLineButton) {
+            addLineButton.disabled = isReadOnly;
+        }
+
+        setLineFormReadOnly(isReadOnly);
+        renderLines();
+    }
+
+    function applyStatus(status, { markDirty: shouldMark = false } = {}) {
+        const normalized = typeof status === 'string' ? status.toLowerCase() : 'submitted';
+        setStatusBadge(normalized);
+        updateStatusDescription(normalized);
+        updateStatusActions(normalized);
+        if (formRefs.statusSelect) {
+            runWithPopulation(() => {
+                formRefs.statusSelect.value = normalized;
+            });
+        }
+        setEditingLocked(normalized === 'approved' || normalized === 'closed' || normalized === 'cancelled');
+        if (shouldMark) {
+            markDirty();
+        }
+    }
+
+    function cloneLine(line) {
+        if (!line || typeof line !== 'object') return null;
+        return {
+            supplier_quotation_line_id: line.supplier_quotation_line_id ?? null,
+            supplier_rfq_line_id: line.supplier_rfq_line_id ?? null,
+            item_id: Number.isFinite(Number(line.item_id)) ? Number(line.item_id) : 0,
+            item_desc: line.item_desc || '',
+            item_spec: line.item_spec || '',
+            item_note: line.item_note || '',
+            uom: line.uom || '',
+            quantity_offered: Number.isFinite(Number(line.quantity_offered)) ? Number(line.quantity_offered) : 0,
+            unit_price: Number.isFinite(Number(line.unit_price)) ? Number(line.unit_price) : 0,
+            discount_percent: line.discount_percent ?? null,
+            discount_amount: line.discount_amount ?? null,
+            tax_include: Boolean(line.tax_include),
+            note: line.note || '',
+        };
+    }
+
+    function createSnapshot(payload = {}) {
+        const sourceLines = Array.isArray(payload.lines) ? payload.lines : lines;
+        const lineCopies = sourceLines.map((line) => cloneLine(line)).filter(Boolean);
+        return {
+            title: payload.title ?? formRefs.title?.value ?? '',
+            ref_supplier_quotation_id: payload.ref_supplier_quotation_id ?? formRefs.refId?.value ?? '',
+            staff_id: payload.staff_id ?? formRefs.staff?.value ?? '',
+            contact_person: payload.contact_person ?? formRefs.contactPerson?.value ?? '',
+            deliver_to: payload.deliver_to ?? formRefs.deliverTo?.value ?? '',
+            note: payload.note ?? formRefs.note?.value ?? '',
+            payment_term: payload.payment_term ?? formRefs.paymentTerm?.value ?? '30D',
+            payment_method: payload.payment_method ?? formRefs.paymentMethod?.value ?? 'bank',
+            bid_validity_days: payload.bid_validity_days ?? formRefs.bidValidity?.value ?? '',
+            quotation_date: payload.quotation_date ?? formRefs.quotationDate?.value ?? '',
+            order_date: payload.order_date ?? formRefs.orderDate?.value ?? '',
+            order_deadline: payload.order_deadline ?? formRefs.orderDeadline?.value ?? '',
+            expected_arrival: payload.expected_arrival ?? formRefs.expectedArrival?.value ?? '',
+            ref_vendor_id: payload.ref_vendor_id ?? formRefs.refVendorId?.value ?? '',
+            status: payload.status ?? formRefs.statusSelect?.value ?? currentStatus ?? 'submitted',
+            lines: lineCopies,
+        };
+    }
+
+    function restoreSnapshot(snapshot) {
+        if (!snapshot) return;
+        runWithPopulation(() => {
+            if (formRefs.title) formRefs.title.value = snapshot.title || '';
+            if (formRefs.refId) formRefs.refId.value = snapshot.ref_supplier_quotation_id || '';
+            if (formRefs.staff) formRefs.staff.value = snapshot.staff_id || '';
+            if (formRefs.contactPerson) formRefs.contactPerson.value = snapshot.contact_person || '';
+            if (formRefs.deliverTo) formRefs.deliverTo.value = snapshot.deliver_to || '';
+            if (formRefs.note) formRefs.note.value = snapshot.note || '';
+            if (formRefs.paymentTerm) formRefs.paymentTerm.value = snapshot.payment_term || '30D';
+            if (formRefs.paymentMethod) formRefs.paymentMethod.value = snapshot.payment_method || 'bank';
+            if (formRefs.bidValidity) formRefs.bidValidity.value = snapshot.bid_validity_days || '';
+            if (formRefs.quotationDate) formRefs.quotationDate.value = snapshot.quotation_date || '';
+            if (formRefs.orderDate) formRefs.orderDate.value = snapshot.order_date || '';
+            if (formRefs.orderDeadline) formRefs.orderDeadline.value = snapshot.order_deadline || '';
+            if (formRefs.expectedArrival) formRefs.expectedArrival.value = snapshot.expected_arrival || '';
+            if (formRefs.refVendorId) formRefs.refVendorId.value = snapshot.ref_vendor_id || '';
+            if (formRefs.statusSelect) formRefs.statusSelect.value = snapshot.status || 'submitted';
+            lines = Array.isArray(snapshot.lines)
+                ? snapshot.lines.map((line) => ({ ...cloneLine(line) })).filter(Boolean)
+                : [];
+            renderLines();
+        });
+        applyStatus(snapshot.status || 'submitted');
+        setDirtyState(false);
+    }
+
+    function handleBeforeUnload(event) {
+        if (!isDirty) return;
+        event.preventDefault();
+        event.returnValue = '';
+    }
+
+    function updateSaveButtonState() {
+        const shouldDisable = isSaving || !isDirty;
+        if (saveButton) {
+            saveButton.disabled = shouldDisable;
+            if (shouldDisable) {
+                saveButton.setAttribute('aria-disabled', 'true');
+            } else {
+                saveButton.removeAttribute('aria-disabled');
+            }
+        }
+        if (inlineSaveButton) {
+            inlineSaveButton.disabled = shouldDisable;
+            if (shouldDisable) {
+                inlineSaveButton.setAttribute('aria-disabled', 'true');
+            } else {
+                inlineSaveButton.removeAttribute('aria-disabled');
+            }
+        }
+    }
+
+    function setDirtyState(next) {
+        const nextState = Boolean(next);
+        if (isDirty === nextState) {
+            updateSaveButtonState();
+            return;
+        }
+        isDirty = nextState;
+        if (unsavedBanner) {
+            if (isDirty) {
+                unsavedBanner.hidden = false;
+                requestAnimationFrame(() => {
+                    unsavedBanner.classList.add('is-active');
+                });
+            } else {
+                if (!unsavedBanner.classList.contains('is-active')) {
+                    unsavedBanner.hidden = true;
+                } else {
+                    unsavedBanner.classList.remove('is-active');
+                    const handleTransitionEnd = (event) => {
+                        if (event.propertyName === 'transform') {
+                            unsavedBanner.hidden = true;
+                            unsavedBanner.removeEventListener('transitionend', handleTransitionEnd);
+                        }
+                    };
+                    unsavedBanner.addEventListener('transitionend', handleTransitionEnd);
+                }
+            }
+        }
+        updateSaveButtonState();
+    }
+
+    function markDirty() {
+        if (!isDatasetLoaded || isPopulating) {
+            return;
+        }
+        setDirtyState(true);
+    }
+
     function formatDateTime(value) {
         if (!value) return '—';
         const date = new Date(value);
@@ -125,6 +403,105 @@
             hour: '2-digit',
             minute: '2-digit',
         });
+    }
+
+    function formatNumber(value, fractionDigits = 2) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return '—';
+        return new Intl.NumberFormat('th-TH', {
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits,
+        }).format(number);
+    }
+
+    function formatPrice(value) {
+        return formatNumber(value ?? 0, 2);
+    }
+
+    function formatQuantity(line) {
+        const qty = Number(line?.quantity_offered ?? 0);
+        const uom = (line?.uom || 'unit').trim();
+        const qtyLabel = Number.isFinite(qty) ? formatNumber(qty, 0) : '0';
+        return uom ? `${qtyLabel} ${uom}` : qtyLabel;
+    }
+
+    function describeDiscount(line) {
+        const parts = [];
+        if (line?.discount_percent !== null && line?.discount_percent !== undefined && line.discount_percent !== '') {
+            parts.push(`ลด ${formatNumber(line.discount_percent, 2)}%`);
+        }
+        if (line?.discount_amount !== null && line?.discount_amount !== undefined && line.discount_amount !== '') {
+            parts.push(`ลด ${formatNumber(line.discount_amount, 2)} บาท`);
+        }
+        parts.push(line?.tax_include ? 'รวม VAT' : 'ยังไม่รวม VAT');
+        return parts.join(' • ');
+    }
+
+    function findLinesMissingPrices() {
+        return lines.filter((line) => {
+            const price = Number(line?.unit_price);
+            return !Number.isFinite(price) || price <= 0;
+        });
+    }
+
+    function setLineModalMessage(message, tone = 'info') {
+        if (!lineModalMessage) return;
+        const normalized = typeof message === 'string' ? message.trim() : '';
+        lineModalMessage.classList.remove('success', 'error');
+        if (!normalized) {
+            lineModalMessage.hidden = true;
+            lineModalMessage.textContent = '';
+            return;
+        }
+        lineModalMessage.hidden = false;
+        lineModalMessage.textContent = normalized;
+        if (tone === 'success') {
+            lineModalMessage.classList.add('success');
+        } else if (tone === 'error') {
+            lineModalMessage.classList.add('error');
+        }
+    }
+
+    function populateLineForm(line) {
+        if (!line) return;
+        if (lineFields.itemName) lineFields.itemName.value = line.item_desc || line.item_name || '';
+        if (lineFields.itemId) lineFields.itemId.value = line.item_id || '';
+        if (lineFields.quantity) lineFields.quantity.value = line.quantity_offered ?? 0;
+        if (lineFields.uom) lineFields.uom.value = line.uom || 'unit';
+        if (lineFields.unitPrice) lineFields.unitPrice.value = line.unit_price ?? 0;
+        if (lineFields.discountPercent)
+            lineFields.discountPercent.value = line.discount_percent ?? '';
+        if (lineFields.discountAmount)
+            lineFields.discountAmount.value = line.discount_amount ?? '';
+        if (lineFields.taxInclude) lineFields.taxInclude.checked = Boolean(line.tax_include);
+        if (lineFields.spec) lineFields.spec.value = line.item_spec || '';
+        if (lineFields.itemNote) lineFields.itemNote.value = line.item_note || '';
+        if (lineFields.note) lineFields.note.value = line.note || '';
+    }
+
+    function openLineModal(line) {
+        if (!lineModal || !line) return;
+        activeLine = line;
+        setLineModalMessage('');
+        populateLineForm(line);
+        setLineFormReadOnly(isReadOnly);
+        lineModal.hidden = false;
+        lineModal.setAttribute('aria-hidden', 'false');
+        requestAnimationFrame(() => {
+            const focusTarget = lineFields.itemName;
+            if (focusTarget && !isReadOnly) {
+                focusTarget.focus();
+                focusTarget.select?.();
+            }
+        });
+    }
+
+    function closeLineModal() {
+        if (!lineModal) return;
+        lineModal.hidden = true;
+        lineModal.setAttribute('aria-hidden', 'true');
+        activeLine = null;
+        setLineModalMessage('');
     }
 
     function setMessage(message, tone = 'info') {
@@ -243,7 +620,7 @@
         if (formRefs.updatedByMeta) {
             formRefs.updatedByMeta.textContent = payload.updated_by_label || '—';
         }
-        setStatusBadge(payload.status);
+        applyStatus(payload.status);
     }
 
     function buildLineRow(line) {
@@ -251,114 +628,100 @@
         row.dataset.lineId = line.supplier_quotation_line_id || '';
 
         const itemCell = document.createElement('td');
-        const itemIdInput = document.createElement('input');
-        itemIdInput.type = 'number';
-        itemIdInput.min = '1';
-        itemIdInput.value = line.item_id || '';
-        const itemName = document.createElement('div');
-        itemName.className = 'meta-sub';
-        itemName.textContent = line.item_desc || line.item_name || '';
-        itemIdInput.addEventListener('input', () => {
-            line.item_id = Number(itemIdInput.value || 0);
-        });
-        itemCell.append(itemIdInput, itemName);
-
-        const descCell = document.createElement('td');
-        const descInput = document.createElement('textarea');
-        descInput.value = line.item_desc || '';
-        descInput.rows = 2;
-        descInput.addEventListener('input', () => {
-            line.item_desc = descInput.value;
-        });
-        const specInput = document.createElement('textarea');
-        specInput.placeholder = 'สเปค (ถ้ามี)';
-        specInput.rows = 2;
-        specInput.value = line.item_spec || '';
-        specInput.addEventListener('input', () => {
-            line.item_spec = specInput.value;
-        });
-        const noteInput = document.createElement('textarea');
-        noteInput.placeholder = 'หมายเหตุ';
-        noteInput.rows = 2;
-        noteInput.value = line.item_note || '';
-        noteInput.addEventListener('input', () => {
-            line.item_note = noteInput.value;
-        });
-        descCell.append(descInput, specInput, noteInput);
+        const itemTitle = document.createElement('div');
+        itemTitle.className = 'line-title';
+        itemTitle.textContent = line.item_desc || line.item_name || '—';
+        const itemMeta = document.createElement('p');
+        itemMeta.className = 'meta-sub';
+        const metaParts = [];
+        if (line.item_id) metaParts.push(`ID: ${line.item_id}`);
+        if (line.item_spec) metaParts.push(line.item_spec);
+        if (line.item_note) metaParts.push(line.item_note);
+        itemMeta.textContent = metaParts.join(' • ') || '—';
+        itemCell.append(itemTitle, itemMeta);
 
         const qtyCell = document.createElement('td');
-        const qtyInput = document.createElement('input');
-        qtyInput.type = 'number';
-        qtyInput.min = '0';
-        qtyInput.value = line.quantity_offered ?? 0;
-        qtyInput.addEventListener('input', () => {
-            line.quantity_offered = Number(qtyInput.value || 0);
-        });
-        const uomInput = document.createElement('input');
-        uomInput.type = 'text';
-        uomInput.placeholder = 'UOM';
-        uomInput.value = line.uom || 'unit';
-        uomInput.addEventListener('input', () => {
-            line.uom = uomInput.value || 'unit';
-        });
-        qtyCell.append(qtyInput, uomInput);
+        const qtyValue = document.createElement('div');
+        qtyValue.className = 'line-title';
+        qtyValue.textContent = formatQuantity(line);
+        const qtyMeta = document.createElement('p');
+        qtyMeta.className = 'meta-sub';
+        qtyMeta.textContent = line.note || ' ';
+        qtyCell.append(qtyValue, qtyMeta);
 
         const priceCell = document.createElement('td');
-        const priceInput = document.createElement('input');
-        priceInput.type = 'number';
-        priceInput.step = '0.01';
-        priceInput.min = '0';
-        priceInput.value = line.unit_price ?? 0;
-        priceInput.addEventListener('input', () => {
-            line.unit_price = Number(priceInput.value || 0);
-        });
-        priceCell.appendChild(priceInput);
-
-        const discountPercentCell = document.createElement('td');
-        const discountPercentInput = document.createElement('input');
-        discountPercentInput.type = 'number';
-        discountPercentInput.step = '0.01';
-        discountPercentInput.min = '0';
-        discountPercentInput.value = line.discount_percent ?? '';
-        discountPercentInput.addEventListener('input', () => {
-            line.discount_percent = discountPercentInput.value === '' ? null : Number(discountPercentInput.value || 0);
-        });
-        discountPercentCell.appendChild(discountPercentInput);
-
-        const discountAmountCell = document.createElement('td');
-        const discountAmountInput = document.createElement('input');
-        discountAmountInput.type = 'number';
-        discountAmountInput.step = '0.01';
-        discountAmountInput.min = '0';
-        discountAmountInput.value = line.discount_amount ?? '';
-        discountAmountInput.addEventListener('input', () => {
-            line.discount_amount = discountAmountInput.value === '' ? null : Number(discountAmountInput.value || 0);
-        });
-        discountAmountCell.appendChild(discountAmountInput);
-
-        const taxCell = document.createElement('td');
-        const taxToggle = document.createElement('input');
-        taxToggle.type = 'checkbox';
-        taxToggle.checked = Boolean(line.tax_include);
-        taxToggle.addEventListener('change', () => {
-            line.tax_include = taxToggle.checked;
-        });
-        taxCell.appendChild(taxToggle);
+        const priceValue = document.createElement('div');
+        priceValue.className = 'line-title';
+        priceValue.textContent = formatPrice(line.unit_price);
+        const priceMeta = document.createElement('p');
+        priceMeta.className = 'meta-sub';
+        priceMeta.textContent = describeDiscount(line);
+        priceCell.append(priceValue, priceMeta);
 
         const actionsCell = document.createElement('td');
         actionsCell.className = 'col-actions';
+        const manageBtn = document.createElement('button');
+        manageBtn.type = 'button';
+        manageBtn.className = 'btn btn-ghost';
+        manageBtn.innerHTML = '<span class="i pencil"></span> รายละเอียดสินค้า';
+        manageBtn.addEventListener('click', () => {
+            openLineModal(line);
+        });
+
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
-        removeBtn.className = 'btn btn-ghost';
-        removeBtn.textContent = 'ลบ';
+        removeBtn.className = 'btn btn-ghost status-danger';
+        removeBtn.innerHTML = '<span class="i trash"></span>';
+        removeBtn.disabled = isReadOnly;
         removeBtn.addEventListener('click', () => {
+            if (isReadOnly) return;
             lines = lines.filter((item) => item !== line);
             renderLines();
+            markDirty();
         });
-        actionsCell.appendChild(removeBtn);
+        actionsCell.append(manageBtn, removeBtn);
 
-        row.append(itemCell, descCell, qtyCell, priceCell, discountPercentCell, discountAmountCell, taxCell, actionsCell);
+        row.append(itemCell, qtyCell, priceCell, actionsCell);
         return row;
+    }
+
+    function handleLineFormSubmit(event) {
+        if (event) {
+            event.preventDefault();
+        }
+        if (isReadOnly) {
+            setLineModalMessage('ไม่สามารถแก้ไขได้เมื่อสถานะถูกล็อก', 'error');
+            return;
+        }
+        if (!activeLine) {
+            setLineModalMessage('ไม่พบรายการสินค้าที่ต้องการแก้ไข', 'error');
+            return;
+        }
+        const itemName = lineFields.itemName?.value?.trim() || '';
+        if (!itemName) {
+            setLineModalMessage('กรุณากรอกชื่อสินค้า', 'error');
+            lineFields.itemName?.focus();
+            return;
+        }
+        activeLine.item_desc = itemName;
+        activeLine.item_name = itemName;
+        activeLine.item_id = lineFields.itemId?.value ? Number(lineFields.itemId.value) : 0;
+        activeLine.quantity_offered = Number(lineFields.quantity?.value || 0);
+        activeLine.uom = lineFields.uom?.value || 'unit';
+        activeLine.unit_price = Number(lineFields.unitPrice?.value || 0);
+        activeLine.discount_percent = lineFields.discountPercent?.value === ''
+            ? null
+            : Number(lineFields.discountPercent?.value || 0);
+        activeLine.discount_amount = lineFields.discountAmount?.value === ''
+            ? null
+            : Number(lineFields.discountAmount?.value || 0);
+        activeLine.tax_include = Boolean(lineFields.taxInclude?.checked);
+        activeLine.item_spec = lineFields.spec?.value || '';
+        activeLine.item_note = lineFields.itemNote?.value || '';
+        activeLine.note = lineFields.note?.value || '';
+        renderLines();
+        markDirty();
+        closeLineModal();
     }
 
     function renderLines() {
@@ -374,7 +737,8 @@
     }
 
     function addEmptyLine() {
-        lines.push({
+        if (isReadOnly) return;
+        const newLine = {
             supplier_quotation_line_id: null,
             supplier_rfq_line_id: null,
             item_id: 0,
@@ -387,8 +751,47 @@
             discount_percent: null,
             discount_amount: null,
             tax_include: true,
-        });
+            note: '',
+        };
+        lines.push(newLine);
         renderLines();
+        markDirty();
+        openLineModal(newLine);
+    }
+
+    function handleApproveAction() {
+        if (!lines || lines.length === 0) {
+            setMessage('กรุณาเพิ่มรายการสินค้าและระบุราคา', 'error');
+            return;
+        }
+        const missingPrices = findLinesMissingPrices();
+        if (missingPrices.length > 0) {
+            const confirmProceed = window.confirm(
+                'ยังมีสินค้าบางรายการที่ไม่มีราคาหรือมีราคา 0 ต้องการตั้งราคาเป็น 0 และอนุมัติเลยหรือไม่?'
+            );
+            if (!confirmProceed) {
+                setMessage('กรุณากรอกข้อมูลราคาของสินค้าทั้งหมดก่อนอนุมัติ', 'error');
+                return;
+            }
+            missingPrices.forEach((line) => {
+                line.unit_price = 0;
+            });
+        }
+        applyStatus('approved', { markDirty: true });
+        renderLines();
+        saveQuotation();
+    }
+
+    function handleReturnPending() {
+        applyStatus('pending', { markDirty: true });
+        renderLines();
+        saveQuotation();
+    }
+
+    function handleCancelAction() {
+        applyStatus('closed', { markDirty: true });
+        renderLines();
+        saveQuotation();
     }
 
     async function fetchQuotation() {
@@ -406,8 +809,13 @@
             const data = await response.json();
             quotation = data?.data || null;
             lines = Array.isArray(quotation?.lines) ? quotation.lines : [];
-            syncMeta(quotation);
-            renderLines();
+            runWithPopulation(() => {
+                syncMeta(quotation);
+                renderLines();
+            });
+            lastSnapshot = createSnapshot(quotation);
+            setDirtyState(false);
+            isDatasetLoaded = true;
             setMessage('');
         } catch (error) {
             setMessage('ไม่สามารถโหลดใบเสนอราคาได้', 'error');
@@ -432,7 +840,7 @@
             order_deadline: formRefs.orderDeadline?.value || null,
             expected_arrival: formRefs.expectedArrival?.value || null,
             ref_vendor_id: formRefs.refVendorId?.value || null,
-            status: formRefs.statusSelect?.value || 'submitted',
+            status: formRefs.statusSelect?.value || currentStatus || 'submitted',
             lines: lines.map((line) => ({
                 supplier_quotation_line_id: line.supplier_quotation_line_id,
                 supplier_rfq_line_id: line.supplier_rfq_line_id,
@@ -457,8 +865,10 @@
             setMessage('ไม่พบใบเสนอราคาที่ต้องการบันทึก', 'error');
             return;
         }
+        if (isSaving) return;
         const payload = collectFormData();
-        saveButton.disabled = true;
+        isSaving = true;
+        updateSaveButtonState();
         setMessage('กำลังบันทึกข้อมูล...');
         try {
             const response = await fetch(`${modelRoot}/supplier_quotation_update.php`, {
@@ -482,24 +892,87 @@
             if (data?.data?.lines) {
                 lines = data.data.lines;
             }
-            setStatusBadge(data?.data?.status || payload.status);
-            syncMeta({ ...quotation, ...payload, ...data.data });
-            renderLines();
+            applyStatus(data?.data?.status || payload.status);
+            runWithPopulation(() => {
+                syncMeta({ ...quotation, ...payload, ...data.data });
+                renderLines();
+            });
+            lastSnapshot = createSnapshot({ ...quotation, ...payload, ...data.data });
+            setDirtyState(false);
             setMessage('บันทึกใบเสนอราคาเรียบร้อย', 'success');
         } catch (error) {
             setMessage('ไม่สามารถบันทึกใบเสนอราคาได้', 'error');
         } finally {
-            saveButton.disabled = false;
+            isSaving = false;
+            updateSaveButtonState();
         }
     }
 
     function bindEvents() {
+        const watchedFields = [
+            'title',
+            'refId',
+            'staff',
+            'contactPerson',
+            'deliverTo',
+            'note',
+            'paymentTerm',
+            'paymentMethod',
+            'bidValidity',
+            'quotationDate',
+            'orderDate',
+            'orderDeadline',
+            'expectedArrival',
+            'refVendorId',
+        ];
+        watchedFields.forEach((key) => {
+            const el = formRefs[key];
+            if (!el) return;
+            const handler = () => markDirty();
+            el.addEventListener('input', handler);
+            if (el.tagName === 'SELECT') {
+                el.addEventListener('change', handler);
+            }
+        });
         if (addLineButton) {
             addLineButton.addEventListener('click', addEmptyLine);
         }
         if (saveButton) {
             saveButton.addEventListener('click', saveQuotation);
         }
+        if (inlineSaveButton) {
+            inlineSaveButton.addEventListener('click', saveQuotation);
+        }
+        if (discardButton) {
+            discardButton.addEventListener('click', () => restoreSnapshot(lastSnapshot));
+        }
+        if (lineForm) {
+            lineForm.addEventListener('submit', handleLineFormSubmit);
+        }
+        if (formRefs.statusSelect) {
+            formRefs.statusSelect.addEventListener('change', (event) => {
+                applyStatus(event.target.value, { markDirty: true });
+            });
+        }
+        if (approveButton) {
+            approveButton.addEventListener('click', handleApproveAction);
+        }
+        if (returnPendingButton) {
+            returnPendingButton.addEventListener('click', handleReturnPending);
+        }
+        if (cancelButton) {
+            cancelButton.addEventListener('click', handleCancelAction);
+        }
+        if (lineModal) {
+            lineModal.addEventListener('click', (event) => {
+                const dismissTrigger = event.target.closest('[data-modal-dismiss]');
+                if (dismissTrigger) {
+                    event.preventDefault();
+                    closeLineModal();
+                }
+            });
+        }
+        window.addEventListener('beforeunload', handleBeforeUnload);
     }
 
     async function boot({ root }) {
@@ -509,6 +982,7 @@
         setBackLinks();
         await fetchQuotation();
         bindEvents();
+        updateSaveButtonState();
     }
 
     if (typeof window.onAppReady === 'function') {

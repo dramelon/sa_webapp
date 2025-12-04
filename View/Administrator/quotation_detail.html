@@ -147,10 +147,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="request-audit">
-                    <p>สร้างโดย: <span id="quotationCreatedBy">—</span></p>
-                    <p>อัปเดตล่าสุดโดย: <span id="quotationUpdatedByMeta">—</span></p>
-                </div>
             </section>
 
             <section class="detail-card request-status-card">
@@ -172,6 +168,20 @@
                             <option value="closed">ปิดใบเสนอราคา</option>
                         </select>
                     </label>
+                    <div class="status-actions" id="quotationStatusActions">
+                        <button class="btn btn-secondary" type="button" id="quotationApproveButton">
+                            <span class="i check"></span>
+                            อนุมัติใบเสนอราคา
+                        </button>
+                        <button class="btn btn-ghost" type="button" id="quotationReturnPendingButton">
+                            <span class="i refresh"></span>
+                            กลับไปรออนุมัติ
+                        </button>
+                        <button class="btn btn-ghost status-danger" type="button" id="quotationCancelButton">
+                            <span class="i trash"></span>
+                            ยกเลิก / ปิดใบเสนอราคา
+                        </button>
+                    </div>
                 </div>
             </section>
 
@@ -191,12 +201,8 @@
                         <thead>
                             <tr>
                                 <th scope="col">สินค้า</th>
-                                <th scope="col">รายละเอียด</th>
                                 <th scope="col">จำนวน</th>
                                 <th scope="col">ราคา/หน่วย</th>
-                                <th scope="col">ส่วนลด (%)</th>
-                                <th scope="col">ส่วนลด (บาท)</th>
-                                <th scope="col">รวม VAT?</th>
                                 <th scope="col" class="col-actions">การจัดการ</th>
                             </tr>
                         </thead>
@@ -210,6 +216,87 @@
             </section>
         </form>
     </main>
+
+    <div class="modal" id="quotationLineModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="quotationLineModalTitle">
+            <header class="modal-head">
+                <h3 id="quotationLineModalTitle">จัดการรายละเอียดสินค้า</h3>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i x"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <div id="quotationLineModalMessage" class="form-alert" role="alert" hidden></div>
+                <form id="quotationLineForm" class="modal-form" autocomplete="off">
+                    <div class="modal-grid">
+                        <label class="field-block">
+                            <span class="field-label">ชื่อสินค้า *</span>
+                            <input type="text" id="lineItemName" data-autofocus required />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">รหัสสินค้า</span>
+                            <input type="number" min="0" id="lineItemId" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">จำนวน *</span>
+                            <input type="number" min="0" step="1" id="lineQuantity" required />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">หน่วย (UOM)</span>
+                            <input type="text" id="lineUom" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ราคา/หน่วย *</span>
+                            <input type="number" min="0" step="0.01" id="lineUnitPrice" required />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ส่วนลด (%)</span>
+                            <input type="number" min="0" step="0.01" id="lineDiscountPercent" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ส่วนลด (บาท)</span>
+                            <input type="number" min="0" step="0.01" id="lineDiscountAmount" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">รวม VAT</span>
+                            <label class="form-toggle" for="lineTaxInclude">
+                                <span class="toggle-switch">
+                                    <input type="checkbox" id="lineTaxInclude" />
+                                    <span class="toggle-slider" aria-hidden="true"></span>
+                                </span>
+                                <span class="toggle-text">ราคารวมภาษีแล้ว</span>
+                            </label>
+                        </label>
+                        <label class="field-block field-span">
+                            <span class="field-label">สเปคสินค้า</span>
+                            <textarea id="lineSpec" rows="2" placeholder="รายละเอียดสเปค"></textarea>
+                        </label>
+                        <label class="field-block field-span">
+                            <span class="field-label">หมายเหตุสินค้า</span>
+                            <textarea id="lineItemNote" rows="2" placeholder="ข้อมูลอื่น ๆ"></textarea>
+                        </label>
+                        <label class="field-block field-span">
+                            <span class="field-label">หมายเหตุเพิ่มเติม</span>
+                            <textarea id="lineNote" rows="2" placeholder="บันทึกภายใน"></textarea>
+                        </label>
+                    </div>
+                    <footer class="modal-actions">
+                        <button class="btn btn-ghost" type="button" data-modal-dismiss>ยกเลิก</button>
+                        <button class="btn btn-secondary" type="submit" id="quotationLineSave">บันทึกรายละเอียด</button>
+                    </footer>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="unsavedBanner" class="unsaved-banner request-unsaved" role="status" hidden>
+        <span class="unsaved-text">ยังมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</span>
+        <div class="unsaved-actions">
+            <button type="button" class="unsaved-btn unsaved-btn-muted" id="quotationBtnDiscard">ยกเลิกการเปลี่ยนแปลง</button>
+            <button type="button" class="unsaved-btn unsaved-btn-primary" id="quotationBtnSaveInline">บันทึกตอนนี้</button>
+        </div>
+    </div>
 
     <script src="../../Controller/common/admin_shell.js" defer></script>
     <script src="../../Controller/common/role_guard.js" defer></script>

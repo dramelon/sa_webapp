@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
-require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -316,8 +315,6 @@ try {
         }
         $deleteStmt->execute();
     }
-
-    recordAuditEvent($db, 'supplier_quotation', $quotationId, 'UPDATE', $staffId, 'ปรับปรุงใบเสนอราคา');
 
     $db->commit();
 
