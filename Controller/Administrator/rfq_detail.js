@@ -45,6 +45,9 @@
     const rfqAuditList = document.getElementById('rfqAuditList');
     const rfqAuditEmpty = document.getElementById('rfqAuditEmpty');
     const rfqAuditLink = document.getElementById('rfqAuditLink');
+    const rfqForwardCard = document.getElementById('rfqForwardCard');
+    const rfqForwardButton = document.getElementById('rfqForwardButton');
+    const rfqForwardMessage = document.getElementById('rfqForwardMessage');
 
     const unsavedBanner = document.getElementById('unsavedBanner');
     const unsavedModal = document.getElementById('unsavedModal');
@@ -62,6 +65,7 @@
     let rfqInfo = null;
     let eventInfo = null;
     let staffInfo = null;
+    let currentStatus = 'draft';
     let isHydrating = false;
     let isDirty = false;
     let isSaving = false;
@@ -172,6 +176,7 @@
             }
         }
         updateSaveButtonState();
+        updateForwardingCard();
     }
 
     function openUnsavedModal() {
@@ -725,6 +730,36 @@
         statusDescription.textContent = message;
     }
 
+    function updateForwardingCard() {
+        if (!rfqForwardCard || !rfqForwardButton || !rfqForwardMessage) return;
+
+        const normalized = normalizeStatus(currentStatus || statusSelect?.value);
+        const hasRfqId = Boolean(rfqId);
+        const isCompleted = normalized === 'completed';
+        const shouldShow = isCompleted && hasRfqId;
+
+        rfqForwardCard.hidden = !shouldShow;
+        rfqForwardCard.setAttribute('aria-hidden', rfqForwardCard.hidden ? 'true' : 'false');
+
+        if (!shouldShow) {
+            return;
+        }
+
+        let message = 'เมื่อส่งแล้วจะบันทึกว่ามีการส่ง RFQ ให้ซัพพลายเออร์ที่เลือก';
+        let disabled = false;
+
+        if (!hasRfqId) {
+            message = 'กรุณาบันทึก RFQ ก่อนส่งต่อ';
+            disabled = true;
+        } else if (isDirty) {
+            message = 'กรุณาบันทึกการเปลี่ยนแปลงล่าสุดก่อนส่ง RFQ';
+            disabled = true;
+        }
+
+        rfqForwardMessage.textContent = message;
+        rfqForwardButton.disabled = disabled;
+    }
+
     function updateStatusControls(status = 'draft') {
         const normalized = normalizeStatus(status);
         const isDraft = normalized === 'draft';
@@ -755,6 +790,7 @@
     function setStatusChip(status = 'draft') {
         const normalized = normalizeStatus(status);
         updateStatusControls(normalized);
+        currentStatus = normalized;
         if (statusBadge) {
             statusBadge.dataset.status = normalized;
         }
@@ -763,6 +799,7 @@
                 normalized === 'completed' ? 'ยืนยันแล้ว' : normalized === 'cancelled' ? 'ยกเลิก' : 'ร่าง';
             statusText.textContent = `สถานะ: ${displayLabel}`;
         }
+        updateForwardingCard();
     }
 
     async function handleSave() {
@@ -865,6 +902,17 @@
         if (btnSaveInline) {
             btnSaveInline.addEventListener('click', async () => {
                 await handleSave();
+            });
+        }
+        if (rfqForwardButton) {
+            rfqForwardButton.addEventListener('click', () => {
+                if (!rfqId) return;
+                const url = new URL('./RFQ_Forwarding.html', window.location.href);
+                url.searchParams.set('rfq_id', rfqId);
+                if (eventId) {
+                    url.searchParams.set('event_id', eventId);
+                }
+                window.location.href = `${url.pathname}${url.search}`;
             });
         }
         if (btnDiscardChanges) {

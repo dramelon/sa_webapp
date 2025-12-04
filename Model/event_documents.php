@@ -159,9 +159,64 @@ try {
 
     $rfqAuditMeta = fetchAuditMetadataForEntities($db, 'supplier_rfq', $rfqIds);
 
+    $quotationSql = <<<SQL
+        SELECT
+            q.SupplierQuotationID,
+            q.RefSupplierQuotationID,
+            q.SupplierRFQID,
+            q.SupplierID,
+            q.Title,
+            q.Status,
+            s.SupplierName,
+            s.OrgName,
+            s.RefSupplierID
+        FROM supplier_quotation q
+        LEFT JOIN suppliers s ON s.SupplierID = q.SupplierID
+        WHERE q.SupplierRFQID IN (
+            SELECT SupplierRFQID FROM supplier_rfq WHERE EventID = :event_id
+        )
+        ORDER BY q.SupplierQuotationID DESC
+    SQL;
+
+    $quotationStmt = $db->prepare($quotationSql);
+    $quotationStmt->execute([':event_id' => $eventId]);
+    $quotationRows = $quotationStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $quotationIds = [];
+    $quotationLineStats = [];
+    if ($quotationRows) {
+        foreach ($quotationRows as $row) {
+            $quotationIds[] = (int) $row['SupplierQuotationID'];
+        }
+        $quotationPlaceholder = implode(',', array_fill(0, count($quotationIds), '?'));
+        $quotationLineSql = <<<SQL
+            SELECT
+                l.SupplierQuotationID,
+                COUNT(*) AS line_count,
+                COALESCE(SUM(l.QuantityOffered), 0) AS total_quantity
+            FROM supplier_quotation_line l
+            WHERE l.SupplierQuotationID IN ($quotationPlaceholder)
+            GROUP BY l.SupplierQuotationID
+        SQL;
+        $quotationLineStmt = $db->prepare($quotationLineSql);
+        foreach ($quotationIds as $index => $quotationId) {
+            $quotationLineStmt->bindValue($index + 1, (int) $quotationId, PDO::PARAM_INT);
+        }
+        $quotationLineStmt->execute();
+        while ($line = $quotationLineStmt->fetch(PDO::FETCH_ASSOC)) {
+            $quotationLineStats[(int) $line['SupplierQuotationID']] = [
+                'line_count' => (int) $line['line_count'],
+                'total_quantity' => (int) $line['total_quantity'],
+            ];
+        }
+    }
+
+    $quotationAuditMeta = fetchAuditMetadataForEntities($db, 'supplier_quotation', $quotationIds);
+
     $statusMeta = [
         'draft' => 'ร่าง',
         'submitted' => 'ส่งคำขอ',
+        'pending' => 'รออนุมัติ',
         'approved' => 'อนุมัติแล้ว',
         'closed' => 'ปิดคำขอ',
         'cancelled' => 'ยกเลิก',
@@ -173,6 +228,7 @@ try {
     $categoryCounts = [
         'item-request' => 0,
         'rfq' => 0,
+        'quotation' => 0,
     ];
 
     foreach ($requestRows as $row) {
@@ -262,6 +318,46 @@ try {
         ];
     }
 
+    foreach ($quotationRows as $row) {
+        $quotationId = (int) $row['SupplierQuotationID'];
+        $statusKey = strtolower((string) $row['Status']);
+        if (!isset($statusMeta[$statusKey])) {
+            $statusMeta[$statusKey] = $statusKey !== '' ? ucfirst($statusKey) : 'อื่น ๆ';
+        }
+        if (!isset($statusCounts[$statusKey])) {
+            $statusCounts[$statusKey] = 0;
+        }
+        $statusCounts[$statusKey] += 1;
+        $categoryCounts['quotation'] += 1;
+
+        $audit = $quotationAuditMeta[$quotationId] ?? buildEmptyAuditMetadata();
+        $lineStat = $quotationLineStats[$quotationId] ?? ['line_count' => 0, 'total_quantity' => 0];
+        $supplierName = $row['SupplierName'] ?? $row['OrgName'] ?? '';
+
+        $documents[] = [
+            'id' => sprintf('quotation:%d', $quotationId),
+            'document_id' => $quotationId,
+            'category' => 'quotation',
+            'type' => 'quotation',
+            'type_label' => 'ใบเสนอราคา',
+            'title' => $row['Title'] ?? ($supplierName !== '' ? $supplierName : sprintf('ใบเสนอราคา #%d', $quotationId)),
+            'reference' => $row['RefSupplierQuotationID'] ?? sprintf('QTN#%d', $quotationId),
+            'status' => $statusKey,
+            'status_label' => $statusMeta[$statusKey] ?? $row['Status'],
+            'owner_id' => $audit['created_by_id'] ?? null,
+            'owner_name' => $audit['created_by_name'] ?? $supplierName,
+            'owner_label' => $audit['created_by_name'] ? formatStaffLabel($audit['created_by_id'], $audit['created_by_name'], $audit['created_by_role']) : $supplierName,
+            'created_at' => $audit['created_at'],
+            'updated_at' => $audit['updated_at'],
+            'updated_by_id' => $audit['updated_by_id'],
+            'updated_by_name' => $audit['updated_by_name'],
+            'updated_by_label' => formatStaffLabel($audit['updated_by_id'], $audit['updated_by_name'], $audit['updated_by_role']),
+            'line_count' => $lineStat['line_count'],
+            'total_quantity' => $lineStat['total_quantity'],
+            'lines' => [],
+        ];
+    }
+
     ksort($statusMeta);
     ksort($statusCounts);
 
@@ -294,6 +390,12 @@ try {
             'description' => 'ติดตามคำขอใบเสนอราคาที่ส่งให้ผู้ขาย',
             'total' => $categoryCounts['rfq'],
         ],
+        [
+            'id' => 'quotation',
+            'label' => 'ใบเสนอราคา',
+            'description' => 'รวมใบเสนอราคาที่ส่งให้ซัพพลายเออร์',
+            'total' => $categoryCounts['quotation'],
+        ],
     ];
 
     $eventPayload = [
@@ -315,6 +417,7 @@ try {
             'by_category' => [
                 'item-request' => $categoryCounts['item-request'],
                 'rfq' => $categoryCounts['rfq'],
+                'quotation' => $categoryCounts['quotation'],
             ],
         ],
         'documents' => $documents,

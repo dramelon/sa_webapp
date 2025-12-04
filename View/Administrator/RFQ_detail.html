@@ -53,38 +53,56 @@
             </div>
         </section>
 
-        <section class="detail-card request-status-card">
-            <header class="detail-card-head">
-                <div>
-                    <h3>สถานะ RFQ</h3>
-                    <p>จัดการขั้นตอนการยืนยันหรือยกเลิกใบขอราคา</p>
+        <section class="request-status-grid">
+            <section class="detail-card request-status-card">
+                <header class="detail-card-head">
+                    <div>
+                        <h3>สถานะ RFQ</h3>
+                        <p>จัดการขั้นตอนการยืนยันหรือยกเลิกใบขอราคา</p>
+                    </div>
+                </header>
+                <div class="request-status-body">
+                    <p class="status-helper" id="rfqStatusDescription">ระบุสถานะ RFQ เพื่อดำเนินการต่อ</p>
+                    <label class="field-block">
+                        <span class="field-label">สถานะ RFQ *</span>
+                        <select id="rfqStatusSelect" name="status">
+                            <option value="draft">ร่าง</option>
+                            <option value="completed">ยืนยันแล้ว</option>
+                            <option value="cancelled">ยกเลิก</option>
+                        </select>
+                    </label>
+                    <div class="status-actions" id="rfqStatusActions">
+                        <button class="btn btn-secondary" type="button" id="confirmRfqButton">
+                            <span class="i check"></span>
+                            ยืนยัน RFQ
+                        </button>
+                        <button class="btn btn-ghost" type="button" id="rfqReturnDraftButton">
+                            <span class="i refresh"></span>
+                            กลับเป็นร่าง
+                        </button>
+                        <button class="btn btn-ghost status-danger" type="button" id="cancelRfqButton">
+                            <span class="i trash"></span>
+                            ยกเลิก RFQ
+                        </button>
+                    </div>
                 </div>
-            </header>
-            <div class="request-status-body">
-                <p class="status-helper" id="rfqStatusDescription">ระบุสถานะ RFQ เพื่อดำเนินการต่อ</p>
-                <label class="field-block">
-                    <span class="field-label">สถานะ RFQ *</span>
-                    <select id="rfqStatusSelect" name="status">
-                        <option value="draft">ร่าง</option>
-                        <option value="completed">ยืนยันแล้ว</option>
-                        <option value="cancelled">ยกเลิก</option>
-                    </select>
-                </label>
-                <div class="status-actions" id="rfqStatusActions">
-                    <button class="btn btn-secondary" type="button" id="confirmRfqButton">
-                        <span class="i check"></span>
-                        ยืนยัน RFQ
-                    </button>
-                    <button class="btn btn-ghost" type="button" id="rfqReturnDraftButton">
-                        <span class="i refresh"></span>
-                        กลับเป็นร่าง
-                    </button>
-                    <button class="btn btn-ghost status-danger" type="button" id="cancelRfqButton">
-                        <span class="i trash"></span>
-                        ยกเลิก RFQ
+            </section>
+
+            <section class="detail-card rfq-forward-card" id="rfqForwardCard" hidden aria-hidden="true">
+                <header class="detail-card-head">
+                    <div>
+                        <h3>ส่ง RFQ ให้ซัพพลายเออร์</h3>
+                        <p>เลือกซัพพลายเออร์ที่ต้องการให้ส่งใบขอราคา</p>
+                    </div>
+                </header>
+                <div class="rfq-forward-body">
+                    <p class="status-helper" id="rfqForwardMessage">กรุณายืนยัน RFQ และบันทึกก่อนส่งต่อ</p>
+                    <button class="btn btn-secondary" type="button" id="rfqForwardButton">
+                        <span class="i send"></span>
+                        ไปหน้าส่ง RFQ ให้ซัพพลายเออร์
                     </button>
                 </div>
-            </div>
+            </section>
         </section>
 
         <form id="rfqForm" class="request-detail-form" autocomplete="off">

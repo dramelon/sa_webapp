@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="th" data-root="../.." data-allowed="Administrator">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ใบเสนอราคา</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body data-app-shell="admin" data-page="events" data-shell-title="ระบบจัดการวัสดุอุปกรณ์ - ใบเสนอราคา">
+    <main class="page detail-page request-page">
+        <section class="page-head">
+            <div>
+                <p class="breadcrumb"><a id="quotationBackLink" href="./event_document_manage.html">← กลับไปหน้ารายการเอกสาร</a></p>
+                <h2 id="quotationTitle">กำลังโหลดใบเสนอราคา...</h2>
+                <p class="date" id="quotationPageDate">วัน...</p>
+            </div>
+            <div class="head-actions">
+                <button class="btn btn-ghost" type="button" id="quotationBtnBack">
+                    <span class="i back"></span>
+                    กลับไปหน้าเอกสาร
+                </button>
+                <button class="btn btn-secondary" type="button" id="quotationBtnSave">
+                    <span class="i check"></span>
+                    บันทึกใบเสนอราคา
+                </button>
+            </div>
+        </section>
+
+        <div class="form-alert" id="quotationGlobalMessage" role="alert" hidden></div>
+
+        <section class="detail-meta" aria-live="polite">
+            <div class="meta-primary">
+                <p class="meta-label">อีเว้น</p>
+                <h3 id="quotationEventName">—</h3>
+                <p class="meta-sub" id="quotationEventCode">รหัสอีเว้น: —</p>
+                <p class="meta-sub" id="quotationEventDate">ช่วงเวลา: —</p>
+            </div>
+            <div class="meta-secondary">
+                <span class="status-chip" id="quotationStatusBadge" aria-live="polite">
+                    <span class="dot"></span>
+                    <span id="quotationStatusText">สถานะ: —</span>
+                </span>
+                <div class="meta-group">
+                    <p class="meta-updated" id="quotationUpdatedAt">อัปเดตล่าสุด: —</p>
+                    <p class="meta-updated-by" id="quotationUpdatedBy">ปรับปรุงโดย: —</p>
+                </div>
+                <div class="meta-group">
+                    <p class="meta-created" id="quotationCreatedAt">สร้างเมื่อ: —</p>
+                    <p class="meta-created-by" id="quotationCreatedBy">สร้างโดย: —</p>
+                </div>
+            </div>
+        </section>
+
+        <form id="quotationForm" class="request-detail-form" autocomplete="off">
+            <section class="detail-card request-info-card">
+                <header class="detail-card-head">
+                    <div>
+                        <h3>รายละเอียดใบเสนอราคา</h3>
+                        <p>กำหนดข้อมูลของใบเสนอราคา</p>
+                    </div>
+                    <p class="request-reference" aria-live="polite" id="quotationReferenceMeta">อ้างอิงใบเสนอราคา: —</p>
+                </header>
+                <div class="detail-card-body">
+                    <div class="detail-form-columns">
+                        <div class="detail-column">
+                            <label class="field-block">
+                                <span class="field-label">หัวข้อใบเสนอราคา</span>
+                                <input type="text" id="quotationTitleInput" name="Title" placeholder="หัวข้อของใบเสนอราคา" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">รหัสใบเสนอราคา</span>
+                                <input type="text" id="quotationId" readonly value="ใหม่" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">รหัสอ้างอิงใบเสนอราคา</span>
+                                <input type="text" id="quotationRefId" name="RefSupplierQuotationID" placeholder="รหัสอ้างอิง (ถ้ามี)" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">เจ้าหน้าที่</span>
+                                <input type="text" id="quotationStaffId" name="StaffID" placeholder="รหัสเจ้าหน้าที่" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">ผู้ติดต่อ</span>
+                                <input type="text" id="quotationContactPerson" name="ContactPerson" placeholder="รหัสผู้ติดต่อ" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">ซัพพลายเออร์</span>
+                                <input type="text" id="quotationSupplier" readonly value="—" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">จัดส่งไปที่</span>
+                                <input type="text" id="quotationDeliverTo" name="DeliverTo" placeholder="รหัสสถานที่จัดส่ง" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">หมายเหตุ</span>
+                                <textarea id="quotationNote" name="Note" rows="3" placeholder="รายละเอียดเพิ่มเติมสำหรับใบเสนอราคา"></textarea>
+                            </label>
+                        </div>
+                        <div class="detail-column">
+                            <label class="field-block">
+                                <span class="field-label">อ้างอิง RFQ</span>
+                                <input type="text" id="quotationRfq" readonly value="—" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">เงื่อนไขการชำระเงิน</span>
+                                <select id="quotationPaymentTerm" name="PaymentTerm">
+                                    <option value="30D">30 วัน</option>
+                                    <option value="45D">45 วัน</option>
+                                    <option value="60D">60 วัน</option>
+                                </select>
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วิธีการชำระเงิน</span>
+                                <select id="quotationPaymentMethod" name="PaymentMethod">
+                                    <option value="bank">โอนธนาคาร</option>
+                                    <option value="credit">บัตรเครดิต</option>
+                                    <option value="cash">เงินสด</option>
+                                    <option value="others">อื่น ๆ</option>
+                                </select>
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันหมดอายุราคา</span>
+                                <input type="datetime-local" id="quotationBidValidity" name="BidValidityDays" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันที่เสนอราคา</span>
+                                <input type="datetime-local" id="quotationDate" name="QuotationDate" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันที่สั่งซื้อวัสดุจริง</span>
+                                <input type="datetime-local" id="quotationOrderDate" name="OrderDate" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันที่ครบกำหนดส่งวัสดุจริง</span>
+                                <input type="datetime-local" id="quotationOrderDeadline" name="OrderDeadline" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันที่คาดว่าจะได้รับวัสดุจริง</span>
+                                <input type="datetime-local" id="quotationExpectedArrival" name="ExpectedArrival" />
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">รหัสผู้ขายอ้างอิง</span>
+                                <input type="text" id="quotationRefVendorId" name="RefVendorID" placeholder="Ref Vendor ID" />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="request-audit">
+                    <p>สร้างโดย: <span id="quotationCreatedBy">—</span></p>
+                    <p>อัปเดตล่าสุดโดย: <span id="quotationUpdatedByMeta">—</span></p>
+                </div>
+            </section>
+
+            <section class="detail-card request-status-card">
+                <header class="detail-card-head">
+                    <div>
+                        <h3>สถานะใบเสนอราคา</h3>
+                        <p>ระบุสถานะการอนุมัติใบเสนอราคา</p>
+                    </div>
+                </header>
+                <div class="request-status-body">
+                    <p class="status-helper" id="quotationStatusDescription">เลือกสถานะปัจจุบันของใบเสนอราคา</p>
+                    <label class="field-block">
+                        <span class="field-label">สถานะ *</span>
+                        <select id="quotationStatusSelect" name="status">
+                            <option value="submitted">ส่งแล้ว</option>
+                            <option value="pending">รออนุมัติ</option>
+                            <option value="approved">อนุมัติแล้ว</option>
+                            <option value="cancelled">ยกเลิก</option>
+                            <option value="closed">ปิดใบเสนอราคา</option>
+                        </select>
+                    </label>
+                </div>
+            </section>
+
+            <section class="detail-card">
+                <header class="detail-card-head">
+                    <div>
+                        <h3>รายการสินค้าในใบเสนอราคา</h3>
+                        <p>ระบุรายละเอียด ราคา ส่วนลด และภาษี</p>
+                    </div>
+                    <button class="btn btn-ghost" type="button" id="addQuotationLine">
+                        <span class="i add"></span>
+                        เพิ่มรายการสินค้า
+                    </button>
+                </header>
+                <div class="table-wrap" role="region" aria-live="polite">
+                    <table class="event-table rfq-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">สินค้า</th>
+                                <th scope="col">รายละเอียด</th>
+                                <th scope="col">จำนวน</th>
+                                <th scope="col">ราคา/หน่วย</th>
+                                <th scope="col">ส่วนลด (%)</th>
+                                <th scope="col">ส่วนลด (บาท)</th>
+                                <th scope="col">รวม VAT?</th>
+                                <th scope="col" class="col-actions">การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quotationLinesBody"></tbody>
+                    </table>
+                    <div class="empty-state" id="quotationLinesEmpty" hidden>
+                        <span class="i inbox"></span>
+                        <p>ยังไม่มีรายการสินค้าในใบเสนอราคา</p>
+                    </div>
+                </div>
+            </section>
+        </form>
+    </main>
+
+    <script src="../../Controller/common/admin_shell.js" defer></script>
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Administrator/quotation_detail.js" defer></script>
+</body>
+
+</html>

@@ -695,6 +695,11 @@
             window.location.href = `./RFQ_detail.html?${params.toString()}`;
             return;
         }
+        if (docType === 'quotation') {
+            params.set('supplier_quotation_id', doc.document_id);
+            window.location.href = `./quotation_detail.html?${params.toString()}`;
+            return;
+        }
         params.set('request_id', doc.document_id);
         window.location.href = `./item_request_detail.html?${params.toString()}`;
     }

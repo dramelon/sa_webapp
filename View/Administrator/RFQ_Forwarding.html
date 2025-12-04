@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="th" data-root="../.." data-allowed="Administrator">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ส่ง RFQ ให้ซัพพลายเออร์</title>
+    <link rel="stylesheet" href="../../style.css" />
+</head>
+
+<body data-app-shell="admin" data-page="rfq-forwarding" data-shell-title="ระบบจัดการวัสดุอุปกรณ์ - ส่ง RFQ ให้ซัพพลายเออร์">
+    <main class="page detail-page">
+        <section class="page-head">
+            <div>
+                <p class="breadcrumb"><a id="forwardBackLink" href="./RFQ_detail.html">← กลับไปหน้า RFQ</a></p>
+                <h2 id="forwardTitle">กำลังโหลด RFQ...</h2>
+                <p class="date" id="pageDate">วัน...</p>
+            </div>
+        </section>
+
+        <section class="detail-meta">
+            <div class="meta-primary">
+                <p class="meta-label">RFQ</p>
+                <h3 id="rfqName">—</h3>
+                <p class="meta-sub" id="rfqCode">รหัส RFQ: —</p>
+                <p class="meta-sub" id="rfqEventLabel">อีเว้น: —</p>
+            </div>
+            <div class="meta-secondary">
+                <span class="status-chip" id="rfqForwardStatusChip" aria-live="polite">
+                    <span class="dot"></span>
+                    <span id="rfqForwardStatusText">สถานะ: —</span>
+                </span>
+                <div class="meta-group">
+                    <p class="meta-updated" id="rfqForwardUpdatedAt">อัปเดตล่าสุด: —</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="detail-card request-lines-card">
+            <header class="request-lines-head">
+                <div>
+                    <h3>ส่ง RFQ ให้ซัพพลายเออร์</h3>
+                    <p>เลือกซัพพลายเออร์ที่จะรับใบขอราคา</p>
+                </div>
+                <div class="request-lines-actions">
+                    <label class="field search">
+                        <span class="i search"></span>
+                        <input type="search" id="supplierSearch" placeholder="ค้นหาซัพพลายเออร์ด้วยชื่อ รหัส หรือผู้ติดต่อ" />
+                    </label>
+                </div>
+            </header>
+            <div class="form-alert" id="forwardMessage" role="alert" hidden></div>
+            <div class="table-wrap" role="region" aria-live="polite">
+                <table class="event-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">รหัสซัพพลายเออร์</th>
+                            <th scope="col">ชื่อ / องค์กร</th>
+                            <th scope="col">ผู้ติดต่อ</th>
+                            <th scope="col">ช่องทางติดต่อ</th>
+                            <th scope="col">สถานะ</th>
+                            <th scope="col" class="col-actions">การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="forwardSupplierTableBody"></tbody>
+                </table>
+                <div class="empty-state" id="forwardEmptyState" aria-hidden="true">
+                    <span class="i inbox"></span>
+                    <p>ยังไม่มีซัพพลายเออร์ที่ตรงกับตัวกรอง</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="../../Controller/common/admin_shell.js" defer></script>
+    <script src="../../Controller/common/role_guard.js" defer></script>
+    <script src="../../Controller/common/ui_shell.js" defer></script>
+    <script src="../../Controller/Administrator/rfq_forwarding.js" defer></script>
+</body>
+
+</html>

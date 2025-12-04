@@ -335,8 +335,52 @@ CREATE TABLE supplier_rfq_line (
     Note                  TEXT DEFAULT NULL
 );
 
--- SUPPLER_RFQ_LOG v1
-CREATE TABLE supplier_rfq_log (
-    SupplierRFQID         BIGINT UNSIGNED NOT NULL,
-    SupplierID            BIGINT UNSIGNED NOT NULL
+-- -- SUPPLER_RFQ_LOG v2
+-- CREATE TABLE supplier_rfq_log (
+--     SupplierRFQID         BIGINT UNSIGNED NOT NULL,
+--     SupplierID            BIGINT UNSIGNED NOT NULL,
+--     Status                ENUM('submitted','pending','approved','cancelled','closed') NOT NULL DEFAULT 'submitted'
+-- );
+
+
+
+
+-- SUPPLIER QUOTATION v1
+CREATE TABLE supplier_quotation (
+    SupplierQuotationID        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    RefSupplierQuotationID     VARCHAR(30) UNIQUE DEFAULT NULL,
+    SupplierRFQID              BIGINT UNSIGNED NOT NULL,
+    SupplierID                 BIGINT UNSIGNED NOT NULL,
+    StaffID                    BIGINT UNSIGNED NOT NULL,
+    ContactPerson              BIGINT UNSIGNED NOT NULL,
+    Title                      VARCHAR(255) NOT NULL,
+    BidValidityDays            DATETIME NOT NULL,
+    QuotationDate              DATETIME NOT NULL,
+    OrderDate                  DATETIME NOT NULL,
+    OrderDeadline              DATETIME NOT NULL,
+    ExpectedArrival            DATETIME NOT NULL,
+    PaymentTerm                VARCHAR(30) NOT NULL DEFAULT '30D',
+    PaymentMethod              ENUM('bank','credit','cash','others') NOT NULL DEFAULT 'bank',
+    DeliverTo                  BIGINT UNSIGNED NOT NULL,
+    RefVendorID                VARCHAR(30) DEFAULT NULL,
+    Note                       TEXT DEFAULT NULL,
+    Status                     ENUM('submitted','pending','approved','cancelled','closed') NOT NULL DEFAULT 'submitted'
+);
+
+-- SUPPLIER_QUOTATION_LINE v1
+CREATE TABLE supplier_quotation_line (
+    SupplierQuotationLineID    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    SupplierQuotationID        BIGINT UNSIGNED NOT NULL,
+    SupplierRFQLineID          BIGINT UNSIGNED DEFAULT NULL,
+    ItemID                     BIGINT UNSIGNED NOT NULL,
+    ItemDesc                   TEXT NOT NULL,
+    ItemSpec                   TEXT DEFAULT NULL,
+    ItemNote                   TEXT DEFAULT NULL,
+    UOM                        VARCHAR(50) NOT NULL DEFAULT 'unit',
+    QuantityOffered            INT UNSIGNED NOT NULL DEFAULT 0,
+    UnitPrice                  DECIMAL(12,2) NOT NULL DEFAULT 0,
+    DiscountPercent            DECIMAL(12,2) DEFAULT NULL,
+    DiscountAmount             DECIMAL(12,2) DEFAULT NULL,
+    TaxInclude                 BOOLEAN NOT NULL DEFAULT TRUE,
+    Note                       TEXT DEFAULT NULL
 );

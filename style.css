@@ -1896,10 +1896,32 @@ body {
     gap: 18px;
 }
 
+.request-status-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    align-items: stretch;
+}
+
 .request-status-card {
     margin: 0;
     display: grid;
     gap: 16px;
+}
+
+.rfq-forward-card {
+    display: grid;
+    gap: 14px;
+}
+
+.rfq-forward-body {
+    display: grid;
+    gap: 12px;
+}
+
+.rfq-forward-card .btn {
+    min-width: 240px;
+    justify-self: flex-start;
 }
 
 .request-status-body {
