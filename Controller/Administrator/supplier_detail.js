@@ -183,6 +183,10 @@
         };
     }
 
+    function markDirty() {
+        setDirtyState(true);
+    }
+
     function handleFieldMutated() {
         markDirty();
     }
@@ -1048,10 +1052,10 @@
             });
         }
 
-    if (locationModalForm) {
-        preventEnterSubmit(locationModalForm);
-        locationModalForm.addEventListener('submit', submitLocationModal);
-    }
+        if (locationModalForm) {
+            preventEnterSubmit(locationModalForm);
+            locationModalForm.addEventListener('submit', submitLocationModal);
+        }
         document.querySelectorAll('[data-modal-dismiss]').forEach((element) => {
             element.addEventListener('click', () => {
                 const modal = element.closest('.modal');

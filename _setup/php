@@ -44,16 +44,18 @@ CREATE TABLE announcements (
 
 
 
--- AUDITLOGS v1
+-- AUDITLOGS v2
 CREATE TABLE audit (
     AuditID    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    EntityType ENUM(
-        'staff', 'location', 'customer', 'supplier', 'warehouse',
-        'item', 'item_unit', 'item_category',
-        'event',
-        'request', 'rfq', 'quotation', 'po', 'deliveryin', 'deliveryout', 'receipt',' otherdocs',
-        'announcement'
-        ) NOT NULL,
+    EntityType VARCHAR(100) NOT NULL,
+    -- EntityType ENUM(
+    --     'staff', 'location', 'customer', 'supplier', 'warehouse',
+    --     'item', 'item_unit', 'item_category',
+    --     'event',
+    --     'request', 'rfq', 'quotation', 'po', 'deliveryin', 'deliveryout', 'receipt',' otherdocs',
+    --     'supplier_quotation','supplier_quotation_line','supplier_rfq','supplier_rfq_line','supplier_rfq_forwarding','supplier_rfq_forwarding_line',
+    --     'announcement'
+    --     ) NOT NULL,
     EntityID   BIGINT UNSIGNED NOT NULL,
     Action     ENUM('CREATE', 'UPDATE', 'ARCHIVE', 'UNARCHIVED', 'DELETE') NOT NULL,
     Reason     TEXT DEFAULT NULL,
@@ -307,6 +309,7 @@ CREATE TABLE request_fulfillment_line (
 CREATE TABLE supplier_rfq (
     SupplierRFQID       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     RefSupplierRFQID    VARCHAR(30) UNIQUE DEFAULT NULL,
+    RequestID           BIGINT UNSIGNED NOT NULL,
     EventID             BIGINT UNSIGNED NOT NULL,
     StaffID             BIGINT UNSIGNED NOT NULL,
     ContactPerson       BIGINT UNSIGNED NOT NULL,

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -140,7 +141,7 @@ try {
 
     $db->beginTransaction();
 
-    $quotationStmt = $db->prepare('SELECT SupplierQuotationID, SupplierRFQID, SupplierID, DeliverTo FROM supplier_quotation WHERE SupplierQuotationID = :id LIMIT 1');
+    $quotationStmt = $db->prepare('SELECT * FROM supplier_quotation WHERE SupplierQuotationID = :id LIMIT 1');
     $quotationStmt->bindValue(':id', $quotationId, PDO::PARAM_INT);
     $quotationStmt->execute();
     $quotationRow = $quotationStmt->fetch(PDO::FETCH_ASSOC);
@@ -315,6 +316,40 @@ try {
         }
         $deleteStmt->execute();
     }
+
+    // Calculate changes for audit log
+    $changes = [];
+    $fieldsToCheck = [
+        'RefSupplierQuotationID' => ['label' => 'Ref ID', 'new' => $refQuotationId],
+        'StaffID' => ['label' => 'Staff ID', 'new' => $staffId],
+        'ContactPerson' => ['label' => 'Contact Person', 'new' => $contactPerson],
+        'Title' => ['label' => 'Title', 'new' => $title],
+        'BidValidityDays' => ['label' => 'Bid Validity', 'new' => $bidValidity],
+        'QuotationDate' => ['label' => 'Quotation Date', 'new' => $quotationDate],
+        'OrderDate' => ['label' => 'Order Date', 'new' => $orderDate],
+        'OrderDeadline' => ['label' => 'Order Deadline', 'new' => $orderDeadline],
+        'ExpectedArrival' => ['label' => 'Expected Arrival', 'new' => $expectedArrival],
+        'PaymentTerm' => ['label' => 'Payment Term', 'new' => $paymentTerm],
+        'PaymentMethod' => ['label' => 'Payment Method', 'new' => $paymentMethod],
+        'DeliverTo' => ['label' => 'Deliver To', 'new' => $deliverTarget],
+        'RefVendorID' => ['label' => 'Vendor Ref ID', 'new' => $refVendorId],
+        'Note' => ['label' => 'Note', 'new' => $note],
+        'Status' => ['label' => 'Status', 'new' => $status],
+    ];
+
+    foreach ($fieldsToCheck as $field => $config) {
+        $oldValue = $quotationRow[$field];
+        $newValue = $config['new'];
+
+        // Normalize for comparison
+        if ($oldValue === null && $newValue === null) continue;
+        if ($oldValue == $newValue) continue; // Loose comparison for string/int mismatch
+
+        $changes[] = sprintf("%s changed from '%s' to '%s'", $config['label'], $oldValue ?? 'null', $newValue ?? 'null');
+    }
+
+    $auditReason = empty($changes) ? 'Updated quotation details (No specific header changes detected)' : implode(', ', $changes);
+    recordAuditEvent($db, 'supplier_quotation', $quotationId, 'UPDATE', $staffId, $auditReason);
 
     $db->commit();
 

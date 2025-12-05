@@ -126,11 +126,20 @@
 
     function setBackLinks() {
         if (!backLink && !backButton) return;
-        const url = new URL('./event_document_manage.html', window.location.href);
-        if (eventId) {
-            url.searchParams.set('event_id', eventId);
+
+        const returnTo = params.get('return_to');
+        let target = '';
+
+        if (returnTo) {
+            target = decodeURIComponent(returnTo);
+        } else {
+            const url = new URL('./event_document_manage.html', window.location.href);
+            if (eventId) {
+                url.searchParams.set('event_id', eventId);
+            }
+            target = `${url.pathname}${url.search}`;
         }
-        const target = `${url.pathname}${url.search}`;
+
         if (backLink) backLink.href = target;
         if (backButton) backButton.addEventListener('click', () => {
             window.location.href = target;

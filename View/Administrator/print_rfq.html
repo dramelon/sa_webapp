@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ใบขอเสนอราคา (RFQ)</title>
+    <link rel="stylesheet" href="../../style.css" />
+    <style>
+        @media print {
+            @page {
+                size: A4;
+                margin: 2cm;
+            }
+
+            body {
+                background: white;
+                font-size: 12pt;
+                color: black;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+        }
+
+        body {
+            background: #f5f5f5;
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        .paper {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 2rem auto;
+            padding: 2cm;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #000;
+            padding-bottom: 1rem;
+        }
+
+        .company-info h1 {
+            font-size: 24pt;
+            margin: 0 0 0.5rem 0;
+            color: #000;
+        }
+
+        .company-info p {
+            margin: 0;
+            color: #555;
+            font-size: 10pt;
+        }
+
+        .doc-info {
+            text-align: right;
+        }
+
+        .doc-info h2 {
+            font-size: 18pt;
+            margin: 0 0 0.5rem 0;
+            color: #000;
+            text-transform: uppercase;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-box h3 {
+            font-size: 11pt;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.25rem;
+            margin-bottom: 0.5rem;
+            color: #000;
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 0.25rem;
+        }
+
+        .label {
+            width: 100px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .value {
+            flex: 1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+
+        th {
+            background: #f0f0f0;
+            border-bottom: 1px solid #000;
+            padding: 0.5rem;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        td {
+            border-bottom: 1px solid #ddd;
+            padding: 0.5rem;
+            vertical-align: top;
+        }
+
+        .col-num {
+            width: 50px;
+            text-align: center;
+        }
+
+        .col-qty {
+            width: 80px;
+            text-align: right;
+        }
+
+        .col-unit {
+            width: 60px;
+            text-align: center;
+        }
+
+        .footer {
+            margin-top: 4rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            page-break-inside: avoid;
+        }
+
+        .signature-box {
+            text-align: center;
+        }
+
+        .signature-line {
+            border-bottom: 1px solid #000;
+            height: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .actions {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        @media print {
+            .paper {
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+
+            .actions {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="actions no-print">
+        <button onclick="window.print()" class="btn btn-secondary">พิมพ์ / บันทึก PDF</button>
+        <button onclick="window.close()" class="btn btn-ghost">ปิด</button>
+    </div>
+
+    <div class="paper">
+        <header class="header">
+            <div class="company-info">
+                <h1>บริษัท อีเว้นท์ จำกัด</h1>
+                <p>123 ถนนตัวอย่าง แขวงตัวอย่าง เขตตัวอย่าง</p>
+                <p>กรุงเทพมหานคร 10110</p>
+                <p>โทร: 02-123-4567 | อีเมล: purchase@event.co.th</p>
+            </div>
+            <div class="doc-info">
+                <h2>ใบขอเสนอราคา</h2>
+                <p>Request for Quotation</p>
+            </div>
+        </header>
+
+        <div class="info-grid">
+            <div class="info-box">
+                <h3>ข้อมูลผู้ขาย (Vendor)</h3>
+                <div class="info-row">
+                    <span class="label">ชื่อผู้ขาย:</span>
+                    <span class="value" id="vendorName">_______________________</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">ผู้ติดต่อ:</span>
+                    <span class="value" id="vendorContact">_______________________</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">โทรศัพท์:</span>
+                    <span class="value" id="vendorPhone">_______________________</span>
+                </div>
+            </div>
+            <div class="info-box">
+                <h3>ข้อมูลเอกสาร</h3>
+                <div class="info-row">
+                    <span class="label">เลขที่ RFQ:</span>
+                    <span class="value" id="rfqId">—</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">วันที่:</span>
+                    <span class="value" id="rfqDate">—</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">ครบกำหนด:</span>
+                    <span class="value" id="rfqDueDate">—</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">ผู้ติดต่อเรา:</span>
+                    <span class="value" id="contactPerson">—</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box" style="margin-bottom: 2rem;">
+            <h3>รายละเอียดโครงการ / อีเว้นท์</h3>
+            <div class="info-row">
+                <span class="label" style="width: 120px;">ชื่องาน:</span>
+                <span class="value" id="eventName">—</span>
+            </div>
+            <div class="info-row">
+                <span class="label" style="width: 120px;">สถานที่จัดส่ง:</span>
+                <span class="value" id="deliverTo">—</span>
+            </div>
+            <div class="info-row">
+                <span class="label" style="width: 120px;">กำหนดส่งของ:</span>
+                <span class="value" id="deliveryDate">—</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-num">ลำดับ</th>
+                    <th>รายการสินค้า / รายละเอียด</th>
+                    <th class="col-qty">จำนวน</th>
+                    <th class="col-unit">หน่วย</th>
+                    <th>หมายเหตุ</th>
+                </tr>
+            </thead>
+            <tbody id="itemsBody">
+                <!-- Items will be populated here -->
+            </tbody>
+        </table>
+
+        <div class="info-box">
+            <h3>เงื่อนไขและข้อกำหนด</h3>
+            <div class="info-row">
+                <span class="label" style="width: 150px;">เงื่อนไขการชำระเงิน:</span>
+                <span class="value" id="paymentTerm">—</span>
+            </div>
+            <div class="info-row">
+                <span class="label" style="width: 150px;">ยืนยันราคาภายใน:</span>
+                <span class="value" id="validityDays">— วัน</span>
+            </div>
+            <div class="info-row">
+                <span class="label" style="width: 150px;">หมายเหตุเพิ่มเติม:</span>
+                <span class="value" id="note">—</span>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <p>ผู้จัดทำ / ผู้ขอราคา</p>
+                <p id="creatorName">(_______________________)</p>
+                <p>วันที่: ____/____/____</p>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <p>ผู้เสนอราคา (Supplier)</p>
+                <p>(_______________________)</p>
+                <p>วันที่: ____/____/____</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="../../Controller/Administrator/print_rfq.js" defer></script>
+</body>
+
+</html>

@@ -1696,6 +1696,20 @@ body {
     outline: none;
 }
 
+.field-block.has-error input,
+.field-block.has-error select,
+.field-block.has-error textarea {
+    border-color: #d4523f;
+    box-shadow: 0 0 0 3px rgba(212, 82, 63, 0.2);
+}
+
+.field-block.has-warning input,
+.field-block.has-warning select,
+.field-block.has-warning textarea {
+    border-color: #ff9d4c;
+    box-shadow: 0 0 0 3px rgba(255, 157, 76, 0.2);
+}
+
 .field-block textarea {
     min-height: 120px;
     resize: vertical;

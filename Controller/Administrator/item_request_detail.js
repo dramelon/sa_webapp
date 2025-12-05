@@ -49,6 +49,10 @@
     const incompleteCancelButton = document.getElementById('incompleteCancelButton');
     const incompleteEditButton = document.getElementById('incompleteEditButton');
     const incompleteMakeRfqButton = document.getElementById('incompleteMakeRfqButton');
+    const statusConfirmModal = document.getElementById('statusConfirmModal');
+    const statusConfirmModalTitle = document.getElementById('statusConfirmModalTitle');
+    const statusConfirmModalDescription = document.getElementById('statusConfirmModalDescription');
+    const statusConfirmButton = document.getElementById('statusConfirmButton');
 
     let modelRoot = '';
     let eventId = initialEventId ? String(initialEventId) : '';
@@ -90,6 +94,11 @@
             model: line.model ?? '',
             quantity: Number.isFinite(Number(line.quantity)) ? Number(line.quantity) : 0,
             note: line.note ?? '',
+            // Preserve fulfillment data
+            fulfillment_line_count: line.fulfillment_line_count ?? 0,
+            fulfillment: line.fulfillment ?? null,
+            fulfilled_quantity: line.fulfilled_quantity ?? 0,
+            quantity_fulfilled: line.quantity_fulfilled ?? 0,
         };
     }
 
@@ -97,8 +106,8 @@
         const status = normalizeStatus(payload.status);
         const lines = Array.isArray(payload.lines)
             ? payload.lines
-                  .map((line) => cloneLine(line))
-                  .filter((line) => line && Number.isFinite(line.item_id))
+                .map((line) => cloneLine(line))
+                .filter((line) => line && Number.isFinite(line.item_id))
             : [];
         return {
             request_name: typeof payload.request_name === 'string' ? payload.request_name : '',
@@ -247,11 +256,14 @@
             return '—';
         }
         const day = dt.getDate();
-        const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-        const month = monthNames[dt.getMonth()];
+        const months = [
+            'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+        ];
+        const month = months[dt.getMonth()];
         const year = dt.getFullYear() + 543;
         const time = dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
-        return `${day} ${month} ${year} • ${time}`;
+        return `${day} ${month} ${year} เวลา ${time}`;
     }
 
     function formatDateRange(start, end) {
@@ -576,7 +588,7 @@
             resetDraftButton.hidden = !(isSubmitted || isPending);
         }
         if (reviewRequestButton) {
-            reviewRequestButton.hidden = !isSubmitted;
+            reviewRequestButton.hidden = !(isSubmitted || isPending);
         }
         if (approveRequestButton) {
             approveRequestButton.hidden = !isReviewable;
@@ -588,8 +600,8 @@
 
     function updateInteractivity(status) {
         const normalized = normalizeStatus(status);
-        const shouldLockForm = isFormLocked || normalized === 'approved';
-        const shouldLockLines = shouldLockForm || normalized === 'submitted' || normalized === 'pending';
+        const shouldLockForm = isFormLocked || normalized === 'approved' || normalized === 'closed' || normalized === 'cancelled';
+        const shouldLockLines = normalized !== 'draft';
 
         setRequestInfoEditable(!shouldLockForm);
         setRequestLinesEditable(!shouldLockLines, shouldLockForm);
@@ -597,6 +609,17 @@
         if (requestStatusSelect) {
             requestStatusSelect.disabled = false;
         }
+
+        // Toggle Fulfillment Column
+        const showFulfillment = normalized === 'pending' || normalized === 'approved';
+        const fulfillmentHeader = document.querySelector('.col-fulfillment');
+        if (fulfillmentHeader) {
+            fulfillmentHeader.hidden = !showFulfillment;
+        }
+        const fulfillmentCells = document.querySelectorAll('.request-line-fulfillment');
+        fulfillmentCells.forEach(cell => {
+            cell.hidden = !showFulfillment;
+        });
     }
 
     function syncStatusUI(status) {
@@ -737,12 +760,68 @@
             parts.push(item.brand);
         }
         if (item.model) {
-            parts.push(item.model);
+            return parts.join(' • ');
         }
-        return parts.join(' • ');
     }
 
-    function createRequestItemTypeahead({ initialItem = null, onSelect = () => {}, onClear = () => {}, filterResults = null } = {}) {
+    function normalizeProgress(value) {
+        const num = Number(value);
+        return Number.isFinite(num) && num >= 0 ? num : 0;
+    }
+
+    function getFulfillmentCount(line) {
+        const fulfillmentLength = Array.isArray(line?.fulfillment?.lines)
+            ? line.fulfillment.lines.length
+            : null;
+        if (Number.isFinite(line?.fulfillment_line_count)) {
+            return normalizeProgress(line.fulfillment_line_count);
+        }
+        if (fulfillmentLength !== null) {
+            return normalizeProgress(fulfillmentLength);
+        }
+        return normalizeProgress(line?.fulfillment?.quantity_fulfilled ?? line?.fulfilled_quantity ?? line?.quantity_fulfilled);
+    }
+
+    function buildFulfillmentCell(line) {
+        const cell = document.createElement('td');
+        if (!line) {
+            cell.textContent = '—';
+            return cell;
+        }
+
+        const requested = Number(line.quantity);
+        if (!Number.isFinite(requested) || requested <= 0) {
+            cell.textContent = '—';
+            return cell;
+        }
+
+        const fulfilled = getFulfillmentCount(line);
+        const overFilled = fulfilled > requested;
+        const fullyFilled = fulfilled === requested;
+        const hasSome = fulfilled > 0;
+
+        const text = `${fulfilled} จาก ${requested}`;
+        cell.textContent = text;
+
+        if (overFilled) {
+            cell.style.color = 'var(--color-orange, #f59e0b)';
+            cell.style.fontWeight = '500';
+            // Add warning icon or text if needed, but user just asked for color
+            // "if it was more than need, its orange"
+        } else if (fullyFilled) {
+            cell.style.color = 'var(--color-green, #10b981)';
+            cell.style.fontWeight = '500';
+        } else if (hasSome) {
+            cell.style.color = 'var(--color-orange, #f59e0b)';
+            cell.style.fontWeight = '500';
+        } else {
+            cell.style.color = 'inherit'; // Black/Default
+        }
+
+        return cell;
+    }
+
+    function createRequestItemTypeahead({ initialItem = null, onSelect = () => { }, onClear = () => { }, filterResults = null } = {}) {
         const root = document.createElement('div');
         root.className = 'typeahead';
         const input = document.createElement('input');
@@ -1085,16 +1164,16 @@
         const initialItem =
             initial && initial.item_id
                 ? {
-                      id: initial.item_id,
-                      name: initial.item_name || '',
-                      ref_id: initial.item_reference || '',
-                      rate: initial.rate ?? initial.item_rate ?? null,
-                      period: initial.period ?? initial.item_period ?? '',
-                      uom: initial.uom ?? initial.item_uom ?? '',
-                      category_name: initial.category_name || initial.item_category || '',
-                      brand: initial.brand || initial.item_brand || '',
-                      model: initial.model || initial.item_model || '',
-                  }
+                    id: initial.item_id,
+                    name: initial.item_name || '',
+                    ref_id: initial.item_reference || '',
+                    rate: initial.rate ?? initial.item_rate ?? null,
+                    period: initial.period ?? initial.item_period ?? '',
+                    uom: initial.uom ?? initial.item_uom ?? '',
+                    category_name: initial.category_name || initial.item_category || '',
+                    brand: initial.brand || initial.item_brand || '',
+                    model: initial.model || initial.item_model || '',
+                }
                 : null;
 
         function updateItemMeta(item) {
@@ -1192,8 +1271,14 @@
         quantityCell.appendChild(quantityField);
 
         const rateCell = document.createElement('td');
-        rateCell.className = 'request-line-cell request-line-rate-cell';
-        rateCell.append(rateValue, rateExtra);
+        rateCell.className = 'request-line-rate-display';
+        rateCell.textContent = formatItemRateDisplay(initialItem);
+
+        const fulfillmentCell = buildFulfillmentCell(initial);
+        fulfillmentCell.className = 'request-line-fulfillment';
+        // Initial visibility check based on current status
+        const currentStatus = normalizeStatus(requestStatusSelect ? requestStatusSelect.value : 'draft');
+        fulfillmentCell.hidden = !(currentStatus === 'pending' || currentStatus === 'approved');
 
         const noteCell = document.createElement('td');
         noteCell.className = 'request-line-cell request-line-note-cell';
@@ -1227,7 +1312,7 @@
         });
         actionCell.appendChild(removeButton);
 
-        row.append(itemCell, quantityCell, rateCell, noteCell, actionCell);
+        row.append(itemCell, quantityCell, rateCell, fulfillmentCell, noteCell, actionCell);
         requestLinesBody.appendChild(row);
         updateRequestLinesEmpty();
         applyRequestLinesFilter();
@@ -1614,6 +1699,49 @@
         });
     }
 
+    function buildMissingLines() {
+        const lines = Array.isArray(requestInfo?.lines) ? requestInfo.lines : [];
+        const missing = [];
+        lines.forEach((line) => {
+            const status = typeof line?.fulfillment_status === 'string' ? line.fulfillment_status.toLowerCase() : '';
+            const requested = getRequestedQuantityFromLine(line);
+            const fulfilled = getFulfilledCountFromLine(line);
+            const remaining = Math.max(0, requested - fulfilled);
+            if (status === 'cancelled' && requested > 0) {
+                missing.push({ ...line, missing_quantity: requested, fulfilled_quantity: fulfilled, requested_quantity: requested });
+                return;
+            }
+            if (remaining > 0) {
+                missing.push({ ...line, missing_quantity: remaining, fulfilled_quantity: fulfilled, requested_quantity: requested });
+            }
+        });
+        return missing;
+    }
+
+    async function createRfq(payload) {
+        const response = await fetch(`${modelRoot}/supplier_rfq_create.php`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+            let errorInfo = { message: 'ไม่สามารถสร้าง RFQ ได้', code: response.status };
+            try {
+                const data = await response.json();
+                errorInfo.message = data?.message || errorInfo.message;
+                errorInfo.code = data?.error || errorInfo.code;
+            } catch (error) {
+                // ignore
+            }
+            const err = new Error(errorInfo.message);
+            throw Object.assign(err, { code: errorInfo.code });
+        }
+        return response.json();
+    }
+
     function promptModal(modal, actions = []) {
         return new Promise((resolve) => {
             if (!modal) {
@@ -1683,16 +1811,44 @@
                     isFormLocked = true;
                 }
                 updateInteractivity('approved');
-                const params = new URLSearchParams();
-                if (requestId) {
-                    params.set('request_id', requestId);
-                }
-                if (eventId) {
-                    params.set('event_id', eventId);
-                }
-                const targetUrl = `./RFQ_detail.html?${params.toString()}`;
-                if (saved) {
+
+                // Create RFQ payload
+                const missing = buildMissingLines();
+                const rfqPayload = {
+                    request_id: requestId ? Number(requestId) : null,
+                    event_id: eventId ? Number(eventId) : requestInfo?.event_id ?? null,
+                    title: `RFQ สำหรับ ${requestInfo?.request_name || ''}`.trim(),
+                    status: 'draft',
+                    missing_lines: missing.map((line) => ({
+                        item_id: line.item_id ?? line.id ?? null,
+                        item_desc: line.item_name || '',
+                        uom: line.item_uom || line.uom || '',
+                        quantity_requested: line.missing_quantity ?? 0,
+                        note: line.note || null,
+                    })),
+                };
+
+                try {
+                    const rfqResult = await createRfq(rfqPayload);
+                    const newRfqId = rfqResult?.data?.supplier_rfq_id;
+
+                    const params = new URLSearchParams();
+                    if (requestId) {
+                        params.set('request_id', requestId);
+                    }
+                    if (eventId) {
+                        params.set('event_id', eventId);
+                    }
+                    if (newRfqId) {
+                        params.set('rfq_id', newRfqId);
+                    }
+
+                    const targetUrl = `./RFQ_detail.html?${params.toString()}`;
                     window.location.href = targetUrl;
+                } catch (error) {
+                    setGlobalMessage(error?.message || 'สร้าง RFQ ไม่สำเร็จ แต่บันทึกคำขอแล้ว', 'error');
+                    isFormLocked = false;
+                    updateInteractivity('approved');
                 }
             }
 
@@ -1702,6 +1858,28 @@
         syncStatusUI('approved');
         markDirty();
         await handleSave();
+    }
+
+    async function confirmAndSaveStatus(targetStatus, title, description, confirmLabel = 'ยืนยัน', onConfirm = null) {
+        if (statusConfirmModalTitle) statusConfirmModalTitle.textContent = title;
+        if (statusConfirmModalDescription) statusConfirmModalDescription.textContent = description;
+        if (statusConfirmButton) statusConfirmButton.textContent = confirmLabel;
+
+        const choice = await promptModal(statusConfirmModal, [
+            { element: statusConfirmButton, value: 'confirm' },
+        ]);
+
+        if (choice !== 'confirm') {
+            return;
+        }
+
+        syncStatusUI(targetStatus);
+        markDirty();
+        const saved = await handleSave();
+
+        if (saved && typeof onConfirm === 'function') {
+            onConfirm();
+        }
     }
 
     function applyEventInfo(info) {
@@ -1834,7 +2012,7 @@
         if (eventId) {
             applyEventInfo(null);
             loadEventInfo()
-                .catch(() => {})
+                .catch(() => { })
                 .finally(() => {
                     const snapshot = { request_name: '', status: 'draft', lines: [] };
                     lastSnapshot = snapshot;
@@ -1881,36 +2059,57 @@
             });
         }
         if (submitRequestButton) {
-            submitRequestButton.addEventListener('click', async () => {
-                const currentStatus = normalizeStatus(requestStatusSelect ? requestStatusSelect.value : 'draft');
-                if (currentStatus === 'draft' && isDirty) {
-                    const confirmChoice = await promptModal(approveConfirmModal, [
-                        { element: approveConfirmButton, value: 'confirm' },
-                    ]);
-                    if (confirmChoice !== 'confirm') {
-                        return;
-                    }
-                }
-                syncStatusUI('submitted');
-                markDirty();
-                await handleSave();
+            submitRequestButton.addEventListener('click', () => {
+                confirmAndSaveStatus(
+                    'submitted',
+                    'ยืนยันการส่งคำขอ',
+                    'คุณต้องการส่งคำขอนี้ใช่หรือไม่? เมื่อส่งแล้วสถานะจะเปลี่ยนเป็น "ส่งคำขอ"',
+                    'ยืนยันส่งคำขอ'
+                );
             });
         }
         if (resetDraftButton) {
             resetDraftButton.addEventListener('click', () => {
-                syncStatusUI('draft');
-                markDirty();
+                confirmAndSaveStatus(
+                    'draft',
+                    'ยืนยันกลับเป็นร่าง',
+                    'คุณต้องการเปลี่ยนสถานะกลับเป็น "ร่าง" ใช่หรือไม่?',
+                    'ยืนยัน'
+                );
             });
         }
         if (cancelRequestButton) {
             cancelRequestButton.addEventListener('click', () => {
-                syncStatusUI('cancelled');
-                markDirty();
+                confirmAndSaveStatus(
+                    'cancelled',
+                    'ยืนยันการยกเลิกคำขอ',
+                    'คุณต้องการยกเลิกคำขอนี้ใช่หรือไม่? การดำเนินการนี้ไม่สามารถเรียกคืนได้',
+                    'ยืนยันยกเลิก'
+                );
             });
         }
         if (reviewRequestButton) {
             reviewRequestButton.addEventListener('click', () => {
-                moveToReviewPage();
+                const currentStatus = normalizeStatus(requestStatusSelect ? requestStatusSelect.value : 'draft');
+                if (currentStatus === 'pending') {
+                    // Already pending, just navigate (maybe confirm navigation?)
+                    // Requirement says "always showing a popup", so let's confirm navigation too
+                    confirmAndSaveStatus(
+                        'pending',
+                        'ยืนยันการตรวจสอบ',
+                        'คุณต้องการเปิดหน้าตรวจสอบคำขอนี้ใช่หรือไม่?',
+                        'ยืนยัน',
+                        () => moveToReviewPage() // moveToReviewPage handles navigation
+                    );
+                } else {
+                    confirmAndSaveStatus(
+                        'pending',
+                        'ยืนยันส่งตรวจสอบ',
+                        'คุณต้องการเปลี่ยนสถานะเป็น "รอตรวจสอบ" และเปิดหน้าตรวจสอบใช่หรือไม่?',
+                        'ยืนยัน',
+                        () => moveToReviewPage()
+                    );
+                }
             });
         }
         if (approveRequestButton) {

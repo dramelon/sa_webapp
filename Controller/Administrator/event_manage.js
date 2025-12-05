@@ -162,7 +162,7 @@
 
     updateDocumentLink(currentEventId);
     updateAuditLink(currentEventId);
-    
+
     const statusMeta = {
         draft: { label: 'ร่าง', className: 'draft' },
         planning: { label: 'วางแผน', className: 'planning' },
@@ -188,7 +188,7 @@
     }
 
     updateSaveButtonState();
-    
+
     const updateThaiDate = () => {
         const now = new Date();
         const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
@@ -296,7 +296,7 @@
             }
         }
     }
-    
+
     function normalizeContactValue(value) {
         return typeof value === 'string' ? value.trim() : '';
     }
@@ -322,7 +322,7 @@
         const idText = Number.isFinite(numericId) ? numericId : normalizeContactValue(id) || '—';
         return `${idText} - ${safeName}`;
     }
-    
+
     function formatCustomerMeta(name, phone, email) {
         const baseName = normalizeContactValue(name) || 'ไม่ระบุ';
         const phoneText = normalizeContactValue(phone);
@@ -366,7 +366,7 @@
         locationEditBtn.disabled = !hasId;
         locationEditBtn.setAttribute('aria-disabled', hasId ? 'false' : 'true');
     }
-    
+
     function syncCustomerDisplayFromForm(metaOverride = null) {
         if (!eventCustomer) {
             return;
@@ -423,7 +423,7 @@
             event.preventDefault();
         });
     }
-    
+
     function showInlineMessage(element, message, variant = 'info') {
         if (!element) return;
         if (!message) {
@@ -509,19 +509,19 @@
         if (!value) {
             return '—';
         }
-        const normalized = String(value).replace(' ', 'T');
-        const date = new Date(normalized);
+        const date = new Date(value);
         if (Number.isNaN(date.getTime())) {
             return '—';
         }
-        return date.toLocaleString('th-TH', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-        });
+        const day = date.getDate();
+        const months = [
+            'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+        ];
+        const month = months[date.getMonth()];
+        const year = date.getFullYear() + 543;
+        const time = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+        return `${day} ${month} ${year} เวลา ${time}`;
     }
 
     function toDateInputValue(value) {
@@ -682,7 +682,7 @@
         applyDateConstraints();
         updateStartDateWarning();
     }
-    
+
     const dateState = {
         savedStart: '',
         savedEnd: '',
@@ -803,7 +803,7 @@
         if (!element) {
             return;
         }
-        const name = extractLabelName(label);
+        const name = label ? String(label).trim() : '';
         element.textContent = `${prefix}: ${name || 'ไม่ระบุ'}`;
     }
 
@@ -1228,10 +1228,10 @@
                     option.addEventListener('click', () => {
                         const meta = this.type === 'customer'
                             ? {
-                                  name: item.name ?? '',
-                                  phone: item.phone ?? '',
-                                  email: item.email ?? '',
-                              }
+                                name: item.name ?? '',
+                                phone: item.phone ?? '',
+                                email: item.email ?? '',
+                            }
                             : this.type === 'location'
                                 ? { name: item.name ?? '' }
                                 : null;
@@ -1459,7 +1459,7 @@
             closeModal(activeModal);
         }
     });
-    
+
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     async function loadEvent(options = {}) {
@@ -1850,7 +1850,7 @@
         }
         return result.data || {};
     }
-    
+
     async function submitCustomerModal(event) {
         event.preventDefault();
         if (!modelRoot || !customerHidden || !customerModal) {
@@ -1938,7 +1938,7 @@
             showInlineMessage(locationModalMessage, message, 'error');
         }
     }
-    
+
     function populateForm(data) {
         runWithPopulation(() => {
             const eventIdValue = data.event_id != null ? String(data.event_id) : null;
@@ -2212,10 +2212,10 @@
                     Object.prototype.hasOwnProperty.call(result, 'customer_email');
                 const customerMeta = hasCustomerMeta
                     ? {
-                          name: result.customer_name ?? '',
-                          phone: result.customer_phone ?? '',
-                          email: result.customer_email ?? '',
-                      }
+                        name: result.customer_name ?? '',
+                        phone: result.customer_phone ?? '',
+                        email: result.customer_email ?? '',
+                    }
                     : null;
                 customerField?.setValue(customerIdValue ?? '', result.customer_label || '', customerMeta);
             }
@@ -2315,16 +2315,16 @@
             const endComparable = datePayload.end || '';
             const initialStartComparable = initialSnapshot
                 ? normalizeComparableDate(
-                      initialSnapshot.start_date,
-                      initialSnapshot.is_all_day === '1'
-                  )
+                    initialSnapshot.start_date,
+                    initialSnapshot.is_all_day === '1'
+                )
                 : '';
             const initialEndComparable = initialSnapshot
                 ? normalizeComparableDate(
-                      initialSnapshot.end_date,
-                      initialSnapshot.is_all_day === '1',
-                      true
-                  )
+                    initialSnapshot.end_date,
+                    initialSnapshot.is_all_day === '1',
+                    true
+                )
                 : '';
             if (startComparable && startComparable < dateLimits.minDateTime) {
                 if (!initialSnapshot || startComparable !== initialStartComparable) {

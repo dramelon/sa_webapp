@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/database_connector.php';
+require_once __DIR__ . '/audit_log.php';
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -102,7 +103,8 @@ try {
             PaymentMethod,
             DeliverTo,
             Note,
-            Status
+            Status,
+            RequestID
         ) VALUES (
             :ref_id,
             :event_id,
@@ -119,7 +121,8 @@ try {
             :payment_method,
             :deliver_to,
             :note,
-            :status
+            :status,
+            :request_id
         )
     ');
 
@@ -139,6 +142,7 @@ try {
     $insertRfq->bindValue(':deliver_to', $deliverTo > 0 ? $deliverTo : $eventId, PDO::PARAM_INT);
     bindNullableString($insertRfq, ':note', appendRequestToNote($note, $requestId));
     $insertRfq->bindValue(':status', 'draft', PDO::PARAM_STR);
+    $insertRfq->bindValue(':request_id', $requestId > 0 ? $requestId : null, PDO::PARAM_INT);
 
     $insertRfq->execute();
 
@@ -190,6 +194,8 @@ try {
         echo json_encode(['error' => 'empty_lines', 'message' => 'ไม่มีรายการสินค้าที่เหมาะสมสำหรับสร้าง RFQ']);
         exit;
     }
+
+    recordAuditEvent($db, 'rfq', $supplierRfqId, 'CREATE', $staffId, 'สร้าง RFQ ใหม่');
 
     $db->commit();
 

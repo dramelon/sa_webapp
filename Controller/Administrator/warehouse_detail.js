@@ -173,6 +173,10 @@
         };
     }
 
+    function markDirty() {
+        setDirtyState(true);
+    }
+
     function handleFieldMutated() {
         markDirty();
     }

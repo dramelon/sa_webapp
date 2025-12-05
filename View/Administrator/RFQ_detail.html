@@ -12,7 +12,8 @@
     <main class="page detail-page request-page">
         <section class="page-head">
             <div>
-                <p class="breadcrumb"><a id="rfqBackLink" href="./event_document_manage.html">← กลับไปหน้ารายการเอกสาร</a></p>
+                <p class="breadcrumb"><a id="rfqBackLink" href="./event_document_manage.html">←
+                        กลับไปหน้ารายการเอกสาร</a></p>
                 <h2 id="rfqTitle">กำลังโหลดคำขอใบเสนอราคา...</h2>
                 <p class="date" id="rfqPageDate">วัน...</p>
             </div>
@@ -101,6 +102,10 @@
                         <span class="i send"></span>
                         ไปหน้าส่ง RFQ ให้ซัพพลายเออร์
                     </button>
+                    <button class="btn btn-ghost" type="button" id="rfqPrintButton">
+                        <span class="i print"></span>
+                        พิมพ์ PDF
+                    </button>
                 </div>
             </section>
         </section>
@@ -127,7 +132,8 @@
                             </label>
                             <label class="field-block">
                                 <span class="field-label">รหัสอ้างอิง RFQ</span>
-                                <input type="text" id="rfqRefSupplierRfqId" name="RefSupplierRFQID" placeholder="รหัสอ้างอิง (ถ้ามี)" />
+                                <input type="text" id="rfqRefSupplierRfqId" name="RefSupplierRFQID"
+                                    placeholder="รหัสอ้างอิง (ถ้ามี)" />
                             </label>
                             <label class="field-block">
                                 <span class="field-label">คำขอที่เกี่ยวข้อง</span>
@@ -135,19 +141,47 @@
                             </label>
                             <label class="field-block">
                                 <span class="field-label">เจ้าหน้าที่</span>
-                                <input type="text" id="rfqStaffId" name="StaffID" placeholder="รหัสเจ้าหน้าที่" />
+                                <div class="typeahead" data-type="staff">
+                                    <input type="text" id="rfqStaffInput" placeholder="ค้นหาด้วยรหัสหรือชื่อเจ้าหน้าที่"
+                                        autocomplete="off" />
+                                    <input type="hidden" id="rfqStaffId" name="StaffID" />
+                                    <div class="typeahead-list" id="rfqStaffList" hidden></div>
+                                </div>
                             </label>
                             <label class="field-block">
                                 <span class="field-label">ผู้ติดต่อ</span>
-                                <input type="text" id="rfqContactPerson" name="ContactPerson" placeholder="รหัสผู้ติดต่อ" />
+                                <div class="typeahead" data-type="customer">
+                                    <div class="typeahead-input">
+                                        <input type="text" id="rfqContactPersonInput" placeholder="ค้นหาผู้ติดต่อ"
+                                            autocomplete="off" />
+                                        <button class="typeahead-action" type="button" id="contactPersonEditBtn"
+                                            aria-label="แก้ไขข้อมูลผู้ติดต่อ" disabled>
+                                            <span class="i pencil"></span>
+                                        </button>
+                                    </div>
+                                    <input type="hidden" id="rfqContactPerson" name="ContactPerson" />
+                                    <div class="typeahead-list" id="rfqContactPersonList" hidden></div>
+                                </div>
                             </label>
                             <label class="field-block">
                                 <span class="field-label">จัดส่งไปที่</span>
-                                <input type="text" id="rfqDeliverTo" name="DeliverTo" placeholder="รหัสสถานที่จัดส่ง" />
+                                <div class="typeahead" data-type="location">
+                                    <div class="typeahead-input">
+                                        <input type="text" id="rfqDeliverToInput" placeholder="ค้นหาสถานที่จัดส่ง"
+                                            autocomplete="off" />
+                                        <button class="typeahead-action" type="button" id="deliverToEditBtn"
+                                            aria-label="แก้ไขข้อมูลสถานที่" disabled>
+                                            <span class="i pencil"></span>
+                                        </button>
+                                    </div>
+                                    <input type="hidden" id="rfqDeliverTo" name="DeliverTo" />
+                                    <div class="typeahead-list" id="rfqDeliverToList" hidden></div>
+                                </div>
                             </label>
                             <label class="field-block">
                                 <span class="field-label">หมายเหตุ</span>
-                                <textarea id="rfqNoteInput" name="Note" rows="3" placeholder="รายละเอียดเพิ่มเติมสำหรับ RFQ"></textarea>
+                                <textarea id="rfqNoteInput" name="Note" rows="3"
+                                    placeholder="รายละเอียดเพิ่มเติมสำหรับ RFQ"></textarea>
                             </label>
                         </div>
                         <div class="detail-column">
@@ -171,10 +205,15 @@
                             <label class="field-block">
                                 <span class="field-label">วันที่สร้างใบขอราคา</span>
                                 <input type="datetime-local" id="rfqRequestDateInput" name="RequestDate" />
+                                <p class="field-warning" id="rfqRequestDateWarning" hidden>
+                                    วันที่สร้างใบขอราคาเป็นวันย้อนหลัง (ย้อนหลังได้ไม่เกิน 14 วัน)
+                                </p>
                             </label>
-                            <label class="field-block">
-                                <span class="field-label">จำนวนวันความน่าเชื่อถือของราคา (ราคามีผลภายในกี่วันหลังการเสนอ)</span>
+                            <label class="field-block" id="rfqValidityDaysBlock">
+                                <span class="field-label">จำนวนวันความน่าเชื่อถือของราคา
+                                    (ราคามีผลภายในกี่วันหลังการเสนอ)</span>
                                 <input type="number" id="rfqValidityDaysInput" name="BidValidityDays" />
+                                <p class="field-warning" id="rfqValidityDaysWarning" hidden></p>
                             </label>
                             <label class="field-block">
                                 <span class="field-label">วันที่ครบกำหนดรับใบเสนอราคา</span>
@@ -248,11 +287,164 @@
         </form>
     </main>
 
+    <div class="modal" id="customerModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="customerModalTitle">
+            <header class="modal-head">
+                <h3 id="customerModalTitle">แก้ไขข้อมูลลูกค้า</h3>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i x"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <div id="customerModalMessage" class="form-alert" role="alert" hidden></div>
+                <form id="customerModalForm" class="modal-form" autocomplete="off">
+                    <div class="modal-grid">
+                        <label class="field-block">
+                            <span class="field-label">ชื่อลูกค้า *</span>
+                            <input type="text" id="customerModalName" required data-autofocus />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ชื่อองค์กร</span>
+                            <input type="text" id="customerModalOrg" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">อีเมล</span>
+                            <input type="email" id="customerModalEmail" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">เบอร์โทร</span>
+                            <input type="text" id="customerModalPhone" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">เลขผู้เสียภาษี</span>
+                            <input type="text" id="customerModalTax" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">สถานะ *</span>
+                            <select id="customerModalStatus" required>
+                                <option value="active">ใช้งาน</option>
+                                <option value="inactive">ปิดใช้งาน</option>
+                            </select>
+                        </label>
+                        <label class="field-block field-span">
+                            <span class="field-label">บันทึกเพิ่มเติม</span>
+                            <textarea id="customerModalNotes" rows="4"></textarea>
+                        </label>
+                    </div>
+                    <footer class="modal-actions">
+                        <button class="btn btn-ghost" type="button" data-modal-dismiss>ปิด</button>
+                        <button class="btn btn-secondary" type="submit" id="customerModalSave">บันทึก</button>
+                    </footer>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="locationModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="locationModalTitle">
+            <header class="modal-head">
+                <h3 id="locationModalTitle">แก้ไขข้อมูลสถานที่</h3>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i x"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <div id="locationModalMessage" class="form-alert" role="alert" hidden></div>
+                <form id="locationModalForm" class="modal-form" autocomplete="off">
+                    <div class="modal-grid">
+                        <label class="field-block">
+                            <span class="field-label">ชื่อสถานที่ *</span>
+                            <input type="text" id="locationModalName" required data-autofocus />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">บ้านเลขที่</span>
+                            <input type="text" id="locationModalHouse" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">หมู่บ้าน</span>
+                            <input type="text" id="locationModalVillage" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">อาคาร</span>
+                            <input type="text" id="locationModalBuilding" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ชั้น</span>
+                            <input type="text" id="locationModalFloor" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ห้อง</span>
+                            <input type="text" id="locationModalRoom" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ถนน</span>
+                            <input type="text" id="locationModalStreet" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ตำบล / แขวง</span>
+                            <input type="text" id="locationModalSubdistrict" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">อำเภอ / เขต</span>
+                            <input type="text" id="locationModalDistrict" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">จังหวัด</span>
+                            <input type="text" id="locationModalProvince" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">รหัสไปรษณีย์</span>
+                            <input type="text" id="locationModalPostal" />
+                        </label>
+                        <label class="field-block">
+                            <span class="field-label">ประเทศ</span>
+                            <input type="text" id="locationModalCountry" />
+                        </label>
+                        <label class="field-block field-span">
+                            <span class="field-label">บันทึกเพิ่มเติม</span>
+                            <textarea id="locationModalNotes" rows="4"></textarea>
+                        </label>
+                    </div>
+                    <footer class="modal-actions">
+                        <button class="btn btn-ghost" type="button" data-modal-dismiss>ปิด</button>
+                        <button class="btn btn-secondary" type="submit" id="locationModalSave">บันทึก</button>
+                    </footer>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="statusConfirmModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true"
+            aria-labelledby="statusConfirmModalTitle">
+            <header class="modal-head">
+                <div>
+                    <p class="modal-kicker">ยืนยันการดำเนินการ</p>
+                    <h3 id="statusConfirmModalTitle">ต้องการดำเนินการต่อหรือไม่?</h3>
+                </div>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i close"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <p class="modal-description" id="statusConfirmModalDescription">...</p>
+            </div>
+            <footer class="modal-actions">
+                <button class="btn btn-ghost" type="button" data-modal-dismiss>ยกเลิก</button>
+                <button class="btn btn-primary" type="button" id="statusConfirmButton">ยืนยัน</button>
+            </footer>
+        </div>
+    </div>
+
     <div id="unsavedBanner" class="unsaved-banner" role="status" hidden>
         <span class="unsaved-text">ระวัง! ยังไม่ได้บันทึกการเปลี่ยนแปลง</span>
         <div class="unsaved-actions">
             <button type="button" class="unsaved-btn unsaved-btn-muted" id="btnDiscardChanges">ยกเลิกการแก้ไข</button>
-            <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnSaveInline">บันทึกการเปลี่ยนแปลง</button>
+            <button type="button" class="unsaved-btn unsaved-btn-primary"
+                id="btnSaveInline">บันทึกการเปลี่ยนแปลง</button>
         </div>
     </div>
 
@@ -262,8 +454,10 @@
             <p class="unsaved-modal-text">คุณต้องการบันทึกการแก้ไขก่อนออกจากหน้านี้หรือไม่?</p>
             <div class="unsaved-modal-actions">
                 <button type="button" class="unsaved-btn unsaved-btn-muted" id="btnModalStay">อยู่ในหน้านี้</button>
-                <button type="button" class="unsaved-btn unsaved-btn-danger" id="btnModalDiscard">ละทิ้งการแก้ไข</button>
-                <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnModalSave">บันทึกและดำเนินการต่อ</button>
+                <button type="button" class="unsaved-btn unsaved-btn-danger"
+                    id="btnModalDiscard">ละทิ้งการแก้ไข</button>
+                <button type="button" class="unsaved-btn unsaved-btn-primary"
+                    id="btnModalSave">บันทึกและดำเนินการต่อ</button>
             </div>
         </div>
     </div>

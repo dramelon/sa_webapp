@@ -81,10 +81,11 @@ try {
 
     $db->beginTransaction();
 
-    $rfqCheck = $db->prepare('SELECT SupplierRFQID FROM supplier_rfq WHERE SupplierRFQID = :id LIMIT 1');
+    $rfqCheck = $db->prepare('SELECT SupplierRFQID, RequestID FROM supplier_rfq WHERE SupplierRFQID = :id LIMIT 1');
     $rfqCheck->bindValue(':id', $rfqId, PDO::PARAM_INT);
     $rfqCheck->execute();
-    if (!$rfqCheck->fetchColumn()) {
+    $currentRfq = $rfqCheck->fetch(PDO::FETCH_ASSOC);
+    if (!$currentRfq) {
         $db->rollBack();
         http_response_code(404);
         echo json_encode(['error' => 'not_found', 'message' => 'ไม่พบ RFQ ที่ต้องการปรับปรุง']);
@@ -140,6 +141,15 @@ try {
         http_response_code(500);
         echo json_encode(['error' => 'update_failed', 'message' => 'ไม่สามารถบันทึกสถานะ RFQ ได้']);
         exit;
+    }
+
+    if ($status === 'cancelled' && !empty($currentRfq['RequestID'])) {
+        $linkedRequestId = (int) $currentRfq['RequestID'];
+        $updateRequest = $db->prepare("UPDATE requests SET Status = 'pending' WHERE RequestID = :id");
+        $updateRequest->bindValue(':id', $linkedRequestId, PDO::PARAM_INT);
+        $updateRequest->execute();
+
+        recordAuditEvent($db, 'request', $linkedRequestId, 'UPDATE', $staffId, 'สถานะถูกย้อนกลับเนื่องจาก RFQ ถูกยกเลิก');
     }
 
     $statusLookup = $db->prepare('SELECT Status FROM supplier_rfq WHERE SupplierRFQID = :id LIMIT 1');

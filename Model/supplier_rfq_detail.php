@@ -43,9 +43,19 @@ try {
             e.EventName,
             e.RefEventID,
             e.StartDate,
-            e.EndDate
+            e.EndDate,
+            st.FullName AS StaffName,
+            st.Role AS StaffRole,
+            c.CustomerName AS ContactName,
+            st_contact.FullName AS ContactStaffName,
+            st_contact.Role AS ContactStaffRole,
+            l.LocationName AS LocationName
         FROM supplier_rfq s
         LEFT JOIN events e ON e.EventID = s.EventID
+        LEFT JOIN staffs st ON st.StaffID = s.StaffID
+        LEFT JOIN customers c ON c.CustomerID = s.ContactPerson
+        LEFT JOIN staffs st_contact ON st_contact.StaffID = s.ContactPerson
+        LEFT JOIN locations l ON l.LocationID = s.DeliverTo
         WHERE s.SupplierRFQID = :rfq_id
         LIMIT 1
     SQL;
@@ -114,6 +124,11 @@ try {
         'payment_term' => $rfqRow['PaymentTerm'],
         'payment_method' => $rfqRow['PaymentMethod'],
         'deliver_to' => $rfqRow['DeliverTo'] !== null ? (int) $rfqRow['DeliverTo'] : null,
+        'staff_label' => formatStaffLabel($rfqRow['StaffID'], $rfqRow['StaffName'], $rfqRow['StaffRole']),
+        'contact_person_label' => $rfqRow['ContactName'] 
+            ? formatCustomerLabel($rfqRow['ContactPerson'], $rfqRow['ContactName']) 
+            : formatStaffLabel($rfqRow['ContactPerson'], $rfqRow['ContactStaffName'], $rfqRow['ContactStaffRole']),
+        'deliver_to_label' => formatLocationLabel($rfqRow['DeliverTo'], $rfqRow['LocationName']),
         'note' => $rfqRow['Note'],
         'status' => strtolower((string) ($rfqRow['Status'] ?? 'draft')),
         'created_at' => $audit['created_at'],
@@ -161,4 +176,16 @@ function formatStaffLabel($id, $name, $role)
     $displayName = $name !== null && $name !== '' ? $name : 'ไม่ทราบชื่อผู้รับผิดชอบ';
     $roleInitial = $role !== null && $role !== '' ? mb_strtoupper(mb_substr($role, 0, 1, 'UTF-8'), 'UTF-8') : 'S';
     return sprintf('%s%d - %s', $roleInitial, $id, $displayName);
+}
+
+function formatCustomerLabel($id, $name)
+{
+    $labelName = $name !== null && $name !== '' ? $name : 'ไม่ระบุชื่อลูกค้า';
+    return sprintf('%d - %s', $id, $labelName);
+}
+
+function formatLocationLabel($id, $name)
+{
+    $labelName = $name !== null && $name !== '' ? $name : 'ไม่ระบุสถานที่';
+    return sprintf('%d - %s', $id, $labelName);
 }

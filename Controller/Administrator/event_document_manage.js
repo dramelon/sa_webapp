@@ -13,6 +13,8 @@
     const globalMessage = document.getElementById('docGlobalMessage');
     const createRequestContainer = document.getElementById('docCreateRequestContainer');
     const createRequestButton = document.getElementById('btnCreateRequest');
+    const summarizeQuotationContainer = document.getElementById('docSummarizeQuotationContainer');
+    const summarizeQuotationButton = document.getElementById('btnSummarizeQuotation');
     const requestModal = document.getElementById('requestModal');
     const requestForm = document.getElementById('requestForm');
     const requestNameInput = document.getElementById('requestNameInput');
@@ -528,6 +530,7 @@
                 renderCategories();
                 renderDocuments();
                 syncCreateRequestButtonState();
+                syncSummarizeQuotationButtonState();
             });
 
             item.appendChild(button);
@@ -608,6 +611,7 @@
             return;
         }
         syncCreateRequestButtonState();
+        syncSummarizeQuotationButtonState();
         if (hasLoadError) {
             showEmptyState(loadErrorMessage || 'ไม่สามารถโหลดข้อมูลเอกสารได้');
             return;
@@ -697,6 +701,8 @@
         }
         if (docType === 'quotation') {
             params.set('supplier_quotation_id', doc.document_id);
+            const returnUrl = encodeURIComponent(`./event_document_manage.html?event_id=${eventId}&category=quotation`);
+            params.set('return_to', returnUrl);
             window.location.href = `./quotation_detail.html?${params.toString()}`;
             return;
         }
@@ -748,6 +754,22 @@
         } else {
             createRequestButton.setAttribute('aria-disabled', 'true');
         }
+    }
+
+    function syncSummarizeQuotationButtonState() {
+        const shouldShow = activeCategory === 'quotation' && !hasLoadError;
+        if (summarizeQuotationContainer) {
+            summarizeQuotationContainer.hidden = !shouldShow;
+        }
+    }
+
+    if (summarizeQuotationButton) {
+        summarizeQuotationButton.addEventListener('click', () => {
+            if (eventId) {
+                const returnUrl = encodeURIComponent(`./event_document_manage.html?event_id=${eventId}&category=quotation`);
+                window.location.href = `./quotations.html?event_id=${encodeURIComponent(eventId)}&return_to=${returnUrl}`;
+            }
+        });
     }
 
     function syncRequestEventDetails() {
@@ -1122,16 +1144,16 @@
         const initialItem =
             initial && initial.item_id
                 ? {
-                      id: initial.item_id,
-                      name: initial.item_name || '',
-                      ref_id: initial.item_reference || '',
-                      rate: initial.rate ?? initial.item_rate ?? null,
-                      period: initial.period ?? initial.item_period ?? '',
-                      uom: initial.uom ?? initial.item_uom ?? '',
-                      category_name: initial.category_name || initial.item_category || '',
-                      brand: initial.brand || initial.item_brand || '',
-                      model: initial.model || initial.item_model || '',
-                  }
+                    id: initial.item_id,
+                    name: initial.item_name || '',
+                    ref_id: initial.item_reference || '',
+                    rate: initial.rate ?? initial.item_rate ?? null,
+                    period: initial.period ?? initial.item_period ?? '',
+                    uom: initial.uom ?? initial.item_uom ?? '',
+                    category_name: initial.category_name || initial.item_category || '',
+                    brand: initial.brand || initial.item_brand || '',
+                    model: initial.model || initial.item_model || '',
+                }
                 : null;
 
         function updateItemMeta(item) {

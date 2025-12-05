@@ -12,7 +12,8 @@
     <main class="page detail-page request-page">
         <section class="page-head">
             <div>
-                <p class="breadcrumb"><a id="requestBackLink" href="./event_document_manage.html">← กลับไปหน้ารายการเอกสาร</a></p>
+                <p class="breadcrumb"><a id="requestBackLink" href="./event_document_manage.html">←
+                        กลับไปหน้ารายการเอกสาร</a></p>
                 <h2 id="requestTitle">กำลังโหลดคำขอ...</h2>
                 <p class="date" id="pageDate">วัน...</p>
             </div>
@@ -138,12 +139,9 @@
                     </div>
                     <label class="request-lines-search" for="requestLinesSearch">
                         <span class="i search"></span>
-                        <input
-                            type="search"
-                            id="requestLinesSearch"
+                        <input type="search" id="requestLinesSearch"
                             placeholder="ค้นหาด้วยรหัสสินค้า ชื่อสินค้า หรือหมายเหตุ"
-                            aria-label="ค้นหารายการสินค้าในตาราง"
-                        />
+                            aria-label="ค้นหารายการสินค้าในตาราง" />
                     </label>
                 </header>
                 <div class="form-alert" id="requestFormMessage" role="alert" hidden></div>
@@ -151,9 +149,10 @@
                     <table class="event-table request-lines-table">
                         <thead>
                             <tr>
-                                <th scope="col">วัสดุอุปกร/สินค้า/บริการ</th>
+                                <th scope="col">วัสดุอุปกรณ์/สินค้า/บริการ</th>
                                 <th scope="col">จำนวน</th>
-                                <th scope="col">อัตราต่อชิ้น / รอบการคิดราคา</th>
+                                <th scope="col">อัตราการคิดราคา</th>
+                                <th scope="col" class="col-fulfillment" hidden>การเบิกจ่าย</th>
                                 <th scope="col">หมายเหตุ</th>
                                 <th scope="col" class="col-actions">การจัดการ</th>
                             </tr>
@@ -181,7 +180,8 @@
 
     <div class="modal" id="approveConfirmModal" hidden aria-hidden="true">
         <div class="modal-backdrop" data-modal-dismiss></div>
-        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true" aria-labelledby="approveConfirmModalTitle">
+        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true"
+            aria-labelledby="approveConfirmModalTitle">
             <header class="modal-head">
                 <div>
                     <p class="modal-kicker">ยืนยันการอนุมัติ</p>
@@ -192,7 +192,8 @@
                 </button>
             </header>
             <div class="modal-body">
-                <p class="modal-description">ระบบจะบันทึกคำขอนี้เป็นสถานะ &ldquo;อนุมัติแล้ว&rdquo; และบันทึกการเปลี่ยนแปลง</p>
+                <p class="modal-description">ระบบจะบันทึกคำขอนี้เป็นสถานะ &ldquo;อนุมัติแล้ว&rdquo;
+                    และบันทึกการเปลี่ยนแปลง</p>
             </div>
             <footer class="modal-actions">
                 <button class="btn btn-ghost" type="button" data-modal-dismiss>ยกเลิก</button>
@@ -203,7 +204,8 @@
 
     <div class="modal" id="overfillWarningModal" hidden aria-hidden="true">
         <div class="modal-backdrop" data-modal-dismiss></div>
-        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true" aria-labelledby="overfillWarningModalTitle">
+        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true"
+            aria-labelledby="overfillWarningModalTitle">
             <header class="modal-head">
                 <div>
                     <p class="modal-kicker">คำเตือน: จ่ายเกินจำนวน</p>
@@ -214,7 +216,8 @@
                 </button>
             </header>
             <div class="modal-body">
-                <p class="modal-description">บางรายการมีการมอบจ่ายมากกว่าจำนวนที่ขอ ตรวจสอบให้แน่ใจว่าต้องการอนุมัติคำขอนี้ต่อ</p>
+                <p class="modal-description">บางรายการมีการมอบจ่ายมากกว่าจำนวนที่ขอ
+                    ตรวจสอบให้แน่ใจว่าต้องการอนุมัติคำขอนี้ต่อ</p>
             </div>
             <footer class="modal-actions">
                 <button class="btn btn-ghost" type="button" data-modal-dismiss>กลับไปตรวจสอบ</button>
@@ -225,7 +228,8 @@
 
     <div class="modal" id="incompleteWarningModal" hidden aria-hidden="true">
         <div class="modal-backdrop" data-modal-dismiss></div>
-        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true" aria-labelledby="incompleteWarningModalTitle">
+        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true"
+            aria-labelledby="incompleteWarningModalTitle">
             <header class="modal-head">
                 <div>
                     <p class="modal-kicker">รายการยังไม่ครบ</p>
@@ -236,7 +240,8 @@
                 </button>
             </header>
             <div class="modal-body">
-                <p class="modal-description">เลือกดำเนินการต่อ: ยกเลิกการอนุมัติชั่วคราว กลับไปแก้ไขการจ่าย หรือสร้าง RFQ ต่อไป</p>
+                <p class="modal-description">เลือกดำเนินการต่อ: ยกเลิกการอนุมัติชั่วคราว กลับไปแก้ไขการจ่าย หรือสร้าง
+                    RFQ ต่อไป</p>
             </div>
             <footer class="modal-actions">
                 <button class="btn btn-ghost" type="button" id="incompleteCancelButton">ยกเลิก</button>
@@ -246,10 +251,34 @@
         </div>
     </div>
 
+    <div class="modal" id="statusConfirmModal" hidden aria-hidden="true">
+        <div class="modal-backdrop" data-modal-dismiss></div>
+        <div class="modal-card booking-modal-card" role="dialog" aria-modal="true"
+            aria-labelledby="statusConfirmModalTitle">
+            <header class="modal-head">
+                <div>
+                    <p class="modal-kicker">ยืนยันการดำเนินการ</p>
+                    <h3 id="statusConfirmModalTitle">ต้องการดำเนินการต่อหรือไม่?</h3>
+                </div>
+                <button class="modal-close" type="button" data-modal-dismiss aria-label="ปิดหน้าต่าง">
+                    <span class="i close"></span>
+                </button>
+            </header>
+            <div class="modal-body">
+                <p class="modal-description" id="statusConfirmModalDescription">...</p>
+            </div>
+            <footer class="modal-actions">
+                <button class="btn btn-ghost" type="button" data-modal-dismiss>ยกเลิก</button>
+                <button class="btn btn-primary" type="button" id="statusConfirmButton">ยืนยัน</button>
+            </footer>
+        </div>
+    </div>
+
     <div id="unsavedBanner" class="unsaved-banner request-unsaved" role="status" hidden>
         <span class="unsaved-text">ยังมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</span>
         <div class="unsaved-actions">
-            <button type="button" class="unsaved-btn unsaved-btn-muted" id="btnDiscardChanges">ยกเลิกการเปลี่ยนแปลง</button>
+            <button type="button" class="unsaved-btn unsaved-btn-muted"
+                id="btnDiscardChanges">ยกเลิกการเปลี่ยนแปลง</button>
             <button type="button" class="unsaved-btn unsaved-btn-primary" id="btnSaveInline">บันทึกตอนนี้</button>
         </div>
     </div>

@@ -183,6 +183,10 @@
         };
     }
 
+    function markDirty() {
+        setDirtyState(true);
+    }
+
     function handleFieldMutated() {
         markDirty();
     }
@@ -980,8 +984,8 @@
         if (btnDiscardChanges) {
             btnDiscardChanges.addEventListener('click', () => {
                 pendingNavigationAction = null;
-            restoreSnapshot(initialSnapshot, { fromDiscard: true });
-            setDirtyState(false);
+                restoreSnapshot(initialSnapshot, { fromDiscard: true });
+                setDirtyState(false);
                 showMessage('ยกเลิกการแก้ไขแล้ว', 'info');
             });
         }
