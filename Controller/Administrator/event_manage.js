@@ -866,18 +866,20 @@
         isDirty = nextState;
         if (unsavedBanner) {
             if (isDirty) {
-                unsavedBanner.hidden = false;
+                unsavedBanner.setAttribute('aria-hidden', 'false');
                 requestAnimationFrame(() => {
                     unsavedBanner.classList.add('is-active');
                 });
             } else {
                 if (!unsavedBanner.classList.contains('is-active')) {
-                    unsavedBanner.hidden = true;
+                    unsavedBanner.setAttribute('aria-hidden', 'true');
                 } else {
                     unsavedBanner.classList.remove('is-active');
                     const handleTransitionEnd = (event) => {
                         if (event.propertyName === 'transform') {
-                            unsavedBanner.hidden = true;
+                            if (!isDirty) {
+                                unsavedBanner.setAttribute('aria-hidden', 'true');
+                            }
                             unsavedBanner.removeEventListener('transitionend', handleTransitionEnd);
                         }
                     };

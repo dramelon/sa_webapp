@@ -28,6 +28,8 @@ body {
     color: var(--text);
     background: var(--bg);
     padding-top: 60px; 
+    /* padding-bottom: 100px; */
+    /* margin-bottom: 100px; */
 }
 
 /* Ensure elements with the hidden attribute are not displayed */
@@ -413,7 +415,8 @@ body {
 .page {
     max-width: 1100px;
     margin: 18px auto;
-    padding: 0 16px
+    padding: 0 16px;
+    padding-bottom: 100px
 }
 
 .news-head h2 {
@@ -3298,4 +3301,91 @@ body.modal-open {
     .unsaved-actions {
         justify-content: center;
     }
+}
+.rfq-line-card .line-info-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.best-offer-box {
+    border: 1px solid var(--border-color, #e1e1e1);
+    border-radius: 8px;
+    padding: 0.85rem;
+    margin-bottom: 0.85rem;
+    background: rgba(46, 204, 113, 0.08);
+}
+
+.rfq-line-offer-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+}
+
+.rfq-line-offer-table th,
+.rfq-line-offer-table td {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-color, #e1e1e1);
+    text-align: left;
+    vertical-align: top;
+}
+
+.rfq-line-offer-table tr.is-best {
+    background: rgba(46, 204, 113, 0.12);
+}
+
+.quotation-review-page .detail-card {
+    padding: 20px;
+    margin-bottom: 32px;
+}
+
+.quotation-review-page #reviewSummaryStats {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.quotation-review-page #reviewSummaryStats .meta-group {
+    min-width: 140px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(251, 197, 65, 0.12);
+}
+
+#reviewQuotationList {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+#reviewQuotationList .summary-card {
+    padding: 14px 16px;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(255, 197, 86, 0.18);
+    cursor: default;
+}
+
+.quotation-review-page #reviewLinesContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.rfq-line-card {
+    margin: 0;
+    border-radius: 16px;
+    padding: 0;
+}
+
+.rfq-line-card .detail-card-head {
+    padding: 18px 18px 0;
+    margin-bottom: 12px;
+}
+
+.rfq-line-card .detail-card-body {
+    padding: 0 18px 18px;
+    display: grid;
+    gap: 12px;
 }

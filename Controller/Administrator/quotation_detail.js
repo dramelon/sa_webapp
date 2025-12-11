@@ -51,6 +51,50 @@
         createdByMeta: document.getElementById('quotationCreatedBy'),
         updatedByMeta: document.getElementById('quotationUpdatedByMeta'),
     };
+    const dateWarnings = {
+        issue: document.getElementById('quotationDateWarning'),
+        validity: document.getElementById('quotationBidValidityWarning'),
+        order: document.getElementById('quotationOrderDateWarning'),
+        expected: document.getElementById('quotationExpectedArrivalWarning'),
+        deadline: document.getElementById('quotationOrderDeadlineWarning'),
+    };
+    const dateFieldMeta = {
+        issue: {
+            input: formRefs.quotationDate,
+            warning: dateWarnings.issue,
+            block: formRefs.quotationDate?.closest('.field-block') || null,
+            label: 'วันที่เสนอราคา',
+            dependsOn: null,
+        },
+        validity: {
+            input: formRefs.bidValidity,
+            warning: dateWarnings.validity,
+            block: formRefs.bidValidity?.closest('.field-block') || null,
+            label: 'วันหมดอายุราคา',
+            dependsOn: 'issue',
+        },
+        order: {
+            input: formRefs.orderDate,
+            warning: dateWarnings.order,
+            block: formRefs.orderDate?.closest('.field-block') || null,
+            label: 'วันที่สั่งซื้อวัสดุจริง',
+            dependsOn: 'validity',
+        },
+        expected: {
+            input: formRefs.expectedArrival,
+            warning: dateWarnings.expected,
+            block: formRefs.expectedArrival?.closest('.field-block') || null,
+            label: 'วันที่คาดว่าจะได้รับวัสดุจริง',
+            dependsOn: 'order',
+        },
+        deadline: {
+            input: formRefs.orderDeadline,
+            warning: dateWarnings.deadline,
+            block: formRefs.orderDeadline?.closest('.field-block') || null,
+            label: 'วันที่ครบกำหนดส่งวัสดุจริง',
+            dependsOn: 'expected',
+        },
+    };
 
     const linesBody = document.getElementById('quotationLinesBody');
     const linesEmpty = document.getElementById('quotationLinesEmpty');
@@ -86,6 +130,7 @@
     let activeLine = null;
     let currentStatus = 'submitted';
     let isReadOnly = false;
+    const invalidDateFields = new Set();
 
     function runWithPopulation(fn) {
         const prev = isPopulating;
@@ -252,6 +297,110 @@
         renderLines();
     }
 
+    function getDateFieldLabel(fieldKey) {
+        return dateFieldMeta[fieldKey]?.label || '';
+    }
+
+    function setDateFieldError(fieldKey, message = '') {
+        const meta = dateFieldMeta[fieldKey];
+        if (!meta) return;
+        const hasError = Boolean(message);
+        if (meta.block) {
+            meta.block.classList.toggle('has-error', hasError);
+        }
+        if (meta.warning) {
+            meta.warning.textContent = message || '';
+            meta.warning.hidden = !hasError;
+        }
+        if (hasError) {
+            invalidDateFields.add(fieldKey);
+        } else {
+            invalidDateFields.delete(fieldKey);
+        }
+        updateSaveButtonState();
+    }
+
+    function applyDateConstraints() {
+        const now = new Date();
+        const minDate = new Date(now);
+        minDate.setDate(minDate.getDate() - 14);
+        minDate.setHours(0, 0, 0, 0);
+
+        const maxDate = new Date(now);
+        maxDate.setFullYear(maxDate.getFullYear() + 5);
+        maxDate.setHours(23, 59, 59, 999);
+
+        const toInputString = (date) => {
+            if (!date || Number.isNaN(date.getTime())) return '';
+            const offset = date.getTimezoneOffset() * 60000;
+            const local = new Date(date.getTime() - offset);
+            return local.toISOString().slice(0, 16);
+        };
+
+        const getDate = (input) => {
+            if (!input || !input.value) return null;
+            const parsed = new Date(input.value);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        };
+
+        const issueMeta = dateFieldMeta.issue;
+        const issueInput = issueMeta?.input;
+        const issueWarning = issueMeta?.warning;
+        const issueValue = getDate(issueInput);
+        const maxDateStr = toInputString(maxDate);
+
+        if (issueInput) {
+            issueInput.min = toInputString(minDate);
+            issueInput.max = maxDateStr;
+            let issueError = '';
+            if (issueValue && issueValue < minDate) {
+                issueError = 'วันที่เสนอราคาย้อนหลังได้ไม่เกิน 14 วัน';
+            } else if (issueValue && issueValue > maxDate) {
+                issueError = 'วันที่เสนอราคาต้องไม่เกิน 5 ปีจากวันนี้';
+            }
+            setDateFieldError('issue', issueError);
+            if (!issueError && issueWarning) {
+                if (issueValue && issueValue < now) {
+                    issueWarning.textContent = 'วันที่เสนอราคาเป็นวันย้อนหลัง (ย้อนหลังได้ไม่เกิน 14 วัน)';
+                    issueWarning.hidden = false;
+                } else {
+                    issueWarning.hidden = true;
+                }
+            }
+        } else {
+            setDateFieldError('issue', '');
+        }
+
+        let currentMin = minDate;
+        if (issueValue && issueValue >= minDate && issueValue <= maxDate) {
+            currentMin = issueValue;
+        }
+
+        const sequence = ['validity', 'order', 'expected', 'deadline'];
+        sequence.forEach((key) => {
+            const meta = dateFieldMeta[key];
+            const input = meta?.input;
+            if (!input) {
+                setDateFieldError(key, '');
+                return;
+            }
+            input.min = toInputString(currentMin);
+            input.max = maxDateStr;
+            const value = getDate(input);
+            let message = '';
+            if (value && value < currentMin) {
+                const previousLabel = meta?.dependsOn ? getDateFieldLabel(meta.dependsOn) : 'วันที่ก่อนหน้า';
+                message = `${meta.label} ต้องไม่เก่ากว่า ${previousLabel}`;
+            } else if (value && value > maxDate) {
+                message = `${meta.label} ต้องอยู่ภายใน 5 ปีข้างหน้า`;
+            }
+            setDateFieldError(key, message);
+            if (!message && value) {
+                currentMin = value;
+            }
+        });
+    }
+
     function applyStatus(status, { markDirty: shouldMark = false } = {}) {
         const normalized = typeof status === 'string' ? status.toLowerCase() : 'submitted';
         setStatusBadge(normalized);
@@ -334,6 +483,7 @@
             renderLines();
         });
         applyStatus(snapshot.status || 'submitted');
+        applyDateConstraints();
         setDirtyState(false);
     }
 
@@ -344,7 +494,7 @@
     }
 
     function updateSaveButtonState() {
-        const shouldDisable = isSaving || !isDirty;
+        const shouldDisable = isSaving || !isDirty || invalidDateFields.size > 0;
         if (saveButton) {
             saveButton.disabled = shouldDisable;
             if (shouldDisable) {
@@ -630,6 +780,7 @@
             formRefs.updatedByMeta.textContent = payload.updated_by_label || '—';
         }
         applyStatus(payload.status);
+        applyDateConstraints();
     }
 
     function buildLineRow(line) {
@@ -874,6 +1025,10 @@
             setMessage('ไม่พบใบเสนอราคาที่ต้องการบันทึก', 'error');
             return;
         }
+        if (invalidDateFields.size > 0) {
+            setMessage('กรุณาแก้ไขข้อมูลวันที่ให้ถูกต้องก่อนบันทึก', 'error');
+            return;
+        }
         if (isSaving) return;
         const payload = collectFormData();
         isSaving = true;
@@ -943,6 +1098,17 @@
                 el.addEventListener('change', handler);
             }
         });
+        const dateInputs = [
+            formRefs.quotationDate,
+            formRefs.bidValidity,
+            formRefs.orderDate,
+            formRefs.expectedArrival,
+            formRefs.orderDeadline,
+        ].filter(Boolean);
+        dateInputs.forEach((input) => {
+            input.addEventListener('input', applyDateConstraints);
+            input.addEventListener('change', applyDateConstraints);
+        });
         if (addLineButton) {
             addLineButton.addEventListener('click', addEmptyLine);
         }
@@ -991,6 +1157,7 @@
         setBackLinks();
         await fetchQuotation();
         bindEvents();
+        applyDateConstraints();
         updateSaveButtonState();
     }
 

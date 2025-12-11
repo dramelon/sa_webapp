@@ -35,6 +35,7 @@
     const requestLinesFilterEmpty = document.getElementById('requestLinesFilterEmpty');
     const requestLinesSearch = document.getElementById('requestLinesSearch');
     const addRequestLineButton = document.getElementById('addRequestLine');
+    const addRequestLineContainer = document.querySelector('.request-lines-actions');
     const unsavedBanner = document.getElementById('unsavedBanner');
     const inlineSaveButton = document.getElementById('btnSaveInline');
     const discardChangesButton = document.getElementById('btnDiscardChanges');
@@ -562,6 +563,10 @@
         });
         if (addRequestLineButton) {
             addRequestLineButton.disabled = !enabled;
+            addRequestLineButton.hidden = !enabled;
+        }
+        if (addRequestLineContainer) {
+            addRequestLineContainer.hidden = !enabled;
         }
         if (requestLinesSearch) {
             requestLinesSearch.disabled = disableSearch && !enabled;

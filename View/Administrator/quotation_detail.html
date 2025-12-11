@@ -121,24 +121,31 @@
                                 </select>
                             </label>
                             <label class="field-block">
-                                <span class="field-label">วันหมดอายุราคา</span>
-                                <input type="datetime-local" id="quotationBidValidity" name="BidValidityDays" />
-                            </label>
-                            <label class="field-block">
                                 <span class="field-label">วันที่เสนอราคา</span>
                                 <input type="datetime-local" id="quotationDate" name="QuotationDate" />
+                                <p class="field-warning" id="quotationDateWarning" hidden>
+                                    วันที่เสนอราคาเป็นวันย้อนหลัง (ย้อนหลังได้ไม่เกิน 14 วัน)
+                                </p>
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันหมดอายุราคา</span>
+                                <input type="datetime-local" id="quotationBidValidity" name="BidValidityDays" />
+                                <p class="field-warning" id="quotationBidValidityWarning" hidden></p>
                             </label>
                             <label class="field-block">
                                 <span class="field-label">วันที่สั่งซื้อวัสดุจริง</span>
                                 <input type="datetime-local" id="quotationOrderDate" name="OrderDate" />
-                            </label>
-                            <label class="field-block">
-                                <span class="field-label">วันที่ครบกำหนดส่งวัสดุจริง</span>
-                                <input type="datetime-local" id="quotationOrderDeadline" name="OrderDeadline" />
+                                <p class="field-warning" id="quotationOrderDateWarning" hidden></p>
                             </label>
                             <label class="field-block">
                                 <span class="field-label">วันที่คาดว่าจะได้รับวัสดุจริง</span>
                                 <input type="datetime-local" id="quotationExpectedArrival" name="ExpectedArrival" />
+                                <p class="field-warning" id="quotationExpectedArrivalWarning" hidden></p>
+                            </label>
+                            <label class="field-block">
+                                <span class="field-label">วันที่ครบกำหนดส่งวัสดุจริง</span>
+                                <input type="datetime-local" id="quotationOrderDeadline" name="OrderDeadline" />
+                                <p class="field-warning" id="quotationOrderDeadlineWarning" hidden></p>
                             </label>
                             <label class="field-block">
                                 <span class="field-label">รหัสผู้ขายอ้างอิง</span>

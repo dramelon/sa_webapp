@@ -28,6 +28,23 @@
 
         <div class="form-alert" id="docGlobalMessage" role="alert" hidden></div>
 
+        <section class="doc-quick-actions summary-cards" id="docQuickActions" aria-label="การดำเนินการเอกสาร">
+            <button
+                type="button"
+                class="summary-card doc-summary-card doc-quick-action"
+                id="btnQuickCreateRequest"
+                aria-disabled="true"
+                disabled
+            >
+                <header>สร้างคำขอเบิกอุปกรณ์</header>
+                <strong>เริ่มต้น</strong>
+            </button>
+            <button type="button" class="summary-card doc-summary-card doc-quick-action" id="btnQuickSummarizeQuotation">
+                <header>สรุปใบเสนอราคา</header>
+                <strong>จัดการ</strong>
+            </button>
+        </section>
+
         <section class="summary-cards" id="documentSummaryCards" aria-live="polite"></section>
 
         <section class="doc-layout">

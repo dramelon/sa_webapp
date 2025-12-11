@@ -29,7 +29,9 @@
     const missingLinesBody = document.getElementById('rfqMissingLinesBody');
     const titleInput = document.getElementById('rfqTitleInput');
     const dueDateInput = document.getElementById('rfqDueDateInput');
+    const dueDateWarning = document.getElementById('rfqDueDateWarning');
     const expectedArrivalInput = document.getElementById('rfqExpectedArrivalInput');
+    const expectedArrivalWarning = document.getElementById('rfqExpectedArrivalWarning');
     const paymentTermSelect = document.getElementById('rfqPaymentTermSelect');
     const paymentMethodSelect = document.getElementById('rfqPaymentMethodSelect');
     const noteInput = document.getElementById('rfqNoteInput');
@@ -39,7 +41,9 @@
     const validityDaysBlock = document.getElementById('rfqValidityDaysBlock');
     const validityDaysWarning = document.getElementById('rfqValidityDaysWarning');
     const orderDateInput = document.getElementById('rfqOrderDateInput');
+    const orderDateWarning = document.getElementById('rfqOrderDateWarning');
     const orderDeadlineInput = document.getElementById('rfqOrderDeadlineInput');
+    const orderDeadlineWarning = document.getElementById('rfqOrderDeadlineWarning');
     const refIdInput = document.getElementById('rfqRefSupplierRfqId');
     const staffIdInput = document.getElementById('rfqStaffId');
     const contactPersonInput = document.getElementById('rfqContactPerson');
@@ -53,6 +57,51 @@
     const printButton = document.getElementById('rfqPrintButton');
     const forwardMessage = document.getElementById('rfqForwardMessage');
     const eventForm = document.getElementById('rfqForm');
+    const requestDateBlock = requestDateInput?.closest('.field-block') || null;
+    const dueDateBlock = dueDateInput?.closest('.field-block') || null;
+    const orderDateBlock = orderDateInput?.closest('.field-block') || null;
+    const expectedArrivalBlock = expectedArrivalInput?.closest('.field-block') || null;
+    const orderDeadlineBlock = orderDeadlineInput?.closest('.field-block') || null;
+
+    const dateFieldMeta = {
+        request: {
+            input: requestDateInput,
+            warning: requestDateWarning,
+            block: requestDateBlock,
+            label: 'วันที่สร้างใบขอราคา',
+            dependsOn: null,
+        },
+        due: {
+            input: dueDateInput,
+            warning: dueDateWarning,
+            block: dueDateBlock,
+            label: 'วันที่ครบกำหนดรับใบเสนอราคา',
+            dependsOn: 'request',
+        },
+        order: {
+            input: orderDateInput,
+            warning: orderDateWarning,
+            block: orderDateBlock,
+            label: 'วันที่สั่งซื้อวัสดุจริง',
+            dependsOn: 'due',
+        },
+        expected: {
+            input: expectedArrivalInput,
+            warning: expectedArrivalWarning,
+            block: expectedArrivalBlock,
+            label: 'วันที่คาดว่าจะได้รับวัสดุจริง',
+            dependsOn: 'order',
+        },
+        deadline: {
+            input: orderDeadlineInput,
+            warning: orderDeadlineWarning,
+            block: orderDeadlineBlock,
+            label: 'วันที่ครบกำหนดส่งวัสดุจริง',
+            dependsOn: 'expected',
+        },
+    };
+
+    const invalidDateFields = new Set();
 
     const unsavedBanner = document.getElementById('unsavedBanner');
     const unsavedModal = document.getElementById('unsavedModal');
@@ -194,7 +243,7 @@
     }
 
     function updateSaveButtonState() {
-        const disable = isSaving || !isDirty;
+        const disable = isSaving || !isDirty || invalidDateFields.size > 0;
         if (saveButton) {
             saveButton.disabled = disable;
         }
@@ -707,6 +756,29 @@
         openModal(customerModal);
     }
 
+    function getDateFieldLabel(fieldKey) {
+        return dateFieldMeta[fieldKey]?.label || '';
+    }
+
+    function setDateFieldError(fieldKey, message = '') {
+        const meta = dateFieldMeta[fieldKey];
+        if (!meta) return;
+        const hasError = Boolean(message);
+        if (meta.block) {
+            meta.block.classList.toggle('has-error', hasError);
+        }
+        if (meta.warning) {
+            meta.warning.textContent = message || '';
+            meta.warning.hidden = !hasError;
+        }
+        if (hasError) {
+            invalidDateFields.add(fieldKey);
+        } else {
+            invalidDateFields.delete(fieldKey);
+        }
+        updateSaveButtonState();
+    }
+
     function applyDateConstraints() {
         const now = new Date();
         const minDate = new Date(now);
@@ -725,53 +797,65 @@
         };
 
         const maxDateStr = toInputString(maxDate);
-
-        // 1. Request Date
-        if (requestDateInput) {
-            requestDateInput.min = toInputString(minDate);
-            requestDateInput.max = maxDateStr;
-
-            // Warning logic for Request Date
-            if (requestDateInput.value) {
-                const selectedDate = new Date(requestDateInput.value);
-                const isPast = selectedDate < now;
-                if (requestDateWarning) {
-                    requestDateWarning.hidden = !isPast;
-                }
-            } else {
-                if (requestDateWarning) {
-                    requestDateWarning.hidden = true;
-                }
-            }
-        }
-
-        // Helper to get date object from input
         const getDate = (input) => {
             if (!input || !input.value) return null;
             const d = new Date(input.value);
             return Number.isNaN(d.getTime()) ? null : d;
         };
 
-        // Chain logic: Request -> Due -> Order -> Expected -> Deadline
-        let currentMin = getDate(requestDateInput) || minDate;
+        const requestValue = getDate(requestDateInput);
+        if (requestDateInput) {
+            requestDateInput.min = toInputString(minDate);
+            requestDateInput.max = maxDateStr;
+            let requestError = '';
+            if (requestValue && requestValue < minDate) {
+                requestError = 'วันที่สร้างใบขอราคาย้อนหลังได้ไม่เกิน 14 วัน';
+            } else if (requestValue && requestValue > maxDate) {
+                requestError = 'วันที่สร้างใบขอราคาต้องไม่เกิน 5 ปีจากวันนี้';
+            }
+            if (requestError) {
+                setDateFieldError('request', requestError);
+            } else {
+                setDateFieldError('request', '');
+                if (requestDateWarning) {
+                    if (requestValue && requestValue < now) {
+                        requestDateWarning.textContent = 'วันที่สร้างใบขอราคาเป็นวันย้อนหลัง (ย้อนหลังได้ไม่เกิน 14 วัน)';
+                        requestDateWarning.hidden = false;
+                    } else {
+                        requestDateWarning.hidden = true;
+                    }
+                }
+            }
+        } else {
+            setDateFieldError('request', '');
+        }
 
-        const chain = [
-            dueDateInput,
-            orderDateInput,
-            expectedArrivalInput,
-            orderDeadlineInput
-        ];
+        const sequence = ['due', 'order', 'expected', 'deadline'];
+        let currentMin = minDate;
+        if (requestValue && requestValue >= minDate && requestValue <= maxDate) {
+            currentMin = requestValue;
+        }
 
-        chain.forEach(field => {
-            if (!field) return;
-
-            field.min = toInputString(currentMin);
-            field.max = maxDateStr;
-
-            // If the field has a value, it becomes the min for the next field
-            const val = getDate(field);
-            if (val) {
-                currentMin = val;
+        sequence.forEach((key) => {
+            const meta = dateFieldMeta[key];
+            const input = meta?.input;
+            if (!input) {
+                setDateFieldError(key, '');
+                return;
+            }
+            input.min = toInputString(currentMin);
+            input.max = maxDateStr;
+            const value = getDate(input);
+            let message = '';
+            if (value && value < currentMin) {
+                const previousLabel = meta?.dependsOn ? getDateFieldLabel(meta.dependsOn) : 'วันที่ก่อนหน้า';
+                message = `${meta.label} ต้องไม่เก่ากว่า ${previousLabel}`;
+            } else if (value && value > maxDate) {
+                message = `${meta.label} ต้องอยู่ภายใน 5 ปีข้างหน้า`;
+            }
+            setDateFieldError(key, message);
+            if (!message && value) {
+                currentMin = value;
             }
         });
     }
@@ -958,6 +1042,7 @@
         setStatusChip(snapshot.status || 'draft');
         isHydrating = false;
         setDirty(false);
+        applyDateConstraints();
     }
 
     function refreshSnapshot() {
@@ -1200,6 +1285,7 @@
             deliverToInput.value = String(eventInfo.event_id);
         }
         updateBackLink();
+        applyDateConstraints();
     }
 
     function applyAuditInfo(info) {
@@ -1268,6 +1354,7 @@
         if (validityDaysInput && Number.isFinite(Number(rfqInfo.rfq_validity_days))) {
             validityDaysInput.value = String(rfqInfo.rfq_validity_days);
         }
+        applyDateConstraints();
         isHydrating = false;
         applyAuditInfo(rfqInfo);
         applyEventInfo(rfqInfo.event);
@@ -1551,6 +1638,10 @@
 
     async function handleSave() {
         setGlobalMessage('');
+        if (invalidDateFields.size > 0) {
+            setGlobalMessage('กรุณาแก้ไขวันที่ที่ไม่ถูกต้องก่อนบันทึก', 'error');
+            return false;
+        }
         const payload = buildSavePayload();
         if (!payload.title && requestInfo?.request_name) {
             payload.title = `RFQ สำหรับ ${requestInfo.request_name}`;
@@ -1768,6 +1859,7 @@
             validityDaysInput.value = '30';
         }
         isHydrating = false;
+        applyDateConstraints();
         refreshSnapshot();
     }
 

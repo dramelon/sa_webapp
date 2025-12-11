@@ -53,9 +53,14 @@ try {
             r.Title AS RfqTitle,
             (
                 SELECT SUM(
-                    (l.QuantityOffered * l.UnitPrice) - 
-                    IFNULL(l.DiscountAmount, 0) - 
-                    (IFNULL(l.DiscountPercent, 0) / 100 * (l.QuantityOffered * l.UnitPrice))
+                    GREATEST(
+                        (
+                            (l.QuantityOffered * l.UnitPrice)
+                            - IFNULL(l.DiscountAmount, 0)
+                            - (IFNULL(l.DiscountPercent, 0) / 100 * (l.QuantityOffered * l.UnitPrice))
+                        ) * CASE WHEN l.TaxInclude = 1 THEN 1 ELSE 1.07 END,
+                        0
+                    )
                 )
                 FROM supplier_quotation_line l
                 WHERE l.SupplierQuotationID = q.SupplierQuotationID

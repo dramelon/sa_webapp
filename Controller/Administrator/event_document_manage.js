@@ -11,10 +11,12 @@
     const backButton = document.getElementById('btnBackToEvent');
     const pageDate = document.getElementById('pageDate');
     const globalMessage = document.getElementById('docGlobalMessage');
-    const createRequestContainer = document.getElementById('docCreateRequestContainer');
-    const createRequestButton = document.getElementById('btnCreateRequest');
-    const summarizeQuotationContainer = document.getElementById('docSummarizeQuotationContainer');
-    const summarizeQuotationButton = document.getElementById('btnSummarizeQuotation');
+    const createRequestContainers = Array.from(document.querySelectorAll('#docCreateRequestContainer'));
+    const createRequestButtons = Array.from(document.querySelectorAll('#btnCreateRequest, #btnQuickCreateRequest'));
+    const summarizeQuotationContainers = Array.from(document.querySelectorAll('#docSummarizeQuotationContainer'));
+    const summarizeQuotationButtons = Array.from(
+        document.querySelectorAll('#btnSummarizeQuotation, #btnQuickSummarizeQuotation')
+    );
     const requestModal = document.getElementById('requestModal');
     const requestForm = document.getElementById('requestForm');
     const requestNameInput = document.getElementById('requestNameInput');
@@ -89,6 +91,7 @@
 
     let activeCategory = 'all';
     let activeStatus = 'all';
+    let showCancelledDocumentsInAll = false;
     let searchTerm = '';
     let hasLoadError = false;
     let loadErrorMessage = '';
@@ -404,6 +407,11 @@
         const normalized = normalizeStatusKey(nextStatus);
         const previous = activeStatus;
         activeStatus = normalized;
+        if (normalized === 'all') {
+            showCancelledDocumentsInAll = Boolean(options.includeCancelledInAll);
+        } else {
+            showCancelledDocumentsInAll = false;
+        }
         if (statusFilter && statusFilter.value !== normalized) {
             statusFilter.value = normalized;
         }
@@ -442,7 +450,10 @@
             value.textContent = metric.value.toLocaleString('th-TH');
             card.append(header, value);
             card.addEventListener('click', () => {
-                setActiveStatus(statusKey, { forceRender: true });
+                setActiveStatus(statusKey, {
+                    forceRender: true,
+                    includeCancelledInAll: statusKey === 'all',
+                });
             });
             summaryContainer.appendChild(card);
         });
@@ -547,6 +558,9 @@
 
     function matchesStatus(doc) {
         if (activeStatus === 'all') {
+            if (!showCancelledDocumentsInAll && doc.status === 'cancelled') {
+                return false;
+            }
             return true;
         }
         return doc.status === activeStatus;
@@ -740,37 +754,48 @@
     }
 
     function syncCreateRequestButtonState() {
-        const shouldShow = activeCategory === 'item-request' && !hasLoadError;
-        if (createRequestContainer) {
-            createRequestContainer.hidden = !shouldShow;
-        }
-        if (!createRequestButton) {
+        const shouldShowPanelAction = activeCategory === 'item-request' && !hasLoadError;
+        createRequestContainers.forEach((container) => {
+            container.hidden = !shouldShowPanelAction;
+        });
+        if (!createRequestButtons.length) {
             return;
         }
-        const isEnabled = shouldShow && canCreateRequest;
-        createRequestButton.disabled = !isEnabled;
-        if (isEnabled) {
-            createRequestButton.removeAttribute('aria-disabled');
-        } else {
-            createRequestButton.setAttribute('aria-disabled', 'true');
-        }
+        const isEnabled = canCreateRequest && !hasLoadError;
+        createRequestButtons.forEach((button) => {
+            button.disabled = !isEnabled;
+            if (isEnabled) {
+                button.removeAttribute('aria-disabled');
+            } else {
+                button.setAttribute('aria-disabled', 'true');
+            }
+        });
     }
 
     function syncSummarizeQuotationButtonState() {
-        const shouldShow = activeCategory === 'quotation' && !hasLoadError;
-        if (summarizeQuotationContainer) {
-            summarizeQuotationContainer.hidden = !shouldShow;
-        }
+        const shouldShowPanelAction = activeCategory === 'quotation' && !hasLoadError;
+        summarizeQuotationContainers.forEach((container) => {
+            container.hidden = !shouldShowPanelAction;
+        });
+        const canSummarize = Boolean(eventId) && !hasLoadError;
+        summarizeQuotationButtons.forEach((button) => {
+            button.disabled = !canSummarize;
+            if (canSummarize) {
+                button.removeAttribute('aria-disabled');
+            } else {
+                button.setAttribute('aria-disabled', 'true');
+            }
+        });
     }
 
-    if (summarizeQuotationButton) {
-        summarizeQuotationButton.addEventListener('click', () => {
+    summarizeQuotationButtons.forEach((button) => {
+        button.addEventListener('click', () => {
             if (eventId) {
                 const returnUrl = encodeURIComponent(`./event_document_manage.html?event_id=${eventId}&category=quotation`);
                 window.location.href = `./quotations.html?event_id=${encodeURIComponent(eventId)}&return_to=${returnUrl}`;
             }
         });
-    }
+    });
 
     function syncRequestEventDetails() {
         if (requestEventName) {
@@ -1463,8 +1488,8 @@
 
     function initializeRequestActions() {
         setCreateRequestEnabled(false);
-        if (createRequestButton) {
-            createRequestButton.addEventListener('click', () => {
+        createRequestButtons.forEach((button) => {
+            button.addEventListener('click', () => {
                 if (!eventId) {
                     setGlobalMessage('ไม่พบอีเว้นที่ต้องการสร้างคำขอ', 'error');
                     return;
@@ -1478,7 +1503,7 @@
                 params.set('event_id', eventId);
                 window.location.href = `./item_request_detail.html?${params.toString()}`;
             });
-        }
+        });
     }
 
     function bindFilters() {
@@ -1490,13 +1515,17 @@
         }
         if (statusFilter) {
             statusFilter.addEventListener('change', (event) => {
-                setActiveStatus(event.target.value || 'all', { forceRender: true });
+                const selectedStatus = event.target.value || 'all';
+                setActiveStatus(selectedStatus, {
+                    forceRender: true,
+                    includeCancelledInAll: selectedStatus === 'all',
+                });
             });
         }
         if (resetFiltersBtn) {
             resetFiltersBtn.addEventListener('click', () => {
                 searchTerm = '';
-                setActiveStatus('all', { skipRender: true });
+                setActiveStatus('all', { skipRender: true, includeCancelledInAll: false });
                 activeCategory = categories.some((category) => category.id === 'all') ? 'all' : categories[0]?.id || 'all';
                 if (searchInput) {
                     searchInput.value = '';

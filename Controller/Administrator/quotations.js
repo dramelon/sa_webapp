@@ -98,6 +98,20 @@
 
             titleGroup.append(title, rfqLink);
             header.appendChild(titleGroup);
+
+            const actionsGroup = document.createElement('div');
+            actionsGroup.className = 'toolbar-group';
+            const reviewLink = document.createElement('a');
+            reviewLink.className = 'btn btn-secondary btn-small';
+            const params = new URLSearchParams();
+            params.set('rfq_id', group.rfq_id);
+            if (eventId) params.set('event_id', eventId);
+            const returnUrl = encodeURIComponent(window.location.href);
+            params.set('return_to', returnUrl);
+            reviewLink.href = `./quotation_review.html?${params.toString()}`;
+            reviewLink.innerHTML = '<span class="i chart"></span> ตรวจสอบราคา';
+            actionsGroup.appendChild(reviewLink);
+            header.appendChild(actionsGroup);
             section.appendChild(header);
 
             // Table
@@ -112,7 +126,7 @@
                 <tr>
                     <th scope="col">ใบเสนอราคา</th>
                     <th scope="col">ผู้ขาย</th>
-                    <th scope="col">ยอดรวม</th>
+                    <th scope="col">ยอดรวม (รวม VAT)</th>
                     <th scope="col">วันที่เสนอราคา</th>
                     <th scope="col">สถานะ</th>
                     <th scope="col" class="col-actions">การจัดการ</th>
